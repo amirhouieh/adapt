@@ -4,6 +4,8 @@ import { InstallCommand } from '@/components/install-command';
 import { buttonVariants } from '@/components/ui/button';
 
 export default function HomePage() {
+  const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true';
+
   return (
     <div className="flex items-center justify-center flex-1">
       <div className="flex flex-col items-start gap-4 px-4">
@@ -28,12 +30,14 @@ export default function HomePage() {
         >
           Get started
         </Link>
-        <Link
-          href="/demo"
-          className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-        >
-          Try it
-        </Link>
+        {!isGitHubPages && (
+          <Link
+            href="/demo"
+            className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+          >
+            Try it
+          </Link>
+        )}
       </div>
       </div>
     </div>

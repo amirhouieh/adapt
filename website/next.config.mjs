@@ -1,6 +1,7 @@
 import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
+const isGitHubPages = process.env.GITHUB_PAGES === "true";
 const betterSqliteStub = new URL(
   "./lib/noop-better-sqlite3.ts",
   import.meta.url,
@@ -9,6 +10,14 @@ const betterSqliteStub = new URL(
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  ...(isGitHubPages
+    ? {
+        output: "export",
+        basePath: "/adapt",
+        trailingSlash: true,
+        images: { unoptimized: true },
+      }
+    : {}),
   turbopack: {
     root: import.meta.dirname,
     resolveAlias: {
