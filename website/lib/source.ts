@@ -1,7 +1,7 @@
 import { docs } from 'collections/server';
 import { type InferPageType, loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
-import { docsContentRoute, docsImageRoute, docsRoute, siteBasePath } from './shared';
+import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
@@ -15,7 +15,7 @@ export function getPageImage(page: InferPageType<typeof source>) {
 
   return {
     segments,
-    url: `${siteBasePath}${docsImageRoute}/${segments.join('/')}`,
+    url: `${docsImageRoute}/${segments.join('/')}`,
   };
 }
 
@@ -24,7 +24,7 @@ export function getPageMarkdownUrl(page: InferPageType<typeof source>) {
 
   return {
     segments,
-    url: `${siteBasePath}${docsContentRoute}/${segments.join('/')}`,
+    url: `${docsContentRoute}/${segments.join('/')}`,
   };
 }
 

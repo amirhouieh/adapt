@@ -59,10 +59,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/amirhouieh/adapt.git"
+    "url": "git+https://github.com/unbody-io/adapt.git"
   },
-  "homepage": "https://amirhouieh.github.io/adapt/",
-  "bugs": "https://github.com/amirhouieh/adapt/issues",
+  "homepage": "https://adapt.unbody.io",
+  "bugs": "https://github.com/unbody-io/adapt/issues",
   "author": "Unbody <hello@unbody.io> (https://unbody.io)",
   "license": "MIT",
   "devDependencies": {

@@ -8,14 +8,14 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **Honest instructions.** Developer `instructions` now reach the runtime observe and understand prompts **verbatim**, instead of being LLM-compressed into a short identity blurb. Runtime prompts are assembled deterministically in three layers — a static framework role frame, the verbatim developer instructions, and framework mechanics (JSON envelope, importance scale, cognitive skills) last — with no LLM call. Observe identity generation and list-neuron understand identity generation are removed; text neurons keep a slimmed cognitive-skill customization call. The derived `domain` dismissal gate is dropped — relevance now rests on the verbatim instructions. Closes [#17](https://github.com/amirhouieh/adapt/issues/17) and [#18](https://github.com/amirhouieh/adapt/issues/18).
+- **Honest instructions.** Developer `instructions` now reach the runtime observe and understand prompts **verbatim**, instead of being LLM-compressed into a short identity blurb. Runtime prompts are assembled deterministically in three layers — a static framework role frame, the verbatim developer instructions, and framework mechanics (JSON envelope, importance scale, cognitive skills) last — with no LLM call. Observe identity generation and list-neuron understand identity generation are removed; text neurons keep a slimmed cognitive-skill customization call. The derived `domain` dismissal gate is dropped — relevance now rests on the verbatim instructions. Closes [#17](https://github.com/unbody-io/adapt/issues/17) and [#18](https://github.com/unbody-io/adapt/issues/18).
 - Neurons restored from a pre-0.0.6 store recompute their observe/understand prompts from structured state on restore, so legacy persisted prompts are replaced with the new 3-layer prompts deterministically (no LLM call).
 
 ### Added
 
 - Optional per-phase instruction overrides — `observeInstructions` and `understandInstructions` on neuron configs and generated neuron configs. The shared `instructions` field remains the fallback when a phase-specific field is omitted; `focus` stays observe-only.
-- `skipUnderstand` — observer-only neurons. A neuron created with `skipUnderstand: true` runs the observe phase and retains observations but never synthesizes understanding, even under `forceSynthesize`. Symmetric to `skipObservation`. Closes [#20](https://github.com/amirhouieh/adapt/issues/20).
-- `onEvent` pre-init subscription hook on `Brain.create` / `Brain.restore` and `TextNeuron` / `ListNeuron` `create` / `restore`. The handler is attached before initialization runs, so `init` events are observable through the public API without bypassing private constructors. Closes [#19](https://github.com/amirhouieh/adapt/issues/19).
+- `skipUnderstand` — observer-only neurons. A neuron created with `skipUnderstand: true` runs the observe phase and retains observations but never synthesizes understanding, even under `forceSynthesize`. Symmetric to `skipObservation`. Closes [#20](https://github.com/unbody-io/adapt/issues/20).
+- `onEvent` pre-init subscription hook on `Brain.create` / `Brain.restore` and `TextNeuron` / `ListNeuron` `create` / `restore`. The handler is attached before initialization runs, so `init` events are observable through the public API without bypassing private constructors. Closes [#19](https://github.com/unbody-io/adapt/issues/19).
 
 ### Fixed
 
@@ -38,7 +38,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- BYO LLM runtime via the `AdaptLLMPlugin` contract — pass `llm` to `Brain.create` / `Brain.restore` / `TextNeuron.*` / `ListNeuron.*` to swap the runtime. Closes [#9](https://github.com/amirhouieh/adapt/issues/9).
+- BYO LLM runtime via the `AdaptLLMPlugin` contract — pass `llm` to `Brain.create` / `Brain.restore` / `TextNeuron.*` / `ListNeuron.*` to swap the runtime. Closes [#9](https://github.com/unbody-io/adapt/issues/9).
 - Public types `AdaptStreamResult` and `AdaptModelStreamEvent` exported from the package root — typed surface for streaming consumers, regardless of which plugin is active.
 - `AdaptStreamResult` gains an optional `output: Promise<TJson>` field, populated by core when the request specified a structured output schema. Resolves *after* the stream finalizes, by running the repair pipeline on the resolved `text` and validating against the schema. Mid-stream JSON is left untouched (partial JSON is unrepairable). Plugins do not need to populate this field — core wraps the result.
 - Opt-in structured-output retry with feedback: pass `repairWithFeedback` (and optionally `maxRepairAttempts`, default 1, capped at 3) on a `generate()` / `streamText()` request, `Brain.create()` config, or restore runtime options. Core still runs the layered repair pipeline first; the hook only fires after repaired JSON fails Zod validation, receives the raw text plus the validation error/schema/model request context, and returns replacement text for one more repair + validation pass. Streaming applies this after the stream finalizes via `AdaptStreamResult.output`.

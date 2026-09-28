@@ -1,6 +1,6 @@
 # Adapt
 
-![Adapt — a memory layer that grows and reshapes over time](https://raw.githubusercontent.com/amirhouieh/adapt/main/assets/hero.jpg)
+![Adapt — a memory layer that grows and reshapes over time](https://raw.githubusercontent.com/unbody-io/adapt/main/assets/hero.jpg)
 
 **Your agent can search everything it stored and still not know you changed your mind.**
 
@@ -122,4 +122,4 @@ Local models (Ollama, LM Studio) are not fully tested yet.
 
 Issues and PRs welcome. If you try it and it does not fit your case, that is the most useful issue you can open.
 
-[Docs](https://amirhouieh.github.io/adapt/) · [Changelog](https://github.com/amirhouieh/adapt/blob/main/CHANGELOG.md) · [npm](https://www.npmjs.com/package/@unbody-io/adapt)
+[Docs](https://adapt.unbody.io) · [Changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md) · [npm](https://www.npmjs.com/package/@unbody-io/adapt)

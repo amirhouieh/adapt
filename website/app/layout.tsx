@@ -1,5 +1,4 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LogoScramble } from '@/components/demo/logo-scramble';
 import './global.css';
@@ -7,16 +6,6 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === 'true';
-
-export const metadata: Metadata = {
-  metadataBase: new URL('https://amirhouieh.github.io/adapt/'),
-  title: {
-    default: 'Adapt',
-    template: '%s · Adapt',
-  },
-  description: 'A self-evolving memory layer for AI applications.',
-};
 
 
 export default function Layout({ children }: LayoutProps<'/'>) {
@@ -29,7 +18,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         />
       </head>
       <body className="flex flex-col min-h-screen">
-        <RootProvider search={{ enabled: !isGitHubPages }}>
+        <RootProvider>
           <Link href="/" className="fixed top-4 left-4 z-50 text-sm no-underline text-fd-foreground">
             <LogoScramble />
           </Link>
