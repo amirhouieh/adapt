@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import type {
-	AtomicNeuronStore,
 	AtomicBrainStore,
+	AtomicNeuronStore,
 	BrainEvolutionActivationRecord,
 	BrainEvolutionStageRecord,
 	BrainMemoryMappingRecord,
@@ -839,9 +839,7 @@ function validateTargetReferences(target: NeuronStoreSnapshot): void {
 	}
 	for (const record of target.outbox) {
 		if (record.change_ids.some((id) => !changes.has(id)))
-			throw new Error(
-				'target outbox has a cross-target change reference',
-			)
+			throw new Error('target outbox has a cross-target change reference')
 	}
 }
 

@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import type {
-	LearningLens,
-	LearningObservation,
-} from '../../learning'
+import type { LearningLens, LearningObservation } from '../../learning'
 
 export interface GraphRelationDefinition {
 	readonly id: string

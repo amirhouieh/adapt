@@ -1,4 +1,3 @@
-import type { EvolutionLensDefinition } from '../evolution/contracts'
 import type {
 	BrainEvolutionRecord,
 	BrainNeuronRecord,
@@ -12,6 +11,7 @@ import type {
 	StateRecord,
 	UnderstandingRecord,
 } from '../../stores'
+import type { EvolutionLensDefinition } from '../evolution/contracts'
 
 export type LegacyV006StoreKind = 'memory' | 'sqlite-node' | 'sqlite-bun'
 
@@ -50,15 +50,17 @@ export interface LegacyV006Source<TSnapshot> {
 	read(): Promise<TSnapshot>
 }
 
-export type LegacyV006NeuronSource = LegacyV006Source<LegacyV006NeuronSnapshot> & {
-	readonly kind: 'neuron'
-	readonly lensId: string
-	readonly lensType: string
-}
+export type LegacyV006NeuronSource =
+	LegacyV006Source<LegacyV006NeuronSnapshot> & {
+		readonly kind: 'neuron'
+		readonly lensId: string
+		readonly lensType: string
+	}
 
-export type LegacyV006BrainSource = LegacyV006Source<LegacyV006BrainSnapshot> & {
-	readonly kind: 'brain'
-}
+export type LegacyV006BrainSource =
+	LegacyV006Source<LegacyV006BrainSnapshot> & {
+		readonly kind: 'brain'
+	}
 
 export type LegacyV006MigrationSource =
 	| LegacyV006NeuronSource

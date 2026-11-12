@@ -1,9 +1,8 @@
-import type { JsonValue } from '../../llm/index'
-import type { AdaptUsage } from '../../llm/index'
 import type {
 	LearningClockCapability,
 	LearningModelCapability,
 } from '../../learning/recipes/types'
+import type { AdaptUsage, JsonValue } from '../../llm/index'
 
 export type QueryClock = LearningClockCapability
 export type QueryModel = Pick<LearningModelCapability, 'generate'>

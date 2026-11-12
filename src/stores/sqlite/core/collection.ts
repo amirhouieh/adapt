@@ -232,7 +232,6 @@ class SQLiteCollectionBase<T extends { id: string }> {
 			if (raw === null && field.preserveNull) {
 				result[field.name] = null
 			} else if (raw === null && field.nullable) {
-				continue
 			} else if (field.kind === 'json' && typeof raw === 'string') {
 				result[field.name] = JSON.parse(raw)
 			} else {

@@ -41,10 +41,12 @@ function referenceKey(reference: VersionRef): string {
 function sameReferences(left: VersionRef[], right: VersionRef[]): boolean {
 	return (
 		left.length === right.length &&
-		left.every(
-			(reference, index) =>
-				referenceKey(reference) === referenceKey(right[index]!),
-		)
+		left.every((reference, index) => {
+			const other = right[index]
+			return (
+				other !== undefined && referenceKey(reference) === referenceKey(other)
+			)
+		})
 	)
 }
 
@@ -60,16 +62,16 @@ function normalizedConstraints(
 			lenses.flatMap((lens) => lens.developer_constraints.instructions),
 		),
 	]
+	const first = lenses[0]
 	const permissions =
-		lenses.length === 0
+		first === undefined
 			? []
-			: lenses[0]!.developer_constraints.provider_permissions.filter(
-					(permission) =>
-						lenses.every((lens) =>
-							lens.developer_constraints.provider_permissions.includes(
-								permission,
-							),
+			: first.developer_constraints.provider_permissions.filter((permission) =>
+					lenses.every((lens) =>
+						lens.developer_constraints.provider_permissions.includes(
+							permission,
 						),
+					),
 				)
 	return {
 		instructions,
@@ -367,7 +369,8 @@ function transformationIssues(
 		proposal.action === 'merge' ||
 		proposal.action === 'split' ||
 		!sameReferences(sourceSchemas, targetSchemas)
-	if (!proposal.transformation) {
+	const wanted = proposal.transformation
+	if (!wanted) {
 		return requiresTransformation
 			? [
 					{
@@ -379,7 +382,7 @@ function transformationIssues(
 	}
 	const transformation = catalogue.transformations.find(
 		(entry) =>
-			referenceKey(entry) === referenceKey(proposal.transformation!) &&
+			referenceKey(entry) === referenceKey(wanted) &&
 			sameReferences(entry.source_schemas, sourceSchemas) &&
 			sameReferences(entry.target_schemas, targetSchemas),
 	)

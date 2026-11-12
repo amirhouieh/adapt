@@ -31,7 +31,8 @@ export function arraySchema<T>(
 		version,
 		collectionItem: item,
 		parse(value) {
-			if (!Array.isArray(value)) throw new Error(`${id}@${version} requires an array`)
+			if (!Array.isArray(value))
+				throw new Error(`${id}@${version} requires an array`)
 			return value.map((entry) => item.parse(entry))
 		},
 		accepts(producer) {
@@ -85,7 +86,9 @@ export interface Operation extends VersionRef {
 	run(
 		inputs: Readonly<Record<string, unknown>>,
 		context: OperationContext,
-	): Promise<Readonly<Record<string, unknown>>> | Readonly<Record<string, unknown>>
+	):
+		| Promise<Readonly<Record<string, unknown>>>
+		| Readonly<Record<string, unknown>>
 }
 
 export type OperationDefinition<
@@ -97,9 +100,7 @@ export type OperationDefinition<
 	run(
 		inputs: ValuesFor<TInputs>,
 		context: OperationContext,
-	):
-		| Promise<ValuesFor<TOutputs>>
-		| ValuesFor<TOutputs>
+	): Promise<ValuesFor<TOutputs>> | ValuesFor<TOutputs>
 }
 
 export function defineOperation<
@@ -253,7 +254,9 @@ function parseLearningResult(value: unknown): LearningResult {
 		throw new Error('defer result requires a reason')
 	}
 	if (
-		(result.outcome === 'change' || result.outcome === 'no_change' || result.outcome === 'defer') &&
+		(result.outcome === 'change' ||
+			result.outcome === 'no_change' ||
+			result.outcome === 'defer') &&
 		result.consumedInputIds !== undefined &&
 		(!Array.isArray(result.consumedInputIds) ||
 			result.consumedInputIds.some((id) => typeof id !== 'string'))
@@ -261,7 +264,9 @@ function parseLearningResult(value: unknown): LearningResult {
 		throw new Error('consumedInputIds must contain only strings')
 	}
 	if (
-		(result.outcome === 'change' || result.outcome === 'no_change' || result.outcome === 'defer') &&
+		(result.outcome === 'change' ||
+			result.outcome === 'no_change' ||
+			result.outcome === 'defer') &&
 		result.pendingInputIds !== undefined &&
 		(!Array.isArray(result.pendingInputIds) ||
 			result.pendingInputIds.some((id) => typeof id !== 'string'))

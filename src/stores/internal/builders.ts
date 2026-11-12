@@ -1,7 +1,7 @@
 import type {
 	BrainCollection,
-	BrainEvolutionRecord,
 	BrainEvolutionActivationRecord,
+	BrainEvolutionRecord,
 	BrainEvolutionStageRecord,
 	BrainMemoryMappingRecord,
 	BrainNeuronRecord,
@@ -24,8 +24,8 @@ import type {
 	UnderstandingRecord,
 } from '../types'
 import {
-	brainEvolutionCollectionSpec,
 	brainEvolutionActivationCollectionSpec,
+	brainEvolutionCollectionSpec,
 	brainEvolutionStageCollectionSpec,
 	brainInternalNeuronCollectionSpec,
 	brainMemoryMappingCollectionSpec,

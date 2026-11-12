@@ -68,7 +68,12 @@ export async function applyStrategy(
 	const result = await generate({
 		llm: input.llm,
 		model: input.model,
-		system: shortenSystem(governance.strategy, input.topic, input.rules, maxTokens),
+		system: shortenSystem(
+			governance.strategy,
+			input.topic,
+			input.rules,
+			maxTokens,
+		),
 		prompt: `Understanding:\n${memory}`,
 		maxOutputTokens: input.maxOutputTokens,
 		abortSignal: input.abortSignal,

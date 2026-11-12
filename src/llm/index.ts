@@ -1065,12 +1065,20 @@ function validateToolInput(
 	input: unknown,
 ): { success: true; data: unknown } | { success: false; error: string } {
 	const parser = schema as
-		| { safeParse?: (value: unknown) => { success: boolean; data?: unknown; error?: unknown } }
+		| {
+				safeParse?: (value: unknown) => {
+					success: boolean
+					data?: unknown
+					error?: unknown
+				}
+		  }
 		| undefined
-	if (typeof parser?.safeParse !== 'function') return { success: true, data: input }
+	if (typeof parser?.safeParse !== 'function')
+		return { success: true, data: input }
 	const result = parser.safeParse(input)
 	if (result.success) return { success: true, data: result.data }
-	const message = result.error instanceof Error ? result.error.message : String(result.error)
+	const message =
+		result.error instanceof Error ? result.error.message : String(result.error)
 	return { success: false, error: message.slice(0, 600) }
 }
 
@@ -1093,7 +1101,10 @@ async function executeToolCalls(
 				type: 'tool-result',
 				toolCallId: toolCall.toolCallId,
 				toolName: toolCall.toolName,
-				output: { success: false, error: `Invalid tool input: ${validated.error}` },
+				output: {
+					success: false,
+					error: `Invalid tool input: ${validated.error}`,
+				},
 			})
 			continue
 		}

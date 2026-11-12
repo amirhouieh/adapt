@@ -1,14 +1,15 @@
 import {
-	learningResultSchema,
 	type BudgetController,
 	type CapabilityResolver,
 	type ExecutionPlan,
 	type InputBinding,
 	type LearningResult,
+	learningResultSchema,
 	type NodeExecution,
 	type PendingCollection,
 	type PlannedNode,
 	type RecipeExecution,
+	type ValueSchema,
 } from './contracts'
 import { nodeDependencies, requiredNodeDependencies } from './planner'
 
@@ -22,12 +23,18 @@ type NodeState = NodeExecution & {
 	readonly outputs?: Readonly<Record<string, unknown>>
 }
 
-function failure(code: string, reason: string, retryable: boolean): LearningResult {
+function failure(
+	code: string,
+	reason: string,
+	retryable: boolean,
+): LearningResult {
 	return { outcome: 'failure', code, reason, retryable }
 }
 
 function errorMessage(error: unknown): string {
-	return error instanceof Error ? error.message : 'operation failed with a non-Error value'
+	return error instanceof Error
+		? error.message
+		: 'operation failed with a non-Error value'
 }
 
 function resolveBinding(
@@ -37,7 +44,8 @@ function resolveBinding(
 ): unknown {
 	if (binding.source === 'root') {
 		const root = plan.roots[binding.root]
-		if (root === undefined) throw new Error(`missing pinned root ${binding.root}`)
+		if (root === undefined)
+			throw new Error(`missing pinned root ${binding.root}`)
 		return root.value
 	}
 	const outputs = states.get(binding.nodeId)?.outputs
@@ -56,12 +64,15 @@ function validateOutputs(
 	const outputNames = Object.keys(rawOutput).sort()
 	const expectedNames = Object.keys(schemas).sort()
 	if (outputNames.join('\u0000') !== expectedNames.join('\u0000')) {
-		throw new Error(`operation ${node.implementation.id} returned the wrong output ports`)
+		throw new Error(
+			`operation ${node.implementation.id} returned the wrong output ports`,
+		)
 	}
 	const outputs: Record<string, unknown> = {}
 	for (const name of expectedNames) {
 		const schema = schemas[name]
-		if (schema === undefined) throw new Error(`missing schema for ${node.id}.${name}`)
+		if (schema === undefined)
+			throw new Error(`missing schema for ${node.id}.${name}`)
 		outputs[name] = schema.parse(rawOutput[name])
 	}
 	return outputs
@@ -100,19 +111,31 @@ async function runOperationNode(
 	try {
 		for (const [name, binding] of Object.entries(node.inputs)) {
 			const schema = node.implementation.inputSchemas[name]
-			if (schema === undefined) throw new Error(`missing input schema ${node.id}.${name}`)
+			if (schema === undefined)
+				throw new Error(`missing input schema ${node.id}.${name}`)
 			commonInputs[name] = schema.parse(resolveBinding(binding, plan, states))
 		}
 	} catch (error) {
 		return {
-			state: { nodeId: node.id, operation: node.operation, status: 'failed', error },
+			state: {
+				nodeId: node.id,
+				operation: node.operation,
+				status: 'failed',
+				error,
+			},
 		}
 	}
 
 	if (node.kind === 'collection') {
 		return runCollectionNode(node, commonInputs, plan, states, dependencies)
 	}
-	if (!dependencies.budget.claim({ kind: 'operation', amount: 1, nodeId: node.id })) {
+	if (
+		!dependencies.budget.claim({
+			kind: 'operation',
+			amount: 1,
+			nodeId: node.id,
+		})
+	) {
 		return {
 			state: { nodeId: node.id, operation: node.operation, status: 'deferred' },
 		}
@@ -141,7 +164,9 @@ async function runOperationNode(
 		if (node.kind === 'gate') {
 			const applies = outputs[node.appliesOutput]
 			if (typeof applies !== 'boolean') {
-				throw new Error(`gate ${node.id} did not return a boolean applies output`)
+				throw new Error(
+					`gate ${node.id} did not return a boolean applies output`,
+				)
 			}
 			if (!applies) {
 				return {
@@ -186,7 +211,7 @@ async function runCollectionNode(
 	let items: readonly unknown[]
 	try {
 		const value = resolveBinding(node.items, plan, states)
-		let sourceSchema
+		let sourceSchema: ValueSchema | undefined
 		if (node.items.source === 'root') {
 			sourceSchema = plan.roots[node.items.root]?.schema
 		} else {
@@ -197,15 +222,26 @@ async function runCollectionNode(
 					? producer.outputSchemas[itemBinding.output]
 					: producer?.implementation.outputSchemas[itemBinding.output]
 		}
-		if (sourceSchema === undefined) throw new Error(`missing collection input for ${node.id}`)
+		if (sourceSchema === undefined)
+			throw new Error(`missing collection input for ${node.id}`)
 		items = sourceSchema.parse(value) as readonly unknown[]
 	} catch (error) {
-		return { state: { nodeId: node.id, operation: node.operation, status: 'failed', error } }
+		return {
+			state: {
+				nodeId: node.id,
+				operation: node.operation,
+				status: 'failed',
+				error,
+			},
+		}
 	}
 	const selected = items.slice(0, node.limit)
 	const pendingItems: unknown[] = [...items.slice(node.limit)]
 	const aggregated = Object.fromEntries(
-		Object.keys(node.implementation.outputSchemas).map((name) => [name, [] as unknown[]]),
+		Object.keys(node.implementation.outputSchemas).map((name) => [
+			name,
+			[] as unknown[],
+		]),
 	) as Record<string, unknown[]>
 	const rawOutputs: unknown[] = []
 	for (const [index, item] of selected.entries()) {
@@ -247,7 +283,8 @@ async function runCollectionNode(
 		}
 		try {
 			const itemSchema = node.implementation.inputSchemas[node.itemInput]
-			if (itemSchema === undefined) throw new Error(`missing item schema for ${node.id}`)
+			if (itemSchema === undefined)
+				throw new Error(`missing item schema for ${node.id}`)
 			const rawOutput = await node.implementation.run(
 				{ ...commonInputs, [node.itemInput]: itemSchema.parse(item) },
 				{
@@ -260,7 +297,8 @@ async function runCollectionNode(
 			)
 			rawOutputs.push(rawOutput)
 			const outputs = validateOutputs(node, rawOutput)
-			for (const [name, output] of Object.entries(outputs)) aggregated[name]?.push(output)
+			for (const [name, output] of Object.entries(outputs))
+				aggregated[name]?.push(output)
 			if (dependencies.signal.aborted) {
 				return {
 					state: {
@@ -323,13 +361,18 @@ function terminalResult(
 	states: ReadonlyMap<string, NodeState>,
 	pending: readonly PendingCollection[],
 ): LearningResult {
-	const cancelled = [...states.values()].find(({ status }) => status === 'cancelled')
-	if (cancelled !== undefined) return failure('cancelled', 'recipe execution was cancelled', true)
+	const cancelled = [...states.values()].find(
+		({ status }) => status === 'cancelled',
+	)
+	if (cancelled !== undefined)
+		return failure('cancelled', 'recipe execution was cancelled', true)
 	const failed = [...states.values()].find(({ status }) => status === 'failed')
 	if (failed !== undefined) {
 		return failure('operation_failed', errorMessage(failed.error), true)
 	}
-	const deferred = [...states.values()].find(({ status }) => status === 'deferred')
+	const deferred = [...states.values()].find(
+		({ status }) => status === 'deferred',
+	)
 	if (deferred !== undefined) {
 		return {
 			outcome: 'defer',
@@ -361,7 +404,9 @@ export async function runRecipe(
 		let settledBlocked = false
 		for (const node of plan.nodes) {
 			if (!waiting.has(node.id)) continue
-			const predecessorStates = requiredNodeDependencies(node).map((id) => states.get(id))
+			const predecessorStates = requiredNodeDependencies(node).map((id) =>
+				states.get(id),
+			)
 			const blocker = predecessorStates.find(
 				(state) => state !== undefined && state.status !== 'succeeded',
 			)

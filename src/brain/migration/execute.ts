@@ -57,7 +57,10 @@ function planDigest(plan: LegacyMigrationPlan): string {
 	return migrationDigest(intent)
 }
 
-function journalFor(plan: LegacyMigrationPlan, updatedAt: string): MigrationJournal {
+function journalFor(
+	plan: LegacyMigrationPlan,
+	updatedAt: string,
+): MigrationJournal {
 	return {
 		kind: 'adapt-v2-legacy-migration',
 		version: 1,
@@ -81,26 +84,37 @@ function journalFor(plan: LegacyMigrationPlan, updatedAt: string): MigrationJour
 	}
 }
 
-function parseJournal(record: StateRecord | BrainStateRecord | undefined): MigrationJournal | undefined {
+function parseJournal(
+	record: StateRecord | BrainStateRecord | undefined,
+): MigrationJournal | undefined {
 	if (!record) return undefined
 	const value = record.value as Partial<MigrationJournal> | undefined
 	if (
-		!value || value.kind !== 'adapt-v2-legacy-migration' || value.version !== 1 ||
-		typeof value.migrationId !== 'string' || typeof value.intentDigest !== 'string' ||
+		!value ||
+		value.kind !== 'adapt-v2-legacy-migration' ||
+		value.version !== 1 ||
+		typeof value.migrationId !== 'string' ||
+		typeof value.intentDigest !== 'string' ||
 		!Array.isArray(value.targets) ||
 		(value.status !== 'preparing' && value.status !== 'completed') ||
-		value.targets.some((target) =>
-			!target || typeof target !== 'object' ||
-			typeof target.lensId !== 'string' ||
-			typeof target.physicalStoreId !== 'string' ||
-			typeof target.snapshotDigest !== 'string' ||
-			(target.status !== 'pending' && target.status !== 'ready')
+		value.targets.some(
+			(target) =>
+				!target ||
+				typeof target !== 'object' ||
+				typeof target.lensId !== 'string' ||
+				typeof target.physicalStoreId !== 'string' ||
+				typeof target.snapshotDigest !== 'string' ||
+				(target.status !== 'pending' && target.status !== 'ready'),
 		)
-	) throw new Error('migration journal is invalid or unsupported')
+	)
+		throw new Error('migration journal is invalid or unsupported')
 	return structuredClone(value as MigrationJournal)
 }
 
-function sameJournal(journal: MigrationJournal, plan: LegacyMigrationPlan): boolean {
+function sameJournal(
+	journal: MigrationJournal,
+	plan: LegacyMigrationPlan,
+): boolean {
 	return (
 		journal.migrationId === plan.migrationId &&
 		journal.intentDigest === plan.intentDigest &&
@@ -160,7 +174,9 @@ async function readNeuronSnapshot(
 	store: NeuronStore,
 	journalStateId?: string,
 ): Promise<NeuronStoreSnapshot> {
-	return store.runAtomic((atomic) => atomicNeuronSnapshot(atomic, journalStateId))
+	return store.runAtomic((atomic) =>
+		atomicNeuronSnapshot(atomic, journalStateId),
+	)
 }
 
 function snapshotEmpty(snapshot: NeuronStoreSnapshot): boolean {
@@ -178,9 +194,13 @@ function updateStateRecord(
 	else state.add({ id, value, updated_at: updatedAt })
 }
 
-function requirePlan(plan: LegacyMigrationPlan, kind: 'brain' | 'neuron'): LegacyMigrationPlan {
+function requirePlan(
+	plan: LegacyMigrationPlan,
+	kind: 'brain' | 'neuron',
+): LegacyMigrationPlan {
 	const snapshot = structuredClone(plan)
-	if (snapshot.kind !== kind) throw new Error(`migration plan kind must be ${kind}`)
+	if (snapshot.kind !== kind)
+		throw new Error(`migration plan kind must be ${kind}`)
 	if (snapshot.intentDigest !== planDigest(snapshot)) {
 		throw new Error('migration plan intent digest does not match its contents')
 	}
@@ -188,16 +208,22 @@ function requirePlan(plan: LegacyMigrationPlan, kind: 'brain' | 'neuron'): Legac
 }
 
 async function requireStableSource(
-	source: LegacyBrainMigrationExecutionInput['source'] | LegacyNeuronMigrationExecutionInput['source'],
+	source:
+		| LegacyBrainMigrationExecutionInput['source']
+		| LegacyNeuronMigrationExecutionInput['source'],
 	plan: LegacyMigrationPlan,
 ): Promise<void> {
-	if (source.sourceId !== plan.sourceId) throw new Error('migration source id changed')
+	if (source.sourceId !== plan.sourceId)
+		throw new Error('migration source id changed')
 	if ((await legacySourceFingerprint(source)) !== plan.sourceFingerprint) {
 		throw new Error('offline legacy source changed after inspection')
 	}
 }
 
-function brainStoreEmpty(store: AtomicBrainStore, journalStateId: string): boolean {
+function brainStoreEmpty(
+	store: AtomicBrainStore,
+	journalStateId: string,
+): boolean {
 	return (
 		store.state.list().every((record) => record.id === journalStateId) &&
 		store.neurons.list().length === 0 &&
@@ -220,7 +246,8 @@ async function beginBrainJournal(
 	return store.runAtomic((atomic) => {
 		const existing = parseJournal(atomic.state.get(plan.journalStateId))
 		if (existing) {
-			if (!sameJournal(existing, plan)) throw new Error('migration journal intent conflict')
+			if (!sameJournal(existing, plan))
+				throw new Error('migration journal intent conflict')
 			return { journal: existing, completed: existing.status === 'completed' }
 		}
 		if (!brainStoreEmpty(atomic, plan.journalStateId)) {
@@ -255,9 +282,13 @@ async function verifyTargetDigest(
 	store: BrainStore,
 	target: LegacyMigrationTarget,
 ): Promise<void> {
-	const snapshot = await readNeuronSnapshot(store.getNeuronStore(target.physicalStoreId))
+	const snapshot = await readNeuronSnapshot(
+		store.getNeuronStore(target.physicalStoreId),
+	)
 	if (migrationDigest(snapshot) !== target.snapshotDigest) {
-		throw new Error(`target physical store ${target.physicalStoreId} changed during verification`)
+		throw new Error(
+			`target physical store ${target.physicalStoreId} changed during verification`,
+		)
 	}
 }
 
@@ -272,16 +303,24 @@ async function writeBrainTarget(
 		const existing = atomicNeuronSnapshot(atomic)
 		if (snapshotEmpty(existing)) writeNeuronSnapshot(atomic, target.snapshot)
 		else if (migrationDigest(existing) !== target.snapshotDigest) {
-			throw new Error(`target physical store ${target.physicalStoreId} contains different state`)
+			throw new Error(
+				`target physical store ${target.physicalStoreId} contains different state`,
+			)
 		}
 	})
 	const written = await readNeuronSnapshot(targetStore)
 	if (migrationDigest(written) !== target.snapshotDigest) {
-		throw new Error(`target physical store ${target.physicalStoreId} failed verification`)
+		throw new Error(
+			`target physical store ${target.physicalStoreId} failed verification`,
+		)
 	}
 	return store.runAtomic((atomic) => {
 		const current = parseJournal(atomic.state.get(plan.journalStateId))
-		if (!current || !sameJournal(current, plan) || current.status !== 'preparing') {
+		if (
+			!current ||
+			!sameJournal(current, plan) ||
+			current.status !== 'preparing'
+		) {
 			throw new Error('migration journal changed while staging targets')
 		}
 		const next: MigrationJournal = {
@@ -296,8 +335,13 @@ async function writeBrainTarget(
 	})
 }
 
-function registryRevision(plan: LegacyMigrationPlan): BrainRegistryRevisionRecord {
-	if (plan.targetRegistryRevisionId === undefined || plan.targetRegistryRevision === undefined) {
+function registryRevision(
+	plan: LegacyMigrationPlan,
+): BrainRegistryRevisionRecord {
+	if (
+		plan.targetRegistryRevisionId === undefined ||
+		plan.targetRegistryRevision === undefined
+	) {
 		throw new Error('Brain migration plan lacks a registry revision')
 	}
 	return {
@@ -325,11 +369,17 @@ function publishBrain(
 	const brain = plan.brain
 	if (!brain) throw new Error('Brain migration plan lacks Brain records')
 	const current = parseJournal(store.state.get(plan.journalStateId))
-	if (!current || !sameJournal(current, plan) || current.status !== 'preparing') {
+	if (
+		!current ||
+		!sameJournal(current, plan) ||
+		current.status !== 'preparing'
+	) {
 		throw new Error('migration journal changed before publication')
 	}
 	if (!brainStoreEmpty(store, plan.journalStateId)) {
-		throw new Error('target Brain store changed while migration targets were staged')
+		throw new Error(
+			'target Brain store changed while migration targets were staged',
+		)
 	}
 	if (journal.targets.some((target) => target.status !== 'ready')) {
 		throw new Error('migration targets are not all ready')
@@ -341,12 +391,14 @@ function publishBrain(
 	writeRecords(store.dismissedBatches, brain.dismissedBatches)
 	const revision = registryRevision(plan)
 	writeRecords(store.registryRevisions, [revision])
-	writeRecords(store.registryHeads, [{
-		id: 'current',
-		revision_id: revision.id,
-		revision: revision.revision,
-		updated_at: updatedAt,
-	}])
+	writeRecords(store.registryHeads, [
+		{
+			id: 'current',
+			revision_id: revision.id,
+			revision: revision.revision,
+			updated_at: updatedAt,
+		},
+	])
 	const completed: MigrationJournal = {
 		...journal,
 		status: 'completed',
@@ -365,15 +417,25 @@ export async function executeLegacyV006BrainMigration(
 		const targetId = input.targetId
 		const options = input.options
 		const clock = input.clock
-		if (targetId === plan.sourceId) throw new Error('source and target stores must be distinct')
+		if (targetId === plan.sourceId)
+			throw new Error('source and target stores must be distinct')
 		await input.assertTargetExclusive()
 		await requireStableSource(source, plan)
 		const updatedAt = clock.now()
-		if (!validTimestamp(updatedAt)) throw new Error('migration clock must return a normalized UTC timestamp')
-		let { journal, completed } = await beginBrainJournal(targetStore, plan, updatedAt)
+		if (!validTimestamp(updatedAt))
+			throw new Error('migration clock must return a normalized UTC timestamp')
+		let { journal, completed } = await beginBrainJournal(
+			targetStore,
+			plan,
+			updatedAt,
+		)
 		if (completed) {
 			await verifyCompletedBrain(targetStore, plan)
-			return { status: 'completed', deduplicated: true, registryRevisionId: plan.targetRegistryRevisionId }
+			return {
+				status: 'completed',
+				deduplicated: true,
+				registryRevisionId: plan.targetRegistryRevisionId,
+			}
 		}
 		await options?.onStage?.('after-journal')
 		for (const target of plan.targets) {
@@ -387,10 +449,17 @@ export async function executeLegacyV006BrainMigration(
 			await options?.onStage?.('after-target-write', target.lensId)
 		}
 		await options?.onStage?.('before-publish')
-		for (const target of plan.targets) await verifyTargetDigest(targetStore, target)
-		await targetStore.runAtomic((atomic) => publishBrain(atomic, plan, journal, updatedAt))
+		for (const target of plan.targets)
+			await verifyTargetDigest(targetStore, target)
+		await targetStore.runAtomic((atomic) =>
+			publishBrain(atomic, plan, journal, updatedAt),
+		)
 		await options?.onStage?.('after-publish')
-		return { status: 'completed', deduplicated: false, registryRevisionId: plan.targetRegistryRevisionId }
+		return {
+			status: 'completed',
+			deduplicated: false,
+			registryRevisionId: plan.targetRegistryRevisionId,
+		}
 	} catch (error) {
 		return { status: 'failure', error }
 	}
@@ -406,22 +475,27 @@ export async function executeLegacyV006NeuronMigration(
 		const targetId = input.targetId
 		const options = input.options
 		const clock = input.clock
-		if (targetId === plan.sourceId) throw new Error('source and target stores must be distinct')
-		if (plan.targets.length !== 1) throw new Error('standalone migration requires exactly one target')
+		if (targetId === plan.sourceId)
+			throw new Error('source and target stores must be distinct')
+		if (plan.targets.length !== 1)
+			throw new Error('standalone migration requires exactly one target')
 		await input.assertTargetExclusive()
 		await requireStableSource(source, plan)
 		const updatedAt = clock.now()
-		if (!validTimestamp(updatedAt)) throw new Error('migration clock must return a normalized UTC timestamp')
+		if (!validTimestamp(updatedAt))
+			throw new Error('migration clock must return a normalized UTC timestamp')
 		const target = plan.targets[0]
 		if (!target) throw new Error('standalone migration target is missing')
 		const initial = await targetStore.runAtomic((atomic) => {
 			const existing = parseJournal(atomic.state.get(plan.journalStateId))
 			if (existing) {
-				if (!sameJournal(existing, plan)) throw new Error('migration journal intent conflict')
+				if (!sameJournal(existing, plan))
+					throw new Error('migration journal intent conflict')
 				return existing
 			}
 			const snapshot = atomicNeuronSnapshot(atomic)
-			if (!snapshotEmpty(snapshot)) throw new Error('target neuron store must be empty before migration')
+			if (!snapshotEmpty(snapshot))
+				throw new Error('target neuron store must be empty before migration')
 			const journal = journalFor(plan, updatedAt)
 			updateStateRecord(atomic.state, plan.journalStateId, journal, updatedAt)
 			return journal
@@ -431,19 +505,23 @@ export async function executeLegacyV006NeuronMigration(
 		}
 		await options?.onStage?.('after-journal')
 		await targetStore.runAtomic((atomic) => {
-				const journal = parseJournal(atomic.state.get(plan.journalStateId))
-				if (!journal || !sameJournal(journal, plan)) throw new Error('migration journal changed before standalone write')
-				const existing = atomicNeuronSnapshot(atomic, plan.journalStateId)
-				if (snapshotEmpty(existing)) writeNeuronSnapshot(atomic, target.snapshot)
-				else if (migrationDigest(existing) !== target.snapshotDigest) {
-					throw new Error('standalone migration target contains different state')
-				}
-				const ready: MigrationJournal = {
-					...journal,
-					targets: journal.targets.map((entry) => ({ ...entry, status: 'ready' })),
-					updatedAt,
-				}
-				updateStateRecord(atomic.state, plan.journalStateId, ready, updatedAt)
+			const journal = parseJournal(atomic.state.get(plan.journalStateId))
+			if (!journal || !sameJournal(journal, plan))
+				throw new Error('migration journal changed before standalone write')
+			const existing = atomicNeuronSnapshot(atomic, plan.journalStateId)
+			if (snapshotEmpty(existing)) writeNeuronSnapshot(atomic, target.snapshot)
+			else if (migrationDigest(existing) !== target.snapshotDigest) {
+				throw new Error('standalone migration target contains different state')
+			}
+			const ready: MigrationJournal = {
+				...journal,
+				targets: journal.targets.map((entry) => ({
+					...entry,
+					status: 'ready',
+				})),
+				updatedAt,
+			}
+			updateStateRecord(atomic.state, plan.journalStateId, ready, updatedAt)
 		})
 		await options?.onStage?.('after-target-write', target.lensId)
 		await options?.verifier?.verifyTarget({
@@ -454,12 +532,18 @@ export async function executeLegacyV006NeuronMigration(
 		await targetStore.runAtomic((atomic) => {
 			const journal = parseJournal(atomic.state.get(plan.journalStateId))
 			if (
-				!journal || !sameJournal(journal, plan) ||
+				!journal ||
+				!sameJournal(journal, plan) ||
 				journal.targets.some((entry) => entry.status !== 'ready')
-			) throw new Error('migration journal changed before standalone completion')
+			)
+				throw new Error(
+					'migration journal changed before standalone completion',
+				)
 			const current = atomicNeuronSnapshot(atomic, plan.journalStateId)
 			if (migrationDigest(current) !== target.snapshotDigest) {
-				throw new Error('standalone migration target changed during verification')
+				throw new Error(
+					'standalone migration target changed during verification',
+				)
 			}
 			const completed: MigrationJournal = {
 				...journal,
@@ -474,6 +558,8 @@ export async function executeLegacyV006NeuronMigration(
 	}
 }
 
-export function migrationFailureMessage(result: LegacyMigrationExecutionResult): string | undefined {
+export function migrationFailureMessage(
+	result: LegacyMigrationExecutionResult,
+): string | undefined {
 	return result.status === 'failure' ? errorMessage(result.error) : undefined
 }

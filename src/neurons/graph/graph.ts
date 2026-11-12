@@ -1,6 +1,4 @@
 import {
-	graphLensSchemaSchema,
-	graphSnapshotSchema,
 	type GraphEdge,
 	type GraphEntity,
 	type GraphLensSchema,
@@ -9,6 +7,8 @@ import {
 	type GraphSnapshot,
 	type GraphTraversalRequest,
 	type GraphTraversalResult,
+	graphLensSchemaSchema,
+	graphSnapshotSchema,
 } from './contracts'
 
 function unique(values: readonly string[], name: string): void {
@@ -51,8 +51,12 @@ export function validateGraphSnapshot(
 	)
 	unique(snapshot.processedInputIds, 'processed input ids')
 
-	const entities = new Map(snapshot.entities.map((entity) => [entity.id, entity]))
-	const relations = new Map(schema.relations.map((relation) => [relation.id, relation]))
+	const entities = new Map(
+		snapshot.entities.map((entity) => [entity.id, entity]),
+	)
+	const relations = new Map(
+		schema.relations.map((relation) => [relation.id, relation]),
+	)
 	for (const entity of snapshot.entities) {
 		if (!schema.entityTypes.includes(entity.type)) {
 			throw new Error(`entity ${entity.id} uses undeclared type ${entity.type}`)
@@ -61,7 +65,8 @@ export function validateGraphSnapshot(
 	for (const edge of snapshot.edges) {
 		const source = entities.get(edge.sourceEntityId)
 		const target = entities.get(edge.targetEntityId)
-		if (!source || !target) throw new Error(`edge ${edge.id} has a missing endpoint`)
+		if (!source || !target)
+			throw new Error(`edge ${edge.id} has a missing endpoint`)
 		const relation = relations.get(edge.relation)
 		if (!relation) throw new Error(`edge ${edge.id} uses undeclared relation`)
 		if (!relation.sourceEntityTypes.includes(source.type)) {
@@ -86,21 +91,30 @@ export function applyGraphPatch(
 	if (patch.expectedRevision !== snapshot.revision) {
 		throw new Error('graph patch expected a different memory revision')
 	}
-	const entities = new Map(snapshot.entities.map((entity) => [entity.id, entity]))
+	const entities = new Map(
+		snapshot.entities.map((entity) => [entity.id, entity]),
+	)
 	for (const entity of patch.entityUpserts) entities.set(entity.id, entity)
 	const edges = new Map(snapshot.edges.map((edge) => [edge.id, edge]))
 	const history = [...snapshot.edgeHistory]
 	for (const change of patch.edgeChanges) {
 		if (change.kind === 'add') {
 			if (edges.has(change.edge.id)) {
-				throw new Error(`graph add conflicts with existing edge ${change.edge.id}`)
+				throw new Error(
+					`graph add conflicts with existing edge ${change.edge.id}`,
+				)
 			}
 			edges.set(change.edge.id, change.edge)
 			continue
 		}
 		const current = edges.get(change.edgeId)
-		if (!current || JSON.stringify(current) !== JSON.stringify(change.previous)) {
-			throw new Error(`graph removal ${change.edgeId} does not match current edge`)
+		if (
+			!current ||
+			JSON.stringify(current) !== JSON.stringify(change.previous)
+		) {
+			throw new Error(
+				`graph removal ${change.edgeId} does not match current edge`,
+			)
 		}
 		edges.delete(change.edgeId)
 		history.push(change.history)
@@ -148,8 +162,12 @@ export function traverseGraph(
 	positiveInteger(request.policy.maxEntities, 'maxEntities')
 	positiveInteger(request.policy.maxEdges, 'maxEdges')
 	unique(request.startEntityIds, 'start entity ids')
-	const entityById = new Map(snapshot.entities.map((entity) => [entity.id, entity]))
-	const relationById = new Map(schema.relations.map((relation) => [relation.id, relation]))
+	const entityById = new Map(
+		snapshot.entities.map((entity) => [entity.id, entity]),
+	)
+	const relationById = new Map(
+		schema.relations.map((relation) => [relation.id, relation]),
+	)
 	for (const id of request.startEntityIds) {
 		if (!entityById.has(id)) throw new Error(`unknown graph start entity ${id}`)
 	}
@@ -209,7 +227,8 @@ export function traverseGraph(
 				request.direction,
 				relationById.get(edge.relation)?.directed !== false,
 			)
-			if (next && !visited.has(next)) queue.push({ id: next, depth: current.depth + 1 })
+			if (next && !visited.has(next))
+				queue.push({ id: next, depth: current.depth + 1 })
 		}
 	}
 	const consistentEdges = [...selectedEdges.values()].filter((edge) => {

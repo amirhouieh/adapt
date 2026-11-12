@@ -6,8 +6,8 @@ import * as path from 'node:path'
 import { guardBrainStore, isPromiseLike } from '../../internal/atomic'
 import { createBrainStoreCollections } from '../../internal/builders'
 import {
-	brainEvolutionCollectionSpec,
 	brainEvolutionActivationCollectionSpec,
+	brainEvolutionCollectionSpec,
 	brainEvolutionStageCollectionSpec,
 	brainInternalNeuronCollectionSpec,
 	brainMemoryMappingCollectionSpec,
@@ -21,8 +21,8 @@ import {
 import type {
 	AtomicBrainStore,
 	BrainCollection,
-	BrainEvolutionRecord,
 	BrainEvolutionActivationRecord,
+	BrainEvolutionRecord,
 	BrainEvolutionStageRecord,
 	BrainMemoryMappingRecord,
 	BrainNeuronRecord,

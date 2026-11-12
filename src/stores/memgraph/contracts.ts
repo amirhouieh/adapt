@@ -59,7 +59,10 @@ export interface InitializeGraphLensInput {
 }
 
 export type InitializeGraphLensResult =
-	| { readonly status: 'initialized'; readonly revisions: LearningRevisionRecord }
+	| {
+			readonly status: 'initialized'
+			readonly revisions: LearningRevisionRecord
+	  }
 	| { readonly status: 'existing'; readonly revisions: LearningRevisionRecord }
 	| { readonly status: 'conflict'; readonly reason: 'schema' }
 
@@ -123,7 +126,11 @@ export interface GraphLearningContext {
 		readonly complete: boolean
 	}[]
 	readonly truncated: boolean
-	readonly unknownContext: readonly ('entity_limit' | 'edge_limit' | 'serialized_char_limit')[]
+	readonly unknownContext: readonly (
+		| 'entity_limit'
+		| 'edge_limit'
+		| 'serialized_char_limit'
+	)[]
 }
 
 export interface StoredGraphTraversalRequest extends GraphTraversalRequest {
@@ -179,16 +186,32 @@ export interface GraphStoreInspection {
 
 export interface MemgraphGraphStore {
 	initialize(): Promise<void>
-	initializeLens(input: InitializeGraphLensInput): Promise<InitializeGraphLensResult>
-	configureLens(input: ConfigureGraphLensInput): Promise<UpdateLearningConfigRevisionResult>
+	initializeLens(
+		input: InitializeGraphLensInput,
+	): Promise<InitializeGraphLensResult>
+	configureLens(
+		input: ConfigureGraphLensInput,
+	): Promise<UpdateLearningConfigRevisionResult>
 	getRevisions(lensId: string): Promise<LearningRevisionRecord>
 	enqueue(input: GraphEnqueueInput): Promise<EnqueueLearningWorkResult>
-	getPendingWork(lensId: string, pendingWorkId: string): Promise<PendingWorkRecord | undefined>
-	getLearningContext(input: GraphLearningContextRequest, options: GraphReadOptions): Promise<GraphLearningContext>
+	getPendingWork(
+		lensId: string,
+		pendingWorkId: string,
+	): Promise<PendingWorkRecord | undefined>
+	getLearningContext(
+		input: GraphLearningContextRequest,
+		options: GraphReadOptions,
+	): Promise<GraphLearningContext>
 	commit(input: GraphCommitInput): Promise<LearningCommitResult>
-	traverse(input: StoredGraphTraversalRequest, options: GraphReadOptions): Promise<StoredGraphTraversalResult>
+	traverse(
+		input: StoredGraphTraversalRequest,
+		options: GraphReadOptions,
+	): Promise<StoredGraphTraversalResult>
 	claimOutbox(input: GraphClaimOutboxInput): Promise<OutboxRecord[]>
 	settleOutbox(input: GraphSettleOutboxInput): Promise<OutboxRecord | undefined>
-	inspect(lensId: string, limits: GraphInspectionLimits): Promise<GraphStoreInspection>
+	inspect(
+		lensId: string,
+		limits: GraphInspectionLimits,
+	): Promise<GraphStoreInspection>
 	close(): Promise<void>
 }

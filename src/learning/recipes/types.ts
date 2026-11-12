@@ -1,5 +1,5 @@
-import type { AdaptFinishReason, AdaptUsage, JsonValue } from '../../llm'
 import type { ZodType } from 'zod'
+import type { AdaptFinishReason, AdaptUsage, JsonValue } from '../../llm'
 
 export interface LearningObservation {
 	readonly id: string
@@ -142,4 +142,5 @@ export interface LearningItemValidatorCapability {
 export const LEARNING_MODEL_CAPABILITY = 'adapt.learning.model'
 export const LEARNING_ID_CAPABILITY = 'adapt.learning.id'
 export const LEARNING_CLOCK_CAPABILITY = 'adapt.learning.clock'
-export const LEARNING_ITEM_VALIDATOR_CAPABILITY = 'adapt.learning.item-validator'
+export const LEARNING_ITEM_VALIDATOR_CAPABILITY =
+	'adapt.learning.item-validator'

@@ -1,6 +1,6 @@
 import type {
-	BrainEvolutionRecord,
 	BrainEvolutionActivationRecord,
+	BrainEvolutionRecord,
 	BrainEvolutionStageRecord,
 	BrainMemoryMappingRecord,
 	BrainNeuronRecord,

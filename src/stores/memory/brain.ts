@@ -11,8 +11,8 @@ import type { StoreCollectionSpec } from '../internal/specs'
 import type {
 	AtomicBrainStore,
 	BrainCollection,
-	BrainEvolutionRecord,
 	BrainEvolutionActivationRecord,
+	BrainEvolutionRecord,
 	BrainEvolutionStageRecord,
 	BrainMemoryMappingRecord,
 	BrainNeuronRecord,

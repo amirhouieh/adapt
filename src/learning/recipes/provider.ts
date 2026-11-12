@@ -76,7 +76,9 @@ export function createLocalLearningModel(
 					status: result.status,
 					raw: result,
 					...(result.usage === undefined ? {} : { usage: result.usage }),
-					...(result.probability === undefined ? {} : { probability: result.probability }),
+					...(result.probability === undefined
+						? {}
+						: { probability: result.probability }),
 				}
 			}
 			return {
@@ -84,7 +86,9 @@ export function createLocalLearningModel(
 				answer: result.answer,
 				raw: result,
 				...(result.usage === undefined ? {} : { usage: result.usage }),
-				...(result.probability === undefined ? {} : { probability: result.probability }),
+				...(result.probability === undefined
+					? {}
+					: { probability: result.probability }),
 			}
 		},
 	}

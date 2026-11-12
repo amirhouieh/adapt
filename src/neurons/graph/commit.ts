@@ -33,7 +33,10 @@ export type GraphCommitCapability = Pick<MemgraphGraphStore, 'commit'>
 export function graphCommitInput(
 	input: CommitGraphRecipeInput,
 ): GraphCommitInput {
-	if (input.result.outcome !== 'change' && input.result.outcome !== 'no_change') {
+	if (
+		input.result.outcome !== 'change' &&
+		input.result.outcome !== 'no_change'
+	) {
 		throw new Error('only a settled graph learning result can be committed')
 	}
 	const inputIds = input.result.consumedInputIds
@@ -44,7 +47,8 @@ export function graphCommitInput(
 	if (input.result.outcome === 'change') {
 		if (
 			input.result.expectedMemoryRevision !== input.expectedMemoryRevision ||
-			input.result.expectedConfigurationRevision !== input.expectedConfigRevision
+			input.result.expectedConfigurationRevision !==
+				input.expectedConfigRevision
 		) {
 			throw new Error('graph learning result does not match commit revisions')
 		}

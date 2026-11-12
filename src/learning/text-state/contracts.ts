@@ -42,7 +42,8 @@ export interface TextCoordinatorConfiguration {
 }
 
 export interface TextProfileSnapshot<
-	TConfiguration extends TextCoordinatorConfiguration = TextCoordinatorConfiguration,
+	TConfiguration extends
+		TextCoordinatorConfiguration = TextCoordinatorConfiguration,
 > {
 	readonly ref: StoredVersionRef
 	readonly revision: number
@@ -52,7 +53,8 @@ export interface TextProfileSnapshot<
 }
 
 export interface TextProcedureStateSnapshot<
-	TConfiguration extends TextCoordinatorConfiguration = TextCoordinatorConfiguration,
+	TConfiguration extends
+		TextCoordinatorConfiguration = TextCoordinatorConfiguration,
 > {
 	readonly runId: string
 	readonly pins: {
@@ -97,7 +99,11 @@ export type TextProcedureDecision =
 			readonly completion?: unknown
 			readonly reason?: string
 	  }
-	| { readonly status: 'defer'; readonly reason: string; readonly proposal?: unknown }
+	| {
+			readonly status: 'defer'
+			readonly reason: string
+			readonly proposal?: unknown
+	  }
 	| {
 			readonly status: 'failure'
 			readonly code: string
@@ -106,14 +112,26 @@ export type TextProcedureDecision =
 			readonly proposal?: unknown
 	  }
 
-export interface TextRunProcedure<
-	TConfiguration extends TextCoordinatorConfiguration = TextCoordinatorConfiguration,
-> {
-	(snapshot: TextProcedureStateSnapshot<TConfiguration>): Promise<TextProcedureDecision>
-}
+export type TextRunProcedure<
+	TConfiguration extends
+		TextCoordinatorConfiguration = TextCoordinatorConfiguration,
+> = (
+	snapshot: TextProcedureStateSnapshot<TConfiguration>,
+) => Promise<TextProcedureDecision>
 
 export interface TextStateIds {
-	next(kind: 'work' | 'attempt' | 'run' | 'candidate' | 'history' | 'change' | 'supersede' | 'profile' | 'activation'): string
+	next(
+		kind:
+			| 'work'
+			| 'attempt'
+			| 'run'
+			| 'candidate'
+			| 'history'
+			| 'change'
+			| 'supersede'
+			| 'profile'
+			| 'activation',
+	): string
 }
 
 export interface TextStateClock {
@@ -135,7 +153,10 @@ export interface TextStatePolicy {
 
 export type TextEnqueueResult =
 	| { readonly status: 'queued'; readonly dueAt: string }
-	| { readonly status: 'deduplicated'; readonly coverage: 'pending' | 'processed' }
+	| {
+			readonly status: 'deduplicated'
+			readonly coverage: 'pending' | 'processed'
+	  }
 	| { readonly status: 'conflict'; readonly reason: 'delivery-id-reused' }
 	| { readonly status: 'input_too_large' }
 
@@ -157,10 +178,26 @@ export interface TextCoordinatorSnapshot {
 export type TextRunResult =
 	| { readonly status: 'idle' }
 	| { readonly status: 'memory-capacity'; readonly reason: string }
-	| { readonly status: 'deferred'; readonly runId: string; readonly retryAt: string }
-	| { readonly status: 'terminal-failure'; readonly runId: string; readonly code: string }
-	| { readonly status: 'superseded'; readonly runId: string; readonly replacementAttemptId: string }
-	| { readonly status: 'settled'; readonly runId: string; readonly commit: LearningCommitResult }
+	| {
+			readonly status: 'deferred'
+			readonly runId: string
+			readonly retryAt: string
+	  }
+	| {
+			readonly status: 'terminal-failure'
+			readonly runId: string
+			readonly code: string
+	  }
+	| {
+			readonly status: 'superseded'
+			readonly runId: string
+			readonly replacementAttemptId: string
+	  }
+	| {
+			readonly status: 'settled'
+			readonly runId: string
+			readonly commit: LearningCommitResult
+	  }
 
 export interface TextSelectionStatePin {
 	readonly neuron: {
@@ -178,5 +215,9 @@ export interface TextSelectionStatePin {
 }
 
 export type TextActivationResult =
-	| { readonly status: 'activated'; readonly profile: StoredVersionRef; readonly supersededAttempts: number }
+	| {
+			readonly status: 'activated'
+			readonly profile: StoredVersionRef
+			readonly supersededAttempts: number
+	  }
 	| { readonly status: 'stale-selection' | 'busy' | 'conflict' }

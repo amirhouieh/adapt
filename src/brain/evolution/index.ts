@@ -2,14 +2,6 @@
  * Evolution system exports
  */
 
-export { EvolutionActionHandler } from './base-handler'
-// Handlers
-export { CreateHandler } from './handlers/create'
-export { DeleteHandler } from './handlers/delete'
-export { MergeHandler } from './handlers/merge'
-export { SplitHandler } from './handlers/split'
-export { UpdateHandler } from './handlers/update'
-export { EvolutionOrchestrator } from './orchestrator'
 export {
 	activateEvolution,
 	EvolutionActivationInterruption,
@@ -20,22 +12,13 @@ export {
 	readNeuronStoreSnapshot,
 	recoverEvolutionActivation,
 } from './activation'
-export {
-	createEvolutionProposalProvider,
-	evolutionProposalOutputSchema,
-	proposeEvolution,
-} from './proposal'
-export {
-	snapshotValidatedEvolutionProposal,
-	validateEvolutionProposal,
-} from './validation'
-
+export { EvolutionActionHandler } from './base-handler'
 export type {
+	EvolutionAction,
 	EvolutionActivationInput,
 	EvolutionActivationOptions,
 	EvolutionActivationResult,
 	EvolutionActivationStage,
-	EvolutionAction,
 	EvolutionCatalogue,
 	EvolutionClock,
 	EvolutionDeveloperConstraints,
@@ -68,8 +51,19 @@ export type {
 	PinnedEvolutionRegistry,
 	ValidatedEvolutionProposal,
 } from './contracts'
+// Handlers
+export { CreateHandler } from './handlers/create'
+export { DeleteHandler } from './handlers/delete'
+export { MergeHandler } from './handlers/merge'
+export { SplitHandler } from './handlers/split'
+export { UpdateHandler } from './handlers/update'
+export { EvolutionOrchestrator } from './orchestrator'
 export type { EvolutionProposalModelConfig } from './proposal'
-
+export {
+	createEvolutionProposalProvider,
+	evolutionProposalOutputSchema,
+	proposeEvolution,
+} from './proposal'
 // Types
 export type {
 	CreateActionResult,
@@ -80,3 +74,7 @@ export type {
 	SplitActionResult,
 	UpdateActionResult,
 } from './types'
+export {
+	snapshotValidatedEvolutionProposal,
+	validateEvolutionProposal,
+} from './validation'

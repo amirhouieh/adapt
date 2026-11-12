@@ -2,9 +2,6 @@ import { z } from 'zod'
 import {
 	defineOperation,
 	defineSchema,
-	learningLensSchema,
-	learningObservationSchema,
-	learningResultSchema,
 	LEARNING_ID_CAPABILITY,
 	LEARNING_MODEL_CAPABILITY,
 	type LearningIdCapability,
@@ -12,30 +9,33 @@ import {
 	type LearningObservation,
 	type LearningRegistry,
 	type LearningResult,
+	learningLensSchema,
+	learningObservationSchema,
+	learningResultSchema,
 	type Recipe,
 	type ValueSchema,
 } from '../../learning'
 import {
+	GRAPH_LEARNING_CONTEXT_CAPABILITY,
+	type GraphCandidateBatch,
+	type GraphEdge,
+	type GraphEdgeChange,
+	type GraphEntity,
+	type GraphLearningContextCapability,
+	type GraphLearningContextResult,
+	type GraphLearningInput,
+	type GraphPatch,
+	type GraphPendingCandidate,
+	type GraphRelationCandidate,
+	type GraphResolutionBatch,
+	type GraphResolvedCandidate,
+	type GraphResolvedEndpoint,
 	graphCandidateBatchSchema,
 	graphEdgeSchema,
 	graphEntitySchema,
 	graphLensSchemaSchema,
 	graphRelationCandidateSchema,
 	graphSnapshotSchema,
-	GRAPH_LEARNING_CONTEXT_CAPABILITY,
-	type GraphCandidateBatch,
-	type GraphEdge,
-	type GraphEdgeChange,
-	type GraphEntity,
-	type GraphLearningInput,
-	type GraphLearningContextCapability,
-	type GraphLearningContextResult,
-	type GraphPatch,
-	type GraphPendingCandidate,
-	type GraphRelationCandidate,
-	type GraphResolvedCandidate,
-	type GraphResolvedEndpoint,
-	type GraphResolutionBatch,
 } from './contracts'
 import { validateGraphSnapshot } from './graph'
 
@@ -94,13 +94,15 @@ export const graphLearningInputSchema = defineSchema<GraphLearningInput>({
 	},
 })
 
-export const graphCandidateBatchValueSchema = defineSchema<GraphCandidateBatch>({
-	id: 'adapt.graph.candidate-batch',
-	version: '1',
-	parse(value) {
-		return graphCandidateBatchSchema.parse(value) as GraphCandidateBatch
+export const graphCandidateBatchValueSchema = defineSchema<GraphCandidateBatch>(
+	{
+		id: 'adapt.graph.candidate-batch',
+		version: '1',
+		parse(value) {
+			return graphCandidateBatchSchema.parse(value) as GraphCandidateBatch
+		},
 	},
-})
+)
 
 const resolvedEndpointSchema = z.discriminatedUnion('state', [
 	z.object({ state: z.literal('existing'), entityId: z.string().min(1) }),
@@ -130,11 +132,7 @@ const resolvedContextSchema = z.object({
 	identityMatches: z.array(graphIdentityMatchSchema),
 	truncated: z.boolean(),
 	unknownContext: z.array(
-		z.enum([
-			'entity_limit',
-			'edge_limit',
-			'serialized_char_limit',
-		]),
+		z.enum(['entity_limit', 'edge_limit', 'serialized_char_limit']),
 	),
 })
 const learningContextResultSchema = z.object({
@@ -147,11 +145,7 @@ const learningContextResultSchema = z.object({
 	identityMatches: z.array(graphIdentityMatchSchema),
 	truncated: z.boolean(),
 	unknownContext: z.array(
-		z.enum([
-			'entity_limit',
-			'edge_limit',
-			'serialized_char_limit',
-		]),
+		z.enum(['entity_limit', 'edge_limit', 'serialized_char_limit']),
 	),
 })
 const graphResolutionBatchZod = z.object({
@@ -262,12 +256,15 @@ function validateCandidate(
 	selected: readonly LearningObservation[],
 ): void {
 	const observation = selected.find(({ id }) => id === candidate.inputId)
-	if (!observation) throw new Error('graph candidate references unsupplied input')
+	if (!observation)
+		throw new Error('graph candidate references unsupplied input')
 	if (
 		!observation.text.includes(candidate.source.label) ||
 		!observation.text.includes(candidate.target.label)
 	) {
-		throw new Error('graph candidate endpoints are not present in its supplied input')
+		throw new Error(
+			'graph candidate endpoints are not present in its supplied input',
+		)
 	}
 	if (
 		!input.schema.entityTypes.includes(candidate.source.entityType) ||
@@ -275,7 +272,9 @@ function validateCandidate(
 	) {
 		throw new Error('graph candidate uses an undeclared entity type')
 	}
-	const relation = input.schema.relations.find(({ id }) => id === candidate.relation)
+	const relation = input.schema.relations.find(
+		({ id }) => id === candidate.relation,
+	)
 	if (!relation) throw new Error('graph candidate uses an undeclared relation')
 	if (
 		!relation.sourceEntityTypes.includes(candidate.source.entityType) ||
@@ -338,7 +337,9 @@ const extractOperation = defineOperation({
 			})
 		const providerSchema = z.object({
 			candidates: z.array(wireCandidateSchema),
-			overflow: z.boolean().describe('true when more supported relations were omitted'),
+			overflow: z
+				.boolean()
+				.describe('true when more supported relations were omitted'),
 		})
 		const candidates: GraphRelationCandidate[] = []
 		const rawGeneration: unknown[] = []
@@ -367,7 +368,8 @@ const extractOperation = defineOperation({
 					outputFieldRules: {
 						sourceLabel: 'named subject entity copied from observation text',
 						targetLabel: 'named object entity copied from observation text',
-						action: 'add for an assertion; remove only for an explicit retraction',
+						action:
+							'add for an assertion; remove only for an explicit retraction',
 					},
 					observation: {
 						id: observation.id,
@@ -381,7 +383,9 @@ const extractOperation = defineOperation({
 			rawGeneration.push(result.raw)
 			const parsed = providerSchema.parse(result.value)
 			if (parsed.candidates.length > remaining) {
-				throw new Error('graph extraction exceeded the configured relation bound')
+				throw new Error(
+					'graph extraction exceeded the configured relation bound',
+				)
 			}
 			const attributed = parsed.candidates.map((candidate) => ({
 				...candidate,
@@ -443,14 +447,19 @@ function identityMentions(batch: GraphCandidateBatch) {
 		for (const role of ['source', 'target'] as const) {
 			const endpoint = role === 'source' ? candidate.source : candidate.target
 			const id = identityMentionId(candidate, role)
-			values.set(id, { id, label: endpoint.label, entityType: endpoint.entityType })
+			values.set(id, {
+				id,
+				label: endpoint.label,
+				entityType: endpoint.entityType,
+			})
 		}
 	}
 	return [...values.values()]
 }
 
 function requireUnique(values: readonly string[], name: string): void {
-	if (new Set(values).size !== values.length) throw new Error(`${name} must be unique`)
+	if (new Set(values).size !== values.length)
+		throw new Error(`${name} must be unique`)
 }
 
 async function resolveContext(
@@ -482,7 +491,8 @@ async function resolveContext(
 		context,
 		GRAPH_LEARNING_CONTEXT_CAPABILITY,
 	)
-	if (context.signal.aborted) throw new Error('graph context retrieval cancelled')
+	if (context.signal.aborted)
+		throw new Error('graph context retrieval cancelled')
 	const raw = await provider.getLearningContext(
 		{
 			lensId: input.schema.lensId,
@@ -496,7 +506,8 @@ async function resolveContext(
 		},
 		{ signal: context.signal },
 	)
-	if (context.signal.aborted) throw new Error('graph context retrieval cancelled')
+	if (context.signal.aborted)
+		throw new Error('graph context retrieval cancelled')
 	const result = learningContextResultSchema.parse(
 		raw,
 	) as GraphLearningContextResult
@@ -509,27 +520,48 @@ async function resolveContext(
 	}
 	for (const inputId of result.processedInputIds) {
 		if (!input.observations.some(({ id }) => id === inputId)) {
-			throw new Error('bounded graph context returned an unrequested processed input')
+			throw new Error(
+				'bounded graph context returned an unrequested processed input',
+			)
 		}
 	}
-	requireUnique(result.entities.map(({ id }) => id), 'bounded graph entity ids')
-	requireUnique(result.identityMatches.map(({ mentionId }) => mentionId), 'bounded graph identity match ids')
+	requireUnique(
+		result.entities.map(({ id }) => id),
+		'bounded graph entity ids',
+	)
+	requireUnique(
+		result.identityMatches.map(({ mentionId }) => mentionId),
+		'bounded graph identity match ids',
+	)
 	const mentionById = new Map(mentions.map((mention) => [mention.id, mention]))
-	const entityById = new Map(result.entities.map((entity) => [entity.id, entity]))
+	const entityById = new Map(
+		result.entities.map((entity) => [entity.id, entity]),
+	)
 	for (const match of result.identityMatches) {
 		const mention = mentionById.get(match.mentionId)
-		if (!mention) throw new Error('bounded graph context returned an unknown mention')
-		requireUnique(match.candidateEntityIds, `identity candidates for ${match.mentionId}`)
+		if (!mention)
+			throw new Error('bounded graph context returned an unknown mention')
+		requireUnique(
+			match.candidateEntityIds,
+			`identity candidates for ${match.mentionId}`,
+		)
 		for (const id of match.candidateEntityIds) {
 			const entity = entityById.get(id)
-			if (!entity) throw new Error('bounded graph context returned a missing identity candidate')
+			if (!entity)
+				throw new Error(
+					'bounded graph context returned a missing identity candidate',
+				)
 			if (entity.type !== mention.entityType) {
-				throw new Error('bounded graph context returned a candidate of the wrong type')
+				throw new Error(
+					'bounded graph context returned a candidate of the wrong type',
+				)
 			}
 		}
 	}
 	for (const mention of mentions) {
-		if (!result.identityMatches.some(({ mentionId }) => mentionId === mention.id)) {
+		if (
+			!result.identityMatches.some(({ mentionId }) => mentionId === mention.id)
+		) {
 			throw new Error('bounded graph context omitted an identity mention')
 		}
 	}
@@ -652,7 +684,9 @@ async function resolveEndpoint(
 			raw: decision.raw,
 		}
 	}
-	const selected = candidateChoices.find(({ choice }) => choice === decision.answer)
+	const selected = candidateChoices.find(
+		({ choice }) => choice === decision.answer,
+	)
 	if (!selected) {
 		throw new Error('identity decision selected an unsupplied entity')
 	}
@@ -684,7 +718,10 @@ const resolveOperation = defineOperation({
 			({ inputId }) =>
 				!resolvedContext.snapshot.processedInputIds.includes(inputId),
 		)
-		if (resolvedContext.truncated || resolvedContext.unknownContext.length > 0) {
+		if (
+			resolvedContext.truncated ||
+			resolvedContext.unknownContext.length > 0
+		) {
 			for (const candidate of activeCandidates) {
 				pending.push({
 					candidate,
@@ -711,10 +748,7 @@ const resolveOperation = defineOperation({
 				},
 			}
 		}
-		const cache = new Map<
-			string,
-			Awaited<ReturnType<typeof resolveEndpoint>>
-		>()
+		const cache = new Map<string, Awaited<ReturnType<typeof resolveEndpoint>>>()
 		for (const candidate of activeCandidates) {
 			const observation = observationFor(input, candidate)
 			const endpoints = [
@@ -736,7 +770,8 @@ const resolveOperation = defineOperation({
 					const entity = resolvedContext.snapshot.entities.find(
 						(candidateEntity) => candidateEntity.id === id,
 					)
-					if (!entity) throw new Error('resolved graph context lost an identity candidate')
+					if (!entity)
+						throw new Error('resolved graph context lost an identity candidate')
 					return entity
 				})
 				const key = JSON.stringify([
@@ -805,8 +840,11 @@ function observationFor(
 	input: GraphLearningInput,
 	candidate: GraphRelationCandidate,
 ): LearningObservation {
-	const observation = input.observations.find(({ id }) => id === candidate.inputId)
-	if (!observation) throw new Error('resolved graph candidate lost its source input')
+	const observation = input.observations.find(
+		({ id }) => id === candidate.inputId,
+	)
+	if (!observation)
+		throw new Error('resolved graph candidate lost its source input')
 	return observation
 }
 
@@ -826,7 +864,8 @@ function endpointId(
 	const existing = newByIdentity.get(key)
 	if (existing) return existing
 	const id = ids.next('graph-entity')
-	if (entities.has(id)) throw new Error(`graph id capability reused entity id ${id}`)
+	if (entities.has(id))
+		throw new Error(`graph id capability reused entity id ${id}`)
 	newByIdentity.set(key, id)
 	entities.set(id, {
 		id,
@@ -847,19 +886,35 @@ const proposeOperation = defineOperation({
 	requiredCapabilities: [LEARNING_ID_CAPABILITY],
 	memoryTypes: ['graph'],
 	run({ input, resolutions }, context) {
-		const ids = capability<LearningIdCapability>(context, LEARNING_ID_CAPABILITY)
-		if (resolutions.context.configurationRevision !== input.configurationRevision) {
+		const ids = capability<LearningIdCapability>(
+			context,
+			LEARNING_ID_CAPABILITY,
+		)
+		if (
+			resolutions.context.configurationRevision !== input.configurationRevision
+		) {
 			throw new Error('resolved graph context lost its configuration revision')
 		}
 		const activeSnapshot = resolutions.context.snapshot
-		const entities = new Map(activeSnapshot.entities.map((entity) => [entity.id, entity]))
+		const entities = new Map(
+			activeSnapshot.entities.map((entity) => [entity.id, entity]),
+		)
 		const newByIdentity = new Map<string, string>()
 		const upsertIds = new Set<string>()
 		const changes: GraphEdgeChange[] = []
 		const changeInputIds: string[] = []
-		const edgeKey = (relationId: string, sourceId: string, targetId: string) => {
-			const relation = input.schema.relations.find(({ id }) => id === relationId)
-			if (relation?.directed !== false || sourceId.localeCompare(targetId) <= 0) {
+		const edgeKey = (
+			relationId: string,
+			sourceId: string,
+			targetId: string,
+		) => {
+			const relation = input.schema.relations.find(
+				({ id }) => id === relationId,
+			)
+			if (
+				relation?.directed !== false ||
+				sourceId.localeCompare(targetId) <= 0
+			) {
 				return JSON.stringify([relationId, sourceId, targetId])
 			}
 			return JSON.stringify([relationId, targetId, sourceId])
@@ -894,7 +949,8 @@ const proposeOperation = defineOperation({
 			const relation = input.schema.relations.find(
 				({ id }) => id === resolution.candidate.relation,
 			)
-			if (!relation) throw new Error('resolved candidate lost its relation schema')
+			if (!relation)
+				throw new Error('resolved candidate lost its relation schema')
 			if (!relation.allowSelf && sourceId === targetId) {
 				throw new Error('resolved relation cannot use the same endpoint twice')
 			}
@@ -938,7 +994,11 @@ const proposeOperation = defineOperation({
 			}
 			for (const entityId of [sourceId, targetId]) {
 				const entity = entities.get(entityId)
-				if (!entity || activeSnapshot.entities.some(({ id }) => id === entityId)) continue
+				if (
+					!entity ||
+					activeSnapshot.entities.some(({ id }) => id === entityId)
+				)
+					continue
 				upsertIds.add(entityId)
 			}
 			const edge: GraphEdge = {
@@ -961,7 +1021,8 @@ const proposeOperation = defineOperation({
 					candidate.edge.sourceEntityId === change.previous.sourceEntityId &&
 					changeInputIds[candidateIndex] === changeInputIds[index],
 			)
-			const replacement = replacementIndex < 0 ? undefined : changes[replacementIndex]
+			const replacement =
+				replacementIndex < 0 ? undefined : changes[replacementIndex]
 			if (replacement?.kind !== 'add') continue
 			changes[index] = {
 				...change,
@@ -985,16 +1046,16 @@ const proposeOperation = defineOperation({
 		]
 		if (changes.length === 0 && pendingInputIds.length > 0) {
 			const result: LearningResult = {
-					outcome: 'defer',
-					reason: resolutions.overflow
-						? 'graph input or candidate context was truncated'
-						: 'graph identity is ambiguous',
-					pending: resolutions.pending,
-					pendingInputIds,
-					diagnostics: {
-						rawGeneration: resolutions.rawGeneration,
-						rawDecisions: resolutions.rawDecisions,
-					},
+				outcome: 'defer',
+				reason: resolutions.overflow
+					? 'graph input or candidate context was truncated'
+					: 'graph identity is ambiguous',
+				pending: resolutions.pending,
+				pendingInputIds,
+				diagnostics: {
+					rawGeneration: resolutions.rawGeneration,
+					rawDecisions: resolutions.rawDecisions,
+				},
 			}
 			return { result }
 		}
@@ -1007,13 +1068,13 @@ const proposeOperation = defineOperation({
 			)
 		if (changes.length === 0) {
 			const result: LearningResult = {
-					outcome: 'no_change',
-					reason: 'no supported graph relationship change',
-					consumedInputIds,
-					diagnostics: {
-						rawGeneration: resolutions.rawGeneration,
-						rawDecisions: resolutions.rawDecisions,
-					},
+				outcome: 'no_change',
+				reason: 'no supported graph relationship change',
+				consumedInputIds,
+				diagnostics: {
+					rawGeneration: resolutions.rawGeneration,
+					rawDecisions: resolutions.rawDecisions,
+				},
 			}
 			return { result }
 		}

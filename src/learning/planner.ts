@@ -1,14 +1,14 @@
 import {
-	learningResultSchema,
-	schemaAccepts,
 	type ExecutionPlan,
 	type InputBinding,
+	learningResultSchema,
 	type MemoryType,
 	type PlannedNode,
 	type PlanningLimits,
 	type RecipeNode,
 	type RevisionPins,
 	type RootValue,
+	schemaAccepts,
 	type ValueSchema,
 	type VersionRef,
 } from './contracts'
@@ -40,7 +40,8 @@ function snapshot(value: unknown, seen = new WeakSet<object>()): unknown {
 		return value
 	}
 	if (typeof value === 'object' && value !== null) {
-		if (seen.has(value)) throw new Error('planned values must not contain cycles')
+		if (seen.has(value))
+			throw new Error('planned values must not contain cycles')
 		seen.add(value)
 	}
 	if (Array.isArray(value)) {
@@ -136,13 +137,18 @@ function validateNodeInputs(
 		throw new Error(`collection node ${node.id} requires a collection schema`)
 	}
 	const itemConsumer = node.implementation.inputSchemas[node.itemInput]
-	if (itemConsumer === undefined || !schemaAccepts(itemConsumer, items.collectionItem)) {
+	if (
+		itemConsumer === undefined ||
+		!schemaAccepts(itemConsumer, items.collectionItem)
+	) {
 		throw new Error(`collection node ${node.id} has an incompatible item input`)
 	}
 	const operationOutputs = Object.keys(node.implementation.outputSchemas).sort()
 	const aggregateOutputs = Object.keys(node.outputSchemas).sort()
 	if (operationOutputs.join('\u0000') !== aggregateOutputs.join('\u0000')) {
-		throw new Error(`collection node ${node.id} must aggregate every operation output`)
+		throw new Error(
+			`collection node ${node.id} must aggregate every operation output`,
+		)
 	}
 	for (const output of operationOutputs) {
 		const aggregate = node.outputSchemas[output]
@@ -152,7 +158,9 @@ function validateNodeInputs(
 			itemOutput === undefined ||
 			!schemaAccepts(aggregate.collectionItem, itemOutput)
 		) {
-			throw new Error(`collection node ${node.id}.${output} has an incompatible aggregate schema`)
+			throw new Error(
+				`collection node ${node.id}.${output} has an incompatible aggregate schema`,
+			)
 		}
 	}
 }
@@ -175,7 +183,9 @@ function validateDag(nodes: readonly PlannedNode[]): void {
 	for (const node of nodes) {
 		for (const predecessor of dependencies(node)) {
 			if (!byId.has(predecessor)) {
-				throw new Error(`node ${node.id} depends on missing node ${predecessor}`)
+				throw new Error(
+					`node ${node.id} depends on missing node ${predecessor}`,
+				)
 			}
 			if (predecessor === node.id) {
 				throw new Error(`node ${node.id} cannot depend on itself`)
@@ -184,7 +194,9 @@ function validateDag(nodes: readonly PlannedNode[]): void {
 			outgoing.get(predecessor)?.push(node.id)
 		}
 	}
-	const ready = [...incoming].filter(([, count]) => count === 0).map(([id]) => id)
+	const ready = [...incoming]
+		.filter(([, count]) => count === 0)
+		.map(([id]) => id)
 	let visited = 0
 	while (ready.length > 0) {
 		const id = ready.pop()
@@ -196,7 +208,8 @@ function validateDag(nodes: readonly PlannedNode[]): void {
 			if (count === 0) ready.push(next)
 		}
 	}
-	if (visited !== nodes.length) throw new Error('recipe graph must not contain a cycle')
+	if (visited !== nodes.length)
+		throw new Error('recipe graph must not contain a cycle')
 }
 
 export function planRecipe(
@@ -208,9 +221,14 @@ export function planRecipe(
 	positiveInteger(request.limits.maxOperations, 'maxOperations')
 	const recipe = registry.getRecipe(request.recipe)
 	if (recipe === undefined) {
-		throw new Error(`missing recipe ${request.recipe.id}@${request.recipe.version}`)
+		throw new Error(
+			`missing recipe ${request.recipe.id}@${request.recipe.version}`,
+		)
 	}
-	if (recipe.memoryTypes !== undefined && !recipe.memoryTypes.includes(request.memoryType)) {
+	if (
+		recipe.memoryTypes !== undefined &&
+		!recipe.memoryTypes.includes(request.memoryType)
+	) {
 		throw new Error(`recipe does not support memory type ${request.memoryType}`)
 	}
 	if (recipe.nodes.length > request.limits.maxNodes) {
@@ -223,13 +241,17 @@ export function planRecipe(
 		ids.add(node.id)
 		const implementation = registry.getOperation(node.operation)
 		if (implementation === undefined) {
-			throw new Error(`missing operation ${node.operation.id}@${node.operation.version}`)
+			throw new Error(
+				`missing operation ${node.operation.id}@${node.operation.version}`,
+			)
 		}
 		if (
 			implementation.memoryTypes !== undefined &&
 			!implementation.memoryTypes.includes(request.memoryType)
 		) {
-			throw new Error(`operation ${implementation.id} does not support ${request.memoryType}`)
+			throw new Error(
+				`operation ${implementation.id} does not support ${request.memoryType}`,
+			)
 		}
 		for (const capability of implementation.requiredCapabilities) {
 			if (!request.availableCapabilities.has(capability)) {
@@ -257,12 +279,16 @@ export function planRecipe(
 			node.kind === 'gate' &&
 			implementation.outputSchemas[node.appliesOutput] === undefined
 		) {
-			throw new Error(`gate ${node.id} has no applies output ${node.appliesOutput}`)
+			throw new Error(
+				`gate ${node.id} has no applies output ${node.appliesOutput}`,
+			)
 		}
 		return Object.freeze({
 			...node,
 			inputs: Object.freeze({ ...node.inputs }),
-			...(node.after === undefined ? {} : { after: Object.freeze([...node.after]) }),
+			...(node.after === undefined
+				? {}
+				: { after: Object.freeze([...node.after]) }),
 			...(node.configuration === undefined
 				? {}
 				: { configuration: snapshot(node.configuration) }),
@@ -308,7 +334,8 @@ export function nodeDependencies(node: PlannedNode): readonly string[] {
 export function requiredNodeDependencies(node: PlannedNode): readonly string[] {
 	const required = [...(node.after ?? [])]
 	for (const binding of Object.values(node.inputs)) {
-		if (binding.source === 'node' && binding.optional !== true) required.push(binding.nodeId)
+		if (binding.source === 'node' && binding.optional !== true)
+			required.push(binding.nodeId)
 	}
 	if (
 		node.kind === 'collection' &&

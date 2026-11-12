@@ -15,9 +15,12 @@ function snapshot(value: unknown, seen = new WeakSet<object>()): unknown {
 		typeof value === 'number' ||
 		typeof value === 'boolean' ||
 		typeof value === 'undefined'
-	) return value
-	if (typeof value !== 'object') throw new Error('recipe configuration must be portable data')
-	if (seen.has(value)) throw new Error('recipe configuration must not contain cycles')
+	)
+		return value
+	if (typeof value !== 'object')
+		throw new Error('recipe configuration must be portable data')
+	if (seen.has(value))
+		throw new Error('recipe configuration must not contain cycles')
 	seen.add(value)
 	if (Array.isArray(value)) {
 		const copy = Object.freeze(value.map((entry) => snapshot(entry, seen)))
@@ -31,7 +34,10 @@ function snapshot(value: unknown, seen = new WeakSet<object>()): unknown {
 	const result = Object.create(null) as Record<string, unknown>
 	for (const [property, entry] of Object.entries(value)) {
 		Object.defineProperty(result, property, {
-			value: snapshot(entry, seen), enumerable: true, writable: false, configurable: false,
+			value: snapshot(entry, seen),
+			enumerable: true,
+			writable: false,
+			configurable: false,
 		})
 	}
 	seen.delete(value)
@@ -39,8 +45,10 @@ function snapshot(value: unknown, seen = new WeakSet<object>()): unknown {
 }
 
 function freezeOperation(operation: Operation): Operation {
-	for (const schema of Object.values(operation.inputSchemas)) Object.freeze(schema)
-	for (const schema of Object.values(operation.outputSchemas)) Object.freeze(schema)
+	for (const schema of Object.values(operation.inputSchemas))
+		Object.freeze(schema)
+	for (const schema of Object.values(operation.outputSchemas))
+		Object.freeze(schema)
 	return Object.freeze({
 		...operation,
 		inputSchemas: Object.freeze({ ...operation.inputSchemas }),
