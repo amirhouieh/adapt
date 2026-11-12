@@ -37,7 +37,6 @@
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
     "format": "biome format --write src",
-    "eval:text-neuron": "npx tsx evals/scripts/text-neuron-semantic-eval.ts",
     "eval:list-neuron": "npx tsx evals/scripts/list-neuron-semantic-eval.ts",
     "eval:behavior-brain": "npx tsx evals/scripts/usecase-behavior-brain.ts",
     "eval:behavior-brain:bun": "bun run evals/scripts/usecase-behavior-brain.ts",

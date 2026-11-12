@@ -321,7 +321,6 @@ describe('two-step in the adaptive TextNeuron pipeline', () => {
 		})
 
 		await neuron.learn([{ deliveryId: 'first', text: 'Prefers Slack for urgent things.', observedAt: at }])
-		expect((await neuron.flush()).runs[0]).toMatchObject({ status: 'deferred' })
 		expect(await neuron.getUnderstanding()).toBe('')
 		expect((await neuron.getLearningState()).pendingDeliveryIds).toEqual(['first'])
 

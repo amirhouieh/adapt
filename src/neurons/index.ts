@@ -16,16 +16,13 @@ export type {
 	BaseNeuronUpdateInput,
 	BaseResolvedConfig,
 	EventUsage,
-	LearnCallbacks,
 	LearnOptions,
 	LearnOutput,
-	LearnPreparation,
 	ManagedLearnOutput,
 	ModelSlots,
 	SharedNeuronEventMap,
 	StateTransform,
 	StoredModelRef,
-	UnderstandCallResult,
 	UnderstandThresholds,
 } from './base'
 export { BaseNeuron } from './base'
@@ -43,7 +40,6 @@ export type {
 	AdaptiveTextLearningState,
 	AdaptiveTextLearnOutput,
 	AdaptiveTextModelProfile,
-	ResolvedGovernanceConfig,
 	ResolvedTextNeuronConfig,
 	TextGovernanceConfig,
 	TextNeuronConfig,
@@ -55,19 +51,8 @@ export type {
 export { protectedDeveloperInstructions, TextNeuron } from './text'
 // Descriptors
 export { textNeuronDescriptor } from './text/descriptor'
-export type {
-	GovernanceConfig,
-	Strategy,
-	StrategyContext,
-	StrategyFn,
-	StrategyResult,
-} from './text/strategies'
-export {
-	applyStrategy,
-	STRATEGIES,
-	strategyFunctions,
-	strategyPrompts,
-} from './text/strategies'
+export type { GovernanceConfig, Strategy } from './text/strategies'
+export { STRATEGIES } from './text/strategies'
 export type {
 	Neuron,
 	NeuronHealth,

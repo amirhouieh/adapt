@@ -64,12 +64,6 @@ export interface BaseNeuronState {
 	// Models (model inputs in cache; StoredModelRef in store)
 	models: ModelSlots
 
-	// Runtime artifacts (null before init)
-	observe_prompt: string | null
-	understand_prompt: string | null
-	observation_schema: Record<string, unknown> | null
-	understanding_schema: Record<string, unknown> | null
-
 	// Phase config
 	thresholds: {
 		maxObservations: number
@@ -80,14 +74,7 @@ export interface BaseNeuronState {
 	// Runtime
 	health: NeuronHealth
 	metrics: NeuronMetrics
-	stagnation_signal_fired: boolean
 	dismissal_signal_fired: boolean
-
-	// Skip observation phase — data goes directly to buffer
-	skipObservation: boolean
-
-	// Skip understand phase — observations are retained but never synthesized
-	skipUnderstand: boolean
 }
 
 // ── Transform types ─────────────────────────────────────────────────────────

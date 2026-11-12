@@ -126,24 +126,4 @@ describe('resolveTextNeuronConfig', () => {
 		expect(result.understand.thresholds.maxTokens).toBe(TEXT_NEURON_DEFAULTS.understand.thresholds.maxTokens)
 		expect(result.understand.thresholds.minImportance).toBe(TEXT_NEURON_DEFAULTS.understand.thresholds.minImportance)
 	})
-
-	// ── Default governance ──
-
-	it('applies default governance', () => {
-		const result = resolveTextNeuronConfig({ model, instructions: 'test' })
-		expect(result.governance).toEqual({
-			strategy: 'cumulative',
-			maxTokens: 16000,
-		})
-	})
-
-	it('allows governance overrides', () => {
-		const result = resolveTextNeuronConfig({
-			model,
-			instructions: 'test',
-			governance: { strategy: 'decay', maxTokens: 8000 },
-		})
-		expect(result.governance.strategy).toBe('decay')
-		expect(result.governance.maxTokens).toBe(8000)
-	})
 })

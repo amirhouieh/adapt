@@ -179,12 +179,6 @@ async function main() {
 	const evoHistory = await apiNeuron.getEvolution()
 	assert(Array.isArray(evoHistory), 'getEvolution() returns array')
 
-	const obsSchema = apiNeuron.getObservationSchema()
-	assert(obsSchema === null || typeof obsSchema === 'object', 'getObservationSchema() works')
-
-	const undSchema = apiNeuron.getUnderstandingSchema()
-	assert(undSchema === null || typeof undSchema === 'object', 'getUnderstandingSchema() works')
-
 	const metadata = apiNeuron.getMetadata()
 	assert(typeof metadata === 'object', 'getMetadata() returns object')
 
@@ -193,33 +187,6 @@ async function main() {
 	assert('count' in bufState, 'getBufferState() has count')
 	assert('avgImportance' in bufState, 'getBufferState() has avgImportance')
 	assert('totalTokens' in bufState, 'getBufferState() has totalTokens')
-
-	const buffered = await apiNeuron.getBufferedObservations()
-	assert(Array.isArray(buffered), 'getBufferedObservations() returns array')
-
-	// Observations API (full history)
-	const allObs = await apiNeuron.getObservations()
-	assert(Array.isArray(allObs), 'getObservations() returns array')
-
-	const pendingObs = await apiNeuron.getObservations({ status: 'pending' })
-	assert(Array.isArray(pendingObs), 'getObservations({status:pending}) returns array')
-
-	const processedObs = await apiNeuron.getObservations({ status: 'processed' })
-	assert(Array.isArray(processedObs), 'getObservations({status:processed}) returns array')
-
-	if (allObs.length > 0) {
-		const first = allObs[0]
-		await apiNeuron.updateObservation(first.id, { metadata_importance: 0.9 })
-		assert(true, 'updateObservation() succeeds')
-	}
-
-	await apiNeuron.setObservations([])
-	const afterClear = await apiNeuron.getObservations()
-	assert(afterClear.length === 0, 'setObservations([]) clears the collection')
-
-	// removeObservation needs an id; verify it accepts the call signature
-	await apiNeuron.removeObservation('non-existent-id').catch(() => {})
-	assert(true, 'removeObservation() accepts id')
 
 	// Config
 	await apiNeuron.adjust('natural language directive')

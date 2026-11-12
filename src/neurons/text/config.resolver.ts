@@ -60,12 +60,5 @@ export function resolveTextNeuronConfig(
 		query: {
 			model: cascade(config.query?.model, model),
 		},
-		governance: {
-			strategy:
-				config.governance?.strategy ?? TEXT_NEURON_DEFAULTS.governance.strategy,
-			maxTokens:
-				config.governance?.maxTokens ??
-				TEXT_NEURON_DEFAULTS.governance.maxTokens,
-		},
 	}
 }

@@ -41,6 +41,8 @@ export const twoStepRecipeRef = Object.freeze({
 
 /** The exact reply the extract step gives when nothing in the batch is relevant. */
 export const TWO_STEP_NOTHING_RELEVANT = 'NONE'
+/** No-change reason when the extract step found nothing relevant (the neuron dismisses the data). */
+export const TWO_STEP_NOTHING_RELEVANT_REASON = 'two_step_nothing_relevant'
 
 function rulesBlock(lens: TextLearningLens): string {
 	if (lens.developerInstructions.length === 0) return ''
@@ -189,7 +191,7 @@ export async function runTwoStep(
 	if (saysNothingRelevant(extracted)) {
 		return {
 			outcome: 'no_change',
-			reason: 'two_step_nothing_relevant',
+			reason: TWO_STEP_NOTHING_RELEVANT_REASON,
 			consumedInputIds,
 		}
 	}

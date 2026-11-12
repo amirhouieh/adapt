@@ -1,18 +1,10 @@
 export type {
 	AdjustResult,
-	LearnCallbacks,
 	LearnOptions,
 	LearnOutput,
-	LearnPreparation,
 	ManagedLearnOutput,
-	UnderstandCallResult,
 } from './class'
 export { BaseNeuron } from './class'
-export type { PhaseInstructionState } from './instructions'
-export {
-	resolveObserveInstructions,
-	resolveUnderstandInstructions,
-} from './instructions'
 export type {
 	QueryCallbacks,
 	QueryContext,

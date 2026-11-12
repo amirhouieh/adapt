@@ -11,7 +11,6 @@ import type {
 import type { NeuronOrigin, Significance } from '../types'
 import type { AdaptiveTextLearningConfig } from './adaptive-runtime'
 import type { Strategy } from './strategies'
-import type { UnderstandIdentity } from './understand'
 
 /**
  * TextNeuron event map
@@ -53,11 +52,6 @@ export interface TextGovernanceConfig {
 	maxTokens?: number
 }
 
-export interface ResolvedGovernanceConfig {
-	strategy: Strategy
-	maxTokens: number
-}
-
 // ── Query ───────────────────────────────────────────────────────────────────
 
 export interface QueryConfig {
@@ -88,11 +82,11 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	origin?: NeuronOrigin
 	/** Injected store */
 	store: NeuronStore
-	/** Governance settings for understanding management */
+	/** Ignored. Accepted for config compatibility. */
 	governance?: TextGovernanceConfig
-	/** Observer phase configuration */
+	/** Ignored. Accepted for config compatibility. */
 	observer?: { model?: LanguageModel; blueprintModel?: LanguageModel }
-	/** Understand phase configuration */
+	/** Ignored. Accepted for config compatibility. */
 	understand?: {
 		model?: LanguageModel
 		blueprintModel?: LanguageModel
@@ -102,25 +96,23 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	query?: QueryConfig
 	/** Health configuration (Living Brain) */
 	health?: Partial<import('../types').NeuronHealth>
-	/** Skip observation phase — data goes directly to understanding buffer */
+	/** Ignored. Accepted for config compatibility. */
 	skipObservation?: boolean
-	/** Skip understand phase — observations are retained but never synthesized */
+	/** Ignored. Accepted for config compatibility. */
 	skipUnderstand?: boolean
-	/** Custom observation schema — skips LLM generation when provided */
+	/** Ignored. Accepted for config compatibility. */
 	observationSchema?: Record<string, unknown>
-	/** Custom understanding schema — skips LLM generation when provided */
+	/** Ignored. Accepted for config compatibility. */
 	understandingSchema?: Record<string, unknown>
 	/** Subscribe before initialization starts, so init events can be observed. */
 	onEvent?: UnifiedHandler<EventsFromMap<SharedNeuronEventMap>>
-	/** Opt into the persisted adaptive text-learning lifecycle. Omit for v1 behavior. */
+	/** Supply an explicit adaptive text-learning setup. Omit for the default two-step setup. */
 	learning?: AdaptiveTextLearningConfig
 }
 
 // ── Resolved Config ─────────────────────────────────────────────────────────
 
-export interface ResolvedTextNeuronConfig extends BaseResolvedConfig {
-	governance: ResolvedGovernanceConfig
-}
+export type ResolvedTextNeuronConfig = BaseResolvedConfig
 
 export interface TextNeuronUpdateResult {
 	changedFields: string[]
@@ -129,7 +121,4 @@ export interface TextNeuronUpdateResult {
 
 // ── State ──────────────────────────────────────────────────────────────────
 
-export interface TextNeuronState extends BaseNeuronState {
-	understand_identity: UnderstandIdentity | null
-	governance: ResolvedGovernanceConfig
-}
+export type TextNeuronState = BaseNeuronState

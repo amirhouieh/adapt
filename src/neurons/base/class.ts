@@ -1,35 +1,23 @@
 /**
  * BaseNeuron — abstract base class for all neuron types
  *
- * Owns the full pipeline: observe → store → understand → governance.
+ * Owns state persistence, query dispatch, health/metrics bookkeeping and
+ * events. Subclasses own learning (learn, update, adjust) and understanding.
  * Store is injected — neuron has no knowledge of storage backend.
  *
  * All serializable config and runtime data lives in `this.state`,
  * cached in memory and backed by `store.state`.
  * Understanding is NOT cached — it lives in `store.understanding`.
- *
- * Subclasses implement type-specific behavior:
- * - regenUnderstandPrompt (identity/prompt generation)
- * - callUnderstand, postProcessUnderstanding (understand phase)
- * - getUnderstanding, setUnderstanding, getSummary, hasKnowledge
- * - createQueryMethod, applyTypeSpecificUpdates
  */
 
 import { nanoid } from 'nanoid'
-import { z } from 'zod'
-import {
-	type AdaptLLMPlugin,
-	type AdaptRepairOptions,
-	type AdaptStreamResult,
-	generate,
-	type LanguageModel,
-	Output,
-} from '../../llm'
 import type {
-	EvolutionRecord,
-	NeuronStore,
-	ObservationRecord,
-} from '../../stores'
+	AdaptLLMPlugin,
+	AdaptRepairOptions,
+	AdaptStreamResult,
+	LanguageModel,
+} from '../../llm'
+import type { EvolutionRecord, NeuronStore } from '../../stores'
 import { TypedEmitter } from '../../types/events'
 import type {
 	QueryCallbacks,
@@ -37,7 +25,6 @@ import type {
 	QueryOptions,
 	QueryResult,
 } from '../base/query'
-import { initObserve, observe } from '../observer'
 import type {
 	Neuron,
 	NeuronHealth,
@@ -46,10 +33,6 @@ import type {
 	NeuronOrigin,
 	Significance,
 } from '../types'
-import {
-	resolveObserveInstructions,
-	resolveUnderstandInstructions,
-} from './instructions'
 import type {
 	BaseNeuronState,
 	ModelSlots,
@@ -117,101 +100,10 @@ export interface ManagedLearnOutput {
  * Options for learn() call
  */
 export interface LearnOptions {
+	/** Ignored. Learning is always the two-step extract/update flow. */
 	forceSynthesize?: boolean
 }
 
-const preparedUnderstandModel: unique symbol = Symbol('preparedUnderstandModel')
-
-/** In-process phase hand-off. This is not a durable checkpoint. */
-export type LearnPreparation =
-	| { readonly kind: 'complete'; readonly output: LearnOutput }
-	| {
-			readonly kind: 'synthesize'
-			readonly failureEvent: 'emit' | 'skip'
-			readonly [preparedUnderstandModel]: LanguageModel
-	  }
-
-/**
- * Callbacks for learning observability
- */
-export interface LearnCallbacks {
-	onObserveStarted?: (itemCount: number) => void
-	onObserveThinking?: (thoughts: string[]) => void
-	onSynthesizeStarted?: (observationCount: number) => void
-	onSynthesizeThinking?: (thoughts: string[]) => void
-}
-
-/**
- * Result from callUnderstand — subclass-specific
- */
-export type UnderstandCallResult =
-	| {
-			status: 'synthesized'
-			newUnderstanding: unknown
-			significance: Significance
-			evolution: string
-			reasoning?: string
-			usage?: {
-				inputTokens?: number
-				outputTokens?: number
-				totalTokens?: number
-			}
-	  }
-	| {
-			status: 'dismissed'
-			output: string
-			usage?: {
-				inputTokens?: number
-				outputTokens?: number
-				totalTokens?: number
-			}
-	  }
-	| { status: 'error'; error: unknown }
-
-/**
- * Classification schema for adjust() routing
- */
-const adjustClassificationSchema = z.object({
-	adjustConfig: z
-		.boolean()
-		.describe(
-			'Whether the directive changes how the node perceives and processes (behavior, focus, criteria, prompts)',
-		),
-	adjustUnderstanding: z
-		.boolean()
-		.describe(
-			"Whether the directive changes, corrects, or removes something in the node's accumulated knowledge",
-		),
-	reasoning: z.string().describe('Brief explanation of the classification'),
-})
-
-const adjustConfigSchema = z.object({
-	instructions: z
-		.string()
-		.describe(
-			'Updated shared developer instructions after applying the directive',
-		),
-	observeInstructions: z
-		.string()
-		.nullable()
-		.describe(
-			'Updated observe-phase override, or null to use shared instructions',
-		),
-	understandInstructions: z
-		.string()
-		.nullable()
-		.describe(
-			'Updated understand-phase override, or null to use shared instructions',
-		),
-	focus: z
-		.string()
-		.nullable()
-		.describe('Updated observe-only focus, or null if none'),
-})
-
-/**
- * Result from adjust() — indicates what was adjusted
- */
 export interface AdjustResult {
 	changedFields: string[]
 	adjustedConfig: boolean
@@ -233,10 +125,7 @@ export abstract class BaseNeuron<
 	private initialized = false
 
 	// Lazy init promise (for ensureInit)
-	private initPromise: Promise<{
-		observeSystemPrompt: string
-		understandSystemPrompt: string
-	}> | null = null
+	private initPromise: Promise<void> | null = null
 
 	/**
 	 * Transform registry for store ↔ cache boundary.
@@ -311,70 +200,17 @@ export abstract class BaseNeuron<
 	abstract getSummary(): Promise<string>
 	abstract hasKnowledge(): Promise<boolean>
 
-	/**
-	 * Hook for type-specific config updates (e.g. governance).
-	 * Returns partial state updates to be merged and persisted.
-	 */
-	protected abstract applyTypeSpecificUpdates(
-		updates: Record<string, unknown>,
-		changedFields: string[],
-	): Partial<TState>
-
-	/**
-	 * Regenerate understand prompt (type-specific — text uses strategy, list uses identity)
-	 */
-	protected abstract regenUnderstandPrompt(
-		model: LanguageModel,
-		instructions: string,
-	): Promise<void>
-
-	/**
-	 * Rebuild a persisted understand prompt from already-loaded state without
-	 * making an LLM call. Subclasses return null when they cannot rebuild
-	 * deterministically and BaseNeuron should fall back to regenUnderstandPrompt.
-	 */
-	protected rebuildUnderstandPromptFromState(
-		_instructions: string,
-	): string | null {
-		return null
-	}
-
-	/**
-	 * Adjust understand prompt from a directive (type-specific)
-	 * Unlike regen (stateless), this passes current identity so the LLM can evolve it.
-	 */
-	protected abstract adjustUnderstandPrompt(
-		model: LanguageModel,
-		directive: string,
-		newInstructions: string,
-	): Promise<void>
-
-	/**
-	 * Adjust understanding content from a directive (type-specific).
-	 * Unlike callUnderstand (which integrates new observations),
-	 * this modifies existing understanding based on a natural language directive.
-	 */
-	protected abstract adjustUnderstanding(
-		model: LanguageModel,
-		directive: string,
-	): Promise<{ evolution: string; significance: Significance }>
-
-	/**
-	 * Execute the understand phase (type-specific)
-	 */
-	protected abstract callUnderstand(
-		model: LanguageModel,
-		understanding: TUnderstanding,
-		observations: string[],
-		callbacks?: { onThinking?: (thoughts: string[]) => void },
-	): Promise<UnderstandCallResult>
-
-	/**
-	 * Transform raw understand output (e.g. apply strategy, dedup, pruning)
-	 */
-	protected abstract postProcessUnderstanding(
-		raw: TUnderstanding,
-	): TUnderstanding | Promise<TUnderstanding>
+	/** Pending-input metrics for health/evolution; owned by the subclass. */
+	abstract getBufferState(): Promise<{
+		count: number
+		avgImportance: number
+		totalTokens: number
+	}>
+	abstract learn(batch: unknown[], options?: LearnOptions): Promise<LearnOutput>
+	abstract update(
+		updates: BaseNeuronUpdateInput & Record<string, unknown>,
+	): Promise<{ changedFields: string[] }>
+	abstract adjust(directive: string): Promise<AdjustResult>
 
 	/**
 	 * Create the query method for this neuron type (agentic, tool-based)
@@ -388,18 +224,6 @@ export abstract class BaseNeuron<
 	protected createDirectQueryMethod(): QueryMethod | undefined {
 		return undefined
 	}
-
-	/**
-	 * Generate observation and understanding JSON Schemas.
-	 * Text neuron returns hardcoded schemas; list neuron generates via LLM.
-	 */
-	protected abstract generateSchemas(
-		model: LanguageModel,
-		instructions: string,
-	): Promise<{
-		observationSchema: Record<string, unknown>
-		understandingSchema: Record<string, unknown>
-	}>
 
 	// ── State persistence ────────────────────────────────────────────────────
 
@@ -438,9 +262,7 @@ export abstract class BaseNeuron<
 		if (records.length === 0) return false
 		for (const record of records) {
 			if (record.id === 'observe_identity') continue
-			if (record.id === 'understand_identity' && !(record.id in this.state)) {
-				continue
-			}
+			if (record.id === 'understand_identity') continue
 			const transform = this.stateTransforms[record.id]
 			;(this.state as Record<string, unknown>)[record.id] = transform
 				? transform.deserialize(record.value)
@@ -449,49 +271,14 @@ export abstract class BaseNeuron<
 		return true
 	}
 
-	private async rebuildRestoredPrompts(): Promise<void> {
-		const updates: Partial<TState> = {} as Partial<TState>
-
-		if (!this.state.skipObservation) {
-			const result = initObserve(resolveObserveInstructions(this.state))
-			;(updates as Record<string, unknown>).observe_prompt = result.systemPrompt
-		}
-
-		if (Object.keys(updates).length > 0) {
-			await this.setState(updates)
-		}
-
-		if (!this.state.skipUnderstand) {
-			const instructions = resolveUnderstandInstructions(this.state)
-			const prompt = this.rebuildUnderstandPromptFromState(instructions)
-			if (prompt !== null) {
-				await this.setState({ understand_prompt: prompt } as Partial<TState>)
-			} else {
-				await this.regenUnderstandPrompt(
-					this.state.models.understand_blueprint,
-					instructions,
-				)
-			}
-		}
-	}
-
 	// ── Init ────────────────────────────────────────────────────────────────
 
-	async init(opts?: { expect?: 'fresh' | 'restore' }): Promise<{
-		observeSystemPrompt: string
-		understandSystemPrompt: string
-	}> {
-		if (this.isInitialized()) {
-			return {
-				observeSystemPrompt: this.state.observe_prompt!,
-				understandSystemPrompt: this.state.understand_prompt!,
-			}
-		}
+	async init(opts?: { expect?: 'fresh' | 'restore' }): Promise<void> {
+		if (this.isInitialized()) return
 
 		this.emit('neuron:init:started', { neuronId: this.id })
 
 		try {
-			// Try restoring state from store (skip LLM calls)
 			const restored = await this.loadState()
 
 			if (opts?.expect === 'fresh' && restored) {
@@ -505,66 +292,19 @@ export abstract class BaseNeuron<
 				)
 			}
 
-			if (!restored) {
-				if (!this.state.skipObservation) {
-					// Build observe prompt deterministically from verbatim instructions
-					const observeResult = initObserve(
-						resolveObserveInstructions(this.state),
-					)
-					this.state.observe_prompt = observeResult.systemPrompt
-				}
+			// Persist the entire state — every field that lives in BaseNeuronState
+			// is data and must round-trip through the store.
+			if (!restored) await this.setState({ ...this.state } as Partial<TState>)
 
-				if (!this.state.skipUnderstand) {
-					// Generate understand prompt (type-specific)
-					await this.regenUnderstandPrompt(
-						this.state.models.understand_blueprint,
-						resolveUnderstandInstructions(this.state),
-					)
-				}
-
-				// Generate schemas only if not already provided via config
-				if (
-					this.state.observation_schema === null ||
-					this.state.understanding_schema === null
-				) {
-					const schemas = await this.generateSchemas(
-						this.state.models.blueprint,
-						this.schemaInstructions(),
-					)
-					if (this.state.observation_schema === null) {
-						this.state.observation_schema = schemas.observationSchema as Record<
-							string,
-							unknown
-						>
-					}
-					if (this.state.understanding_schema === null) {
-						this.state.understanding_schema =
-							schemas.understandingSchema as Record<string, unknown>
-					}
-				}
-
-				// Persist the entire state — every field that lives in BaseNeuronState
-				// is data and must round-trip through the store.
-				await this.setState({ ...this.state } as Partial<TState>)
-			} else {
-				await this.rebuildRestoredPrompts()
-			}
-
-			// Create query methods
 			this.queryMethod = this.createQueryMethod()
 			this.directQueryMethod = this.createDirectQueryMethod()
 			this.initialized = true
 
 			this.emit('neuron:init:completed', {
 				neuronId: this.id,
-				systemPrompt: this.state.observe_prompt!,
+				systemPrompt: '',
 				usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
 			})
-
-			return {
-				observeSystemPrompt: this.state.observe_prompt!,
-				understandSystemPrompt: this.state.understand_prompt ?? '',
-			}
 		} catch (err) {
 			const error = err instanceof Error ? err : new Error(String(err))
 			this.emit('neuron:init:failed', {
@@ -573,20 +313,6 @@ export abstract class BaseNeuron<
 			})
 			throw error
 		}
-	}
-
-	// ── Validation ──────────────────────────────────────────────────────────
-
-	protected validateObservationData(data: unknown): boolean {
-		if (!this.state.observation_schema) return true
-		return z.fromJSONSchema(this.state.observation_schema).safeParse(data)
-			.success
-	}
-
-	protected validateUnderstandingData(data: unknown): boolean {
-		if (!this.state.understanding_schema) return true
-		return z.fromJSONSchema(this.state.understanding_schema).safeParse(data)
-			.success
 	}
 
 	// ── Identity ────────────────────────────────────────────────────────────
@@ -620,9 +346,7 @@ export abstract class BaseNeuron<
 	}
 
 	isInitialized(): boolean {
-		// Legacy restored neurons use understand_prompt as a persisted readiness
-		// signal. skipUnderstand neurons are marked ready after init completes.
-		return this.initialized || this.state.understand_prompt !== null
+		return this.initialized
 	}
 
 	private async ensureInit(): Promise<void> {
@@ -633,359 +357,8 @@ export abstract class BaseNeuron<
 		await this.initPromise
 	}
 
-	getObserveSystemPrompt(): string | null {
-		return this.state.observe_prompt
-	}
-
-	getUnderstandSystemPrompt(): string | null {
-		return this.state.understand_prompt
-	}
-
-	private schemaInstructions(): string {
-		return (
-			resolveObserveInstructions(this.state) ||
-			resolveUnderstandInstructions(this.state) ||
-			this.state.instructions
-		)
-	}
-
 	getUnderstandThresholds() {
 		return { ...this.state.thresholds }
-	}
-
-	getObservationSchema(): Record<string, unknown> | null {
-		return this.state.observation_schema
-	}
-
-	getUnderstandingSchema(): Record<string, unknown> | null {
-		return this.state.understanding_schema
-	}
-
-	// ── Learn (pipeline: observe → store → understand) ────────────────────
-
-	async learn(batch: unknown[], options?: LearnOptions): Promise<LearnOutput> {
-		const preparation = await this.prepareLearning(batch, options)
-		return this.completeLearning(preparation)
-	}
-
-	async prepareLearning(
-		batch: unknown[],
-		options?: LearnOptions,
-	): Promise<LearnPreparation> {
-		await this.ensureInit()
-
-		try {
-			// Handle forceSynthesize with empty data
-			if (
-				!this.state.skipUnderstand &&
-				options?.forceSynthesize &&
-				batch.length === 0
-			) {
-				const pendingCount = await this.store.observations.count({
-					metadata_status: 'pending',
-				})
-				if (pendingCount > 0) {
-					return {
-						kind: 'synthesize',
-						failureEvent: 'skip',
-						[preparedUnderstandModel]: this.state.models.understand,
-					}
-				}
-			}
-
-			// Phase 1: Observe (or skip if skipObservation)
-			this.emit('neuron:observe:started', {
-				neuronId: this.id,
-				itemCount: batch.length,
-			})
-
-			let observations: unknown[]
-			let importance: number
-			let observeUsage:
-				| { inputTokens?: number; outputTokens?: number; totalTokens?: number }
-				| undefined
-
-			if (this.state.skipObservation) {
-				// Skip observe — store raw batch directly
-				observations = batch
-				importance = 1.0
-			} else {
-				const observeResult = await observe(
-					this.llm,
-					this.state.models.observer,
-					this.state.observe_prompt!,
-					{
-						neuronId: this.id,
-						instructions: this.state.instructions,
-						data: batch,
-					},
-					this.state.observation_schema ?? undefined,
-					{
-						onThinking: (thoughts) => {
-							this.emit('neuron:observe:thinking', {
-								neuronId: this.id,
-								thoughts,
-								usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-							})
-						},
-					},
-					this.llmRepairOptions,
-				)
-
-				if (observeResult.status === 'error') {
-					const result: LearnOutput = {
-						status: 'observe:error',
-						error: observeResult.error,
-					}
-					await this.handleLearnResult(result)
-					return { kind: 'complete', output: result }
-				}
-
-				if (observeResult.status === 'dismissed') {
-					const result: LearnOutput = {
-						status: 'observe:dismissed',
-						output: observeResult.output,
-						gaps: observeResult.gaps,
-						usage: observeResult.usage,
-					}
-					await this.handleLearnResult(result)
-					return { kind: 'complete', output: result }
-				}
-
-				// Filter by importance threshold
-				const minImportance = this.state.thresholds.minImportance
-				if (
-					minImportance !== undefined &&
-					observeResult.importance < minImportance
-				) {
-					const result: LearnOutput = {
-						status: 'observe:dismissed',
-						output: observeResult.output,
-						gaps: observeResult.gaps,
-						usage: observeResult.usage,
-					}
-					await this.handleLearnResult(result)
-					return { kind: 'complete', output: result }
-				}
-
-				observations = observeResult.output
-				importance = observeResult.importance
-				observeUsage = observeResult.usage
-			}
-
-			// Store observations as pending
-			for (const item of observations) {
-				if (
-					!this.state.skipObservation &&
-					!this.validateObservationData(item)
-				) {
-					console.error(`[${this.id}] Skipping invalid observation:`, item)
-					continue
-				}
-				const serialized =
-					typeof item === 'string' ? item : JSON.stringify(item)
-				await this.store.observations.add({
-					id: `obs_${nanoid()}`,
-					data: item,
-					metadata_importance: importance,
-					metadata_tokens: Math.ceil(serialized.length / 4),
-					metadata_status: 'pending',
-					metadata_created_at: new Date().toISOString(),
-				})
-			}
-
-			// Check if understand should happen
-			const shouldUnderstand =
-				!this.state.skipUnderstand &&
-				(options?.forceSynthesize ||
-					(await this.shouldUnderstand(this.state.thresholds)))
-
-			if (!shouldUnderstand) {
-				const bufferState = await this.getBufferState()
-				const result: LearnOutput = {
-					status: 'observed',
-					output: observations,
-					usage: observeUsage,
-				}
-				await this.handleLearnResult(result, bufferState)
-				return { kind: 'complete', output: result }
-			}
-
-			// Phase 2: Understand
-			return {
-				kind: 'synthesize',
-				failureEvent: 'emit',
-				[preparedUnderstandModel]: this.state.models.understand,
-			}
-		} catch (err) {
-			const error = err instanceof Error ? err : new Error(String(err))
-			this.emit('neuron:learn:failed', {
-				neuronId: this.id,
-				error: error.message,
-			})
-			throw error
-		}
-	}
-
-	async completeLearning(preparation: LearnPreparation): Promise<LearnOutput> {
-		if (preparation.kind === 'complete') return preparation.output
-		if (preparation.failureEvent === 'skip') {
-			return this.understandFromStore(preparation[preparedUnderstandModel])
-		}
-		try {
-			return await this.understandFromStore(
-				preparation[preparedUnderstandModel],
-			)
-		} catch (err) {
-			const error = err instanceof Error ? err : new Error(String(err))
-			this.emit('neuron:learn:failed', {
-				neuronId: this.id,
-				error: error.message,
-			})
-			throw error
-		}
-	}
-
-	private async understandFromStore(
-		model: LanguageModel,
-	): Promise<LearnOutput> {
-		const pending = await this.store.observations.list({
-			metadata_status: 'pending',
-		})
-		const observations = pending.map((o) =>
-			typeof o.data === 'string' ? o.data : JSON.stringify(o.data),
-		)
-
-		this.emit('neuron:synthesize:started', {
-			neuronId: this.id,
-			observationCount: observations.length,
-		})
-
-		const understanding = await this.getUnderstanding()
-		const understandResult = await this.callUnderstand(
-			model,
-			understanding,
-			observations,
-			{
-				onThinking: (thoughts) => {
-					this.emit('neuron:synthesize:thinking', {
-						neuronId: this.id,
-						thoughts,
-						usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-					})
-				},
-			},
-		)
-
-		// Mark pending observations as processed
-		for (const obs of pending) {
-			await this.store.observations.update(obs.id, {
-				metadata_status: 'processed' as const,
-			})
-		}
-
-		if (understandResult.status === 'error') {
-			const result: LearnOutput = {
-				status: 'synthesize:error',
-				error: understandResult.error,
-			}
-			await this.handleLearnResult(result)
-			return result
-		}
-
-		if (understandResult.status === 'dismissed') {
-			const result: LearnOutput = {
-				status: 'synthesize:dismissed',
-				output: understandResult.output,
-				usage: understandResult.usage,
-			}
-			await this.handleLearnResult(result)
-			return result
-		}
-
-		const processed = await this.postProcessUnderstanding(
-			understandResult.newUnderstanding as TUnderstanding,
-		)
-
-		const result: LearnOutput = {
-			status: 'synthesized',
-			newUnderstanding: processed,
-			significance: understandResult.significance,
-			evolution: understandResult.evolution,
-			reasoning: understandResult.reasoning,
-			usage: understandResult.usage,
-		}
-		await this.handleLearnResult(result)
-		return result
-	}
-
-	// ── Buffer metrics from store ──────────────────────────────────────────
-
-	async getBufferState(): Promise<{
-		count: number
-		avgImportance: number
-		totalTokens: number
-	}> {
-		const pending = await this.store.observations.list({
-			metadata_status: 'pending',
-		})
-		const count = pending.length
-		const avgImportance =
-			count > 0
-				? pending.reduce((sum, o) => sum + o.metadata_importance, 0) / count
-				: 0
-		const totalTokens = Math.ceil(
-			pending.reduce((sum, o) => sum + JSON.stringify(o.data).length, 0) / 4,
-		)
-		return { count, avgImportance, totalTokens }
-	}
-
-	async getBufferedObservations(): Promise<
-		Array<{ text: string; importance: number }>
-	> {
-		const pending = await this.store.observations.list({
-			metadata_status: 'pending',
-		})
-		return pending.map((o) => ({
-			text: String(o.data),
-			importance: o.metadata_importance,
-		}))
-	}
-
-	async getObservations(filter?: {
-		status?: 'pending' | 'processed'
-	}): Promise<ObservationRecord[]> {
-		return filter?.status
-			? this.store.observations.list({ metadata_status: filter.status })
-			: this.store.observations.list()
-	}
-
-	async setObservations(observations: ObservationRecord[]): Promise<void> {
-		await this.store.observations.clear()
-		if (observations.length > 0) {
-			await this.store.observations.addBatch(observations)
-		}
-	}
-
-	async updateObservation(
-		id: string,
-		patch: Partial<Omit<ObservationRecord, 'id'>>,
-	): Promise<void> {
-		await this.store.observations.update(id, patch)
-	}
-
-	async removeObservation(id: string): Promise<void> {
-		await this.store.observations.delete(id)
-	}
-
-	protected async shouldUnderstand(thresholds: {
-		maxObservations: number
-		maxTokens: number
-	}): Promise<boolean> {
-		const { count, totalTokens } = await this.getBufferState()
-		return (
-			count >= thresholds.maxObservations || totalTokens >= thresholds.maxTokens
-		)
 	}
 
 	// ── Query (concrete — delegates to queryMethod) ────────────────────────
@@ -1114,16 +487,16 @@ export abstract class BaseNeuron<
 		)
 	}
 
-	// ── Update ──────────────────────────────────────────────────────────────
-
-	async update(
+	/**
+	 * Apply the non-learning settings: metadata, model slots, thresholds and
+	 * health config. Persists them and returns the changed field names.
+	 * Learning-lens fields (instructions, focus) are the subclass's concern.
+	 */
+	protected async updateSettings(
 		updates: BaseNeuronUpdateInput & Record<string, unknown>,
-	): Promise<{ changedFields: string[] }> {
+	): Promise<string[]> {
 		const changedFields: string[] = []
-		let needsObserveRegen = false
-		let needsUnderstandRegen = false
-		let needsSchemaRegen = false
-		const stateUpdates: Partial<TState> = {} as Partial<TState>
+		const stateUpdates: Record<string, unknown> = {}
 
 		if (updates.id !== undefined && updates.id !== this.id) {
 			throw new Error(
@@ -1131,132 +504,62 @@ export abstract class BaseNeuron<
 			)
 		}
 
-		// ── Metadata (passive) ──
-
 		if (updates.name !== undefined && updates.name !== this.state.name) {
-			;(stateUpdates as Record<string, unknown>).name = updates.name
+			stateUpdates.name = updates.name
 			changedFields.push('name')
 		}
-
 		if (
 			updates.description !== undefined &&
 			updates.description !== this.state.description
 		) {
-			;(stateUpdates as Record<string, unknown>).description =
-				updates.description
+			stateUpdates.description = updates.description
 			changedFields.push('description')
 		}
-
 		if (updates.origin !== undefined && updates.origin !== this.state.origin) {
-			;(stateUpdates as Record<string, unknown>).origin = updates.origin
+			stateUpdates.origin = updates.origin
 			changedFields.push('origin')
 		}
 
-		// ── Models (reactive) ──
-
-		if (
-			updates.model !== undefined ||
-			updates.blueprintModel !== undefined ||
-			updates.observer?.model !== undefined ||
-			updates.observer?.blueprintModel !== undefined ||
-			updates.understand?.model !== undefined ||
-			updates.understand?.blueprintModel !== undefined ||
-			updates.query?.model !== undefined
-		) {
-			const newModels = { ...this.state.models }
-			if (updates.model !== undefined) {
-				newModels.default = updates.model
-				changedFields.push('model')
-			}
-			if (updates.blueprintModel !== undefined) {
-				newModels.blueprint = updates.blueprintModel
-				changedFields.push('blueprintModel')
-			}
-			if (updates.observer?.model !== undefined) {
-				newModels.observer = updates.observer.model
-				changedFields.push('observer.model')
-			}
-			if (updates.observer?.blueprintModel !== undefined) {
-				newModels.observer_blueprint = updates.observer.blueprintModel
-				changedFields.push('observer.blueprintModel')
-				needsObserveRegen = true
-			}
-			if (updates.understand?.model !== undefined) {
-				newModels.understand = updates.understand.model
-				changedFields.push('understand.model')
-			}
-			if (updates.understand?.blueprintModel !== undefined) {
-				newModels.understand_blueprint = updates.understand.blueprintModel
-				changedFields.push('understand.blueprintModel')
-				needsUnderstandRegen = true
-			}
+		const newModels = { ...this.state.models }
+		const modelUpdates: Array<[string, keyof typeof newModels, unknown]> = [
+			['model', 'default', updates.model],
+			['blueprintModel', 'blueprint', updates.blueprintModel],
+			['observer.model', 'observer', updates.observer?.model],
+			[
+				'observer.blueprintModel',
+				'observer_blueprint',
+				updates.observer?.blueprintModel,
+			],
+			['understand.model', 'understand', updates.understand?.model],
+			[
+				'understand.blueprintModel',
+				'understand_blueprint',
+				updates.understand?.blueprintModel,
+			],
+			['query.model', 'query', updates.query?.model],
+		]
+		let modelsChanged = false
+		for (const [field, slot, value] of modelUpdates) {
+			if (value === undefined) continue
+			newModels[slot] = value as LanguageModel
+			changedFields.push(field)
+			modelsChanged = true
+		}
+		if (modelsChanged) {
+			stateUpdates.models = newModels
 			if (updates.query?.model !== undefined) {
-				newModels.query = updates.query.model
-				changedFields.push('query.model')
 				this.queryMethod.update({ model: updates.query.model })
 				this.directQueryMethod?.update({ model: updates.query.model })
 			}
-
-			;(stateUpdates as Record<string, unknown>).models = newModels
 		}
-
-		// ── Instructions (reactive) ──
-
-		if (
-			updates.instructions !== undefined &&
-			updates.instructions !== this.state.instructions
-		) {
-			;(stateUpdates as Record<string, unknown>).instructions =
-				updates.instructions
-			changedFields.push('instructions')
-			needsObserveRegen = true
-			needsUnderstandRegen = true
-			needsSchemaRegen = true
-		}
-
-		if (
-			updates.observeInstructions !== undefined &&
-			updates.observeInstructions !== this.state.observeInstructions
-		) {
-			;(stateUpdates as Record<string, unknown>).observeInstructions =
-				updates.observeInstructions
-			changedFields.push('observeInstructions')
-			needsObserveRegen = true
-			needsSchemaRegen = true
-		}
-
-		if (
-			updates.understandInstructions !== undefined &&
-			updates.understandInstructions !== this.state.understandInstructions
-		) {
-			;(stateUpdates as Record<string, unknown>).understandInstructions =
-				updates.understandInstructions
-			changedFields.push('understandInstructions')
-			needsUnderstandRegen = true
-			needsSchemaRegen = true
-		}
-
-		// ── Focus (reactive) ──
-
-		if (updates.focus !== undefined && updates.focus !== this.state.focus) {
-			;(stateUpdates as Record<string, unknown>).focus = updates.focus
-			changedFields.push('focus')
-			needsObserveRegen = true
-			needsSchemaRegen = true
-		}
-
-		// ── Thresholds ──
 
 		if (updates.understand?.thresholds) {
-			const newThresholds = {
+			stateUpdates.thresholds = {
 				...this.state.thresholds,
 				...updates.understand.thresholds,
 			}
-			;(stateUpdates as Record<string, unknown>).thresholds = newThresholds
 			changedFields.push('understand.thresholds')
 		}
-
-		// ── Health config (passive, nested) ──
 
 		if (updates.health) {
 			const newHealth = { ...this.state.health }
@@ -1283,251 +586,13 @@ export abstract class BaseNeuron<
 					)
 				}
 			}
-			;(stateUpdates as Record<string, unknown>).health = newHealth
+			stateUpdates.health = newHealth
 		}
 
-		if (
-			updates.skipUnderstand !== undefined &&
-			updates.skipUnderstand !== this.state.skipUnderstand
-		) {
-			;(stateUpdates as Record<string, unknown>).skipUnderstand =
-				updates.skipUnderstand
-			if (updates.skipUnderstand) {
-				;(stateUpdates as Record<string, unknown>).understand_prompt = null
-			}
-			changedFields.push('skipUnderstand')
-			if (!updates.skipUnderstand) needsUnderstandRegen = true
-		}
-
-		// ── Type-specific updates (subclass implements) ──
-
-		const typeSpecificUpdates = this.applyTypeSpecificUpdates(
-			updates,
-			changedFields,
-		)
-		Object.assign(stateUpdates, typeSpecificUpdates)
-
-		// ── Force regen if prompts don't exist yet (first init) ──
-		// Skip-observation neurons intentionally leave observe_prompt null.
-
-		if (!this.state.skipObservation && this.state.observe_prompt === null)
-			needsObserveRegen = true
-		if (!this.state.skipUnderstand && this.state.understand_prompt === null) {
-			needsUnderstandRegen = true
-		}
-		if (this.state.observation_schema === null) needsSchemaRegen = true
-
-		// ── Regenerate prompts ──
-
-		// Apply state updates collected so far (so regen uses fresh instructions/focus)
 		if (Object.keys(stateUpdates).length > 0) {
-			await this.setState(stateUpdates)
+			await this.setState(stateUpdates as Partial<TState>)
 		}
-
-		// Skip-observation neurons never run the observe phase; never regen its prompt.
-		if (this.state.skipObservation) needsObserveRegen = false
-		if (this.state.skipUnderstand) needsUnderstandRegen = false
-
-		if (needsObserveRegen || needsUnderstandRegen || needsSchemaRegen) {
-			const promises: Promise<void>[] = []
-			const regenUpdates: Partial<TState> = {} as Partial<TState>
-
-			if (needsObserveRegen) {
-				const result = initObserve(resolveObserveInstructions(this.state))
-				;(regenUpdates as Record<string, unknown>).observe_prompt =
-					result.systemPrompt
-			}
-
-			if (needsUnderstandRegen) {
-				promises.push(
-					this.regenUnderstandPrompt(
-						this.state.models.understand_blueprint,
-						resolveUnderstandInstructions(this.state),
-					),
-				)
-			}
-
-			await Promise.all(promises)
-
-			// Regenerate schemas if instructions changed
-			if (needsSchemaRegen) {
-				const schemas = await this.generateSchemas(
-					this.state.models.blueprint,
-					this.schemaInstructions(),
-				)
-				;(regenUpdates as Record<string, unknown>).observation_schema =
-					schemas.observationSchema
-				;(regenUpdates as Record<string, unknown>).understanding_schema =
-					schemas.understandingSchema
-			}
-
-			// Persist regenerated state
-			if (Object.keys(regenUpdates).length > 0) {
-				await this.setState(regenUpdates)
-			}
-
-			this.emit('neuron:prompts:regenerated', {
-				neuronId: this.id,
-				observePrompt: this.state.observe_prompt!,
-				understandPrompt: this.state.understand_prompt ?? '',
-			})
-		}
-
-		if (changedFields.length > 0) {
-			this.emit('neuron:config:updated', {
-				neuronId: this.id,
-				changedFields,
-				config: { ...this.state },
-			})
-		}
-
-		return { changedFields }
-	}
-
-	// ── Adjust ──────────────────────────────────────────────────────────────
-
-	/**
-	 * Adjust neuron behavior from a natural language directive.
-	 *
-	 * Unlike update() (which replaces instructions and regenerates from scratch),
-	 * adjust() shows the LLM the current state so it can evolve incrementally.
-	 * The directive is natural language: "also track X", "stop tracking Y", "be stricter", etc.
-	 *
-	 * Does NOT touch persisted data (observations, understandings, evolution records).
-	 */
-	async adjust(directive: string): Promise<AdjustResult> {
-		await this.ensureInit()
-
-		// 1. Classify what the directive touches
-		const { output: classification } = await generate({
-			llm: this.llm,
-			model: this.state.models.blueprint,
-			prompt: `You sense what a directive is asking to change about a learning node.
-
-Root question: Does this directive reshape how the node perceives and processes, what the node currently knows, or both?
-
-The node's purpose: "${this.state.instructions}"
-The directive: "${directive}"
-
-- adjustConfig → the directive changes perception, focus, criteria, or processing behavior
-- adjustUnderstanding → the directive changes, corrects, or removes something in the node's accumulated knowledge
-- Both can be true
-
-What does this directive touch?`,
-			output: Output.object({ schema: adjustClassificationSchema }),
-			repairSchema: adjustClassificationSchema,
-			...this.llmRepairOptions,
-		})
-
-		const changedFields: string[] = []
-		let adjustedConfig = false
-		let adjustedUnderstanding = false
-
-		// 2. Config adjustment (existing logic)
-		if (classification.adjustConfig) {
-			const { output } = await generate({
-				llm: this.llm,
-				model: this.state.models.blueprint,
-				prompt: `You update a neuron's raw developer instruction fields from a directive.
-
-Preserve existing text unless the directive clearly changes it. Do not summarize, invent identity text, or convert instructions into a role description.
-
-Current shared instructions:
-"${this.state.instructions}"
-
-Current observe-only instructions:
-${this.state.observeInstructions === null ? 'null' : `"${this.state.observeInstructions}"`}
-
-Current understand-only instructions:
-${this.state.understandInstructions === null ? 'null' : `"${this.state.understandInstructions}"`}
-
-Current observe focus:
-${this.state.focus === null ? 'null' : `"${this.state.focus}"`}
-
-Directive:
-"${directive}"
-
-Return the updated raw fields. Use null for a phase-specific field when it should inherit the shared instructions.`,
-				output: Output.object({ schema: adjustConfigSchema }),
-				repairSchema: adjustConfigSchema,
-				...this.llmRepairOptions,
-			})
-
-			await this.setState({
-				instructions: output.instructions,
-				observeInstructions: output.observeInstructions,
-				understandInstructions: output.understandInstructions,
-				focus: output.focus,
-			} as Partial<TState>)
-
-			if (!this.state.skipObservation) {
-				const observeResult = initObserve(
-					resolveObserveInstructions(this.state),
-				)
-				await this.setState({
-					observe_prompt: observeResult.systemPrompt,
-				} as Partial<TState>)
-			}
-
-			if (!this.state.skipUnderstand) {
-				await this.adjustUnderstandPrompt(
-					this.state.models.understand_blueprint,
-					directive,
-					resolveUnderstandInstructions(this.state),
-				)
-			}
-
-			const schemas = await this.generateSchemas(
-				this.state.models.blueprint,
-				this.schemaInstructions(),
-			)
-			await this.setState({
-				observation_schema: schemas.observationSchema,
-				understanding_schema: schemas.understandingSchema,
-			} as Partial<TState>)
-
-			changedFields.push(
-				'instructions',
-				'observeInstructions',
-				'understandInstructions',
-				'focus',
-				'observe_prompt',
-				'observation_schema',
-				'understanding_schema',
-			)
-			if (!this.state.skipUnderstand) changedFields.push('understand_prompt')
-			adjustedConfig = true
-
-			this.emit('neuron:prompts:regenerated', {
-				neuronId: this.id,
-				observePrompt: this.state.observe_prompt!,
-				understandPrompt: this.state.understand_prompt ?? '',
-			})
-
-			this.emit('neuron:config:updated', {
-				neuronId: this.id,
-				changedFields,
-				config: { ...this.state },
-			})
-		}
-
-		// 3. Understanding adjustment (new)
-		if (classification.adjustUnderstanding) {
-			const result = await this.adjustUnderstanding(
-				this.state.models.understand,
-				directive,
-			)
-			adjustedUnderstanding = true
-
-			this.emit('neuron:understanding:adjusted', {
-				neuronId: this.id,
-				directive,
-				evolution: result.evolution,
-				significance: result.significance,
-			})
-		}
-
-		return { changedFields, adjustedConfig, adjustedUnderstanding }
+		return changedFields
 	}
 
 	// ── Accessors ───────────────────────────────────────────────────────────
@@ -1573,6 +638,8 @@ Return the updated raw fields. Use null for a phase-specific field when it shoul
 	protected async handleLearnResult(
 		result: LearnOutput,
 		bufferState?: { count: number; avgImportance: number },
+		/** Set when the new understanding was already committed; holds the one it replaced. */
+		committedOver?: { previousUnderstanding: TUnderstanding },
 	): Promise<void> {
 		switch (result.status) {
 			case 'observed': {
@@ -1610,10 +677,12 @@ Return the updated raw fields. Use null for a phase-specific field when it shoul
 				this.trackIngestion()
 				this.state.metrics.ingestion.synthesisCount++
 				this.state.metrics.ingestion.observationsSinceLastSynthesis = 0
-				this.state.stagnation_signal_fired = false
 
-				const previousUnderstanding = await this.getUnderstanding()
-				await this.setUnderstanding(result.newUnderstanding as TUnderstanding)
+				const previousUnderstanding =
+					committedOver?.previousUnderstanding ??
+					(await this.getUnderstanding())
+				if (committedOver === undefined)
+					await this.setUnderstanding(result.newUnderstanding as TUnderstanding)
 
 				// Store evolution entry
 				await this.store.evolution.add({
@@ -1772,20 +841,6 @@ Return the updated raw fields. Use null for a phase-specific field when it shoul
 				})
 				this.state.metrics.query.confidenceScores = []
 			}
-		}
-
-		if (
-			!this.state.skipUnderstand &&
-			!this.state.stagnation_signal_fired &&
-			ingestion.observationsSinceLastSynthesis >
-				signalThresholds.maxObservationsWithoutSynthesis
-		) {
-			this.state.stagnation_signal_fired = true
-			this.emit('neuron:signal', {
-				neuronId: this.id,
-				description: `Stagnation: no synthesis in ${ingestion.observationsSinceLastSynthesis} observations`,
-				timestamp: new Date(),
-			})
 		}
 	}
 }

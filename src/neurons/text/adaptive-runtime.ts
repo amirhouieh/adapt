@@ -7,6 +7,7 @@ import {
 	registerAdaptiveTextProcedures,
 	runTextProcedure,
 	type TextLearningConfig,
+	TWO_STEP_NOTHING_RELEVANT_REASON,
 	validateTextLearningConfig,
 } from '../../learning/text-procedures'
 import {
@@ -55,6 +56,8 @@ export interface AdaptiveTextLearnOutput {
 	readonly enqueued: readonly TextEnqueueResult[]
 	readonly runs?: readonly TextRunResult[]
 	readonly state: AdaptiveTextLearningState
+	/** True when every procedure run in this call found nothing relevant. */
+	readonly nothingRelevant?: boolean
 }
 
 export interface AdaptiveTextFlushOutput {
@@ -174,6 +177,7 @@ export class AdaptiveTextRuntime {
 	readonly #coordinator: LearningCoordinator<TextLearningConfig>
 	readonly #registry = new LearningRegistry()
 	#visibleState: AdaptiveTextLearningState | undefined
+	#procedureResults: ProcedureProposal['result'][] | undefined
 	readonly #activeOperations = new Set<Promise<void>>()
 	#disposed = false
 
@@ -206,14 +210,15 @@ export class AdaptiveTextRuntime {
 				if (this.#disposed) return
 				await this.#refreshVisibleState()
 			},
-			runProcedure: async (snapshot) =>
-				decision(
-					await runTextProcedure(snapshot, {
-						registry: this.#registry,
-						...model(runtime, snapshot.pins.model),
-						clock: runtime.clock,
-					}),
-				),
+			runProcedure: async (snapshot) => {
+				const proposal = await runTextProcedure(snapshot, {
+					registry: this.#registry,
+					...model(runtime, snapshot.pins.model),
+					clock: runtime.clock,
+				})
+				this.#procedureResults?.push(proposal.result)
+				return decision(proposal)
+			},
 		})
 	}
 
@@ -239,6 +244,40 @@ export class AdaptiveTextRuntime {
 				enqueued,
 				...(runs.length > 0 ? { runs } : {}),
 				state,
+			}
+		})
+	}
+
+	/** Learn a batch now: enqueue, run every ready batch, and report whether nothing was relevant. */
+	async learnNow(
+		inputs: readonly TextInput[],
+	): Promise<AdaptiveTextLearnOutput> {
+		return this.#trackOperation(async () => {
+			const results: ProcedureProposal['result'][] = []
+			this.#procedureResults = results
+			try {
+				const learned = await this.#coordinator.learnBatch(inputs)
+				const flushed = await this.#coordinator.flush()
+				await this.#refreshVisibleState()
+				const state = this.#visibleState
+				if (state === undefined)
+					throw new Error('adaptive text runtime is not initialized')
+				return {
+					status: 'managed',
+					mode: 'adaptive-text',
+					enqueued: learned.enqueued,
+					runs: [...learned.runs, ...flushed],
+					state,
+					nothingRelevant:
+						results.length > 0 &&
+						results.every(
+							(result) =>
+								result.outcome === 'no_change' &&
+								result.reason === TWO_STEP_NOTHING_RELEVANT_REASON,
+						),
+				}
+			} finally {
+				this.#procedureResults = undefined
 			}
 		})
 	}

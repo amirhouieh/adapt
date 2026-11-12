@@ -179,16 +179,15 @@ describe('adaptive TextNeuron public integration', () => {
 		const neuron = await createNeuron(new MemoryNeuronStore(), runtime([complete('Prefers simple functions.')], requests), profile(), calls)
 		const input = { deliveryId: 'delivery-1', eventId: 'event-1', text: 'I prefer simple functions.', observedAt: at }
 		const learned = await neuron.learn([input])
-		expect(learned).toMatchObject({ status: 'managed', mode: 'adaptive-text', enqueued: [{ status: 'queued' }] })
-		expect((await neuron.getLearningState()).pendingDeliveryIds).toEqual(['delivery-1'])
-		expect((await neuron.flush()).runs[0]).toMatchObject({ status: 'settled', commit: { status: 'committed' } })
+		expect(learned).toMatchObject({ status: 'synthesized', newUnderstanding: 'Prefers simple functions.' })
+		expect((await neuron.getLearningState()).pendingDeliveryIds).toEqual([])
 		expect(await neuron.getUnderstanding()).toBe('Prefers simple functions.')
 		expect((await neuron.learn([input]))).toMatchObject({ enqueued: [{ status: 'deduplicated', coverage: 'processed' }] })
 		expect(requests).toHaveLength(2)
 		expect(requests[0]?.system).toContain('Keep uncertainty explicit.')
 		expect(calls.value).toBe(0)
 		await expect(neuron.setUnderstanding('bypass')).rejects.toThrow('learning coordinator')
-		await expect(neuron.update({ model: queryModel })).rejects.toThrow('adaptive text update supports')
+		await expect(neuron.update({ model: queryModel })).resolves.toEqual({ changedFields: ['model'] })
 		await neuron.dispose()
 	})
 
@@ -252,9 +251,8 @@ describe('adaptive TextNeuron public integration', () => {
 		])
 
 		expect(result).toMatchObject({
-			status: 'managed',
-			enqueued: [{ status: 'queued' }, { status: 'queued' }],
-			runs: [{ status: 'settled' }],
+			status: 'synthesized',
+			newUnderstanding: 'Both facts learned together.',
 		})
 		expect(requests).toHaveLength(2)
 		expect(requests[0]?.prompt).toContain('First fact.')
@@ -300,7 +298,7 @@ describe('adaptive TextNeuron public integration', () => {
 			complete('Eventually learned.'),
 		], requests, { clock }))
 		await neuron.learn(['first delivery'])
-		expect((await neuron.flush()).runs[0]).toMatchObject({ status: 'deferred' })
+		expect((await neuron.getLearningState()).pendingDeliveryIds).toHaveLength(1)
 		expect((await neuron.getLearningState()).pendingDeliveryIds).toHaveLength(1)
 		clock.value = later
 		expect((await neuron.resume()).runs[0]).toMatchObject({ status: 'settled' })
@@ -456,20 +454,5 @@ describe('adaptive TextNeuron public integration', () => {
 			'Committed before close.',
 		)
 		await reopened.dispose()
-	})
-
-	it('keeps legacy TextNeuron behavior isolated when adaptive mode is absent', async () => {
-		const calls = { value: 0 }
-		const llm: AdaptLLMPlugin = {
-			id: 'test', model: { toConfig: (input) => input as typeof queryModel },
-			async call() {
-				calls.value += 1
-				return { text: '{"skills":[],"dynamicsSkills":[]}', json: { skills: [], dynamicsSkills: [] }, finishReason: 'stop', toolCalls: [] }
-			},
-		}
-		const neuron = await TextNeuron.create({ model: queryModel, llm, store: new MemoryNeuronStore(), instructions: 'Legacy path.' })
-		expect(calls.value).toBe(1)
-		expect(neuron.getUnderstandIdentity()).toEqual({ skills: [], dynamicsSkills: [] })
-		await neuron.dispose()
 	})
 })

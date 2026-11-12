@@ -3,7 +3,6 @@
  */
 
 import type { UnderstandThresholds } from '../base/types'
-import type { Strategy } from './strategies'
 
 export const TEXT_NEURON_DEFAULTS = {
 	origin: 'developer' as const,
@@ -13,9 +12,5 @@ export const TEXT_NEURON_DEFAULTS = {
 			maxTokens: 8000,
 			minImportance: 0.5,
 		} satisfies Required<UnderstandThresholds>,
-	},
-	governance: {
-		strategy: 'cumulative' as Strategy,
-		maxTokens: 16000,
 	},
 } as const

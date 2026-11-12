@@ -44,8 +44,6 @@ async function main() {
 	assert(typeof textNeuron.dispose === 'function', 'textNeuron.dispose() exists')
 	assert(typeof textNeuron.isInitialized === 'function', 'textNeuron.isInitialized() exists')
 	assert(textNeuron.isInitialized() === true, 'isInitialized() returns true after create()')
-	assert(typeof textNeuron.getObserveSystemPrompt() === 'string', 'getObserveSystemPrompt() returns string after create()')
-	assert(typeof textNeuron.getUnderstandSystemPrompt() === 'string', 'getUnderstandSystemPrompt() returns string after create()')
 
 	// ── Learning ─────────────────────────────────────────────────────────
 	section('TextNeuron — Learning')
@@ -112,32 +110,11 @@ async function main() {
 	section('TextNeuron — Buffer')
 
 	assert(typeof textNeuron.getBufferState === 'function', 'getBufferState() exists')
-	assert(typeof textNeuron.getBufferedObservations === 'function', 'getBufferedObservations() exists')
 
 	const bufState = await textNeuron.getBufferState()
 	assert('count' in bufState, 'BufferState has count')
 	assert('avgImportance' in bufState, 'BufferState has avgImportance')
 	assert('totalTokens' in bufState, 'BufferState has totalTokens')
-
-	const buffered = await textNeuron.getBufferedObservations()
-	assert(Array.isArray(buffered), 'getBufferedObservations() returns array')
-
-	// ── Observations API ─────────────────────────────────────────────────
-	section('TextNeuron — Observations API')
-
-	assert(typeof textNeuron.getObservations === 'function', 'getObservations() exists')
-	assert(typeof textNeuron.setObservations === 'function', 'setObservations() exists')
-	assert(typeof textNeuron.updateObservation === 'function', 'updateObservation() exists')
-	assert(typeof textNeuron.removeObservation === 'function', 'removeObservation() exists')
-
-	const allObs = await textNeuron.getObservations()
-	assert(Array.isArray(allObs), 'getObservations() returns array')
-
-	const pendingObs = await textNeuron.getObservations({ status: 'pending' })
-	assert(Array.isArray(pendingObs), 'getObservations({status:pending}) returns array')
-
-	const processedObs = await textNeuron.getObservations({ status: 'processed' })
-	assert(Array.isArray(processedObs), 'getObservations({status:processed}) returns array')
 
 	// ── Introspection ────────────────────────────────────────────────────
 	section('TextNeuron — Introspection')
@@ -146,10 +123,6 @@ async function main() {
 	assert(typeof textNeuron.getMetrics === 'function', 'getMetrics() exists')
 	assert(typeof textNeuron.getMetadata === 'function', 'getMetadata() exists')
 	assert(typeof textNeuron.getEvolution === 'function', 'getEvolution() exists')
-	assert(typeof textNeuron.getObservationSchema === 'function', 'getObservationSchema() exists')
-	assert(typeof textNeuron.getUnderstandingSchema === 'function', 'getUnderstandingSchema() exists')
-	assert(typeof textNeuron.getObserveSystemPrompt === 'function', 'getObserveSystemPrompt() exists')
-	assert(typeof textNeuron.getUnderstandSystemPrompt === 'function', 'getUnderstandSystemPrompt() exists')
 	assert(typeof textNeuron.getUnderstandThresholds === 'function', 'getUnderstandThresholds() exists')
 
 	const health = textNeuron.getHealth()
