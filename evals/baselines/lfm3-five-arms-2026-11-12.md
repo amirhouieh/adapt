@@ -114,6 +114,72 @@ Two-step memory size stayed between about 6,000 and 9,000 characters without any
 2. Put d1.1 in front of step 1 as a cheap "anything relevant?" gate.
 3. Run two-step locally on LM Studio (thinking on) to confirm it holds on the downloaded Q8 model.
 
+## Follow-up: fixing two-step, and a d1.1 gate (same day)
+
+Two more arms, same suite and settings ([bare-text-arm.ts](../scripts/bare-text-arm.ts)):
+
+- **twostep2**: the update prompt adds three rules: replace outdated statements and note what changed; no advice or suggestions; an understanding, not a dated list of events. Extracted information whose update fails is carried into the next update instead of being dropped.
+- **twostep2d1**: twostep2, with each input first passing a `liquid/d1.1` relevance decision (kept when P ≥ 0.5).
+
+Mechanics: both arms ran all five tasks with 0 failed steps. Calls, time and cost were the same as twostep (about $0.07 per arm).
+
+### The extra rules made fidelity worse
+
+The advice sections and diary-style lists are gone. Some stale statements were replaced (iPhone → Samsung is now told as a change). But the smoother prose invented things the source never says:
+
+- Preference: "announced his departure from Stripe" around 15 December, and "participates in marathons; personal best marathon distance was 10 km".
+- Personal behavior: the person is called "Maria" (Maria is a friend; the person is Alex) and "shifting from product-manager".
+- Developer: "the code throws on failures", the opposite of the source's explicit-returns rule.
+
+This is one run each, so some of the difference may be run-to-run noise. The direction matches the earlier lesson, though: more rules in the prompt, more drift.
+
+### d1.1 as a hard gate loses useful content
+
+At P ≥ 0.5, d1.1 dropped:
+
+- in therapist-profile, 19 inputs, including her posts on RSD, time blindness, imposter syndrome and decision fatigue (P 0.05–0.42);
+- in developer-memory, 24 inputs, mostly bare commits, but also the "GitHub Actions — we're on GitHub" decision;
+- in personal-behavior, the dentist reschedule, which is an avoidance signal.
+
+It saved no model calls, because every batch still had at least one relevant input. The extract step already filters. **Keep d1.1 out of the learning path**; it fits decisions such as routing an input to the right neuron, or spotting text that tries to control the memory.
+
+### Run-to-run noise: the original two-step, four runs
+
+The original two-step ran three more times (`twostep-r2`, `-r3`, `-r4`), same prompts and settings. All 20 jobs finished; the only failed step across the four runs is the one cut-off update in run 1 of developer-memory.
+
+Stable in all four runs (the core is reliable):
+
+- Coffee: 200°F, 9 bars, 25–30 s, 1:2, 140–155°F, channeling; cold brew excluded.
+- Preference: Stripe, Nike, pescatarian because of B12, Samsung, the Google layoff.
+- Personal behavior: Alex, Dave, gym, dentist, late nights.
+- Developer: Biome, immutability, integration tests with real databases, monolith/YAGNI, naming rules, "ship it".
+- Therapist: CBT, ACT, ADHD, perfectionism, Asian-American focus, $300 sessions, burnout.
+
+Varies between runs (small errors, a different mix each run):
+
+| Item | Runs out of 4 |
+|---|---|
+| Coffee: pour-over and French press kept after the espresso-only switch | 1 |
+| Coffee: bean origins lost | 1 |
+| Preference: "pescatarian/vegan" mixed up | 2 |
+| Preference: stale "considering switching" next to the switch | 2 |
+| Personal: progress stale (lecture 6 missing) | 2 |
+| Personal: advice or "next steps" written in | 2 |
+| Developer: Prettier presented as current next to Biome | 2 |
+| Developer: pagination regret | 0 (always missed) |
+| Therapist: "167 hours" garbled | 2 |
+
+Not seen in any of the four original runs, but seen in the single twostep2 run: the wrong name ("Maria"), marathons, "throws on failures". Those three errors are most likely caused by twostep2's added rules.
+
+So each run has a few small, random errors on top of a stable core. Chasing them one at a time with prompt rules mostly chases noise.
+
+### Updated recommendation
+
+- Keep the original two-step prompts.
+- Judge any future change over several runs, never one.
+- Target the errors that repeat (staleness in 2 of 4 runs, missed regrets), not single slips. Prefer structural fixes over more prompt rules.
+- Next: move two-step into v2's real pipeline (store, restart, recovery), and confirm it on the local LFM3 model.
+
 ## Limits
 
 - One run per arm and task; differences in single sentences may not repeat.
