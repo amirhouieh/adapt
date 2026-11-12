@@ -11,12 +11,12 @@ Typical cost for common workflows:
 
 | Scenario | Neurons | Calls per `inject` | Calls per `ask` |
 |---|---|---|---|
-| Simple (3 neurons, no understand trigger) | 3 | 3 | 5 |
-| Medium (5 neurons, understand triggers on 1) | 5 | 6 | 7 |
-| Large (10 neurons, understand triggers on 3) | 10 | 13 | 12 |
+| Simple (3 neurons, 1 finds the data relevant) | 3 | 4 | 5 |
+| Medium (5 neurons, 2 find it relevant) | 5 | 7 | 7 |
+| Large (10 neurons, 3 find it relevant) | 10 | 13 | 12 |
 | Deep mode ask (5 neurons) | 5 | — | 2–12 |
 
-> **Cost tip:** The observe phase runs on every inject and scales linearly with neurons. This is where a fast/cheap model pays off the most. Understand and query run less frequently but need higher quality — use a smarter model there. See [Configuration — Model Cascade](./configuration#model-cascade) for the cost-optimized cascade setup.
+> **Cost tip:** Learning runs on every inject and scales linearly with neurons. This is where a fast/cheap model pays off the most. Learning is plain text, so small local models work. See [Configuration — Model Cascade](./configuration#model-cascade) for the cost-optimized cascade setup.
 
 ## Detailed Call Counts
 
@@ -27,8 +27,9 @@ N = number of neurons, B = number of batches.
 | Operation | LLM Calls | Model Slot | Notes |
 |---|---|---|---|
 | **`inject(data)`** | | | |
-| → Observe | `N × B` | `learning.observer` | 1 call per neuron per batch. Skipped if `skipObservation: true` |
-| → Understand | `0 – N` | `learning.understand` | Only triggers when buffer exceeds `maxObservations` or `maxTokens`. Always skipped if `skipUnderstand: true` |
+| → Extract | `N × B` | `learning.model` | 1 call per neuron per batch |
+| → Update | `0 – N × B` | `learning.model` | Only when extract found something relevant |
+| → Memory strategy | `0 – N × B` | `learning.model` | `cumulative` / `decay` only, when the memory crosses its limit |
 | **`ask(question)`** | | | |
 | → Neuron selection | `1` | `query` | Skipped if only 1 neuron has knowledge |
 | → Neuron queries | `N` | `learning.query` | Parallel. N = relevant neurons, not all |
@@ -43,10 +44,9 @@ N = number of neurons, B = number of batches.
 | **`Brain.create()`** | | | |
 | → Decomposition | `1` | `init` | Only with `autoSetup: true`. Determines neuron structure |
 | → Prompt parsing | `1` | `blueprintModel` | Extracts purpose and synthesis directives |
-| → Neuron init | `0 – N` | `blueprintModel` | Up to 1 call per neuron. TextNeuron: cognitive-skill customization — always, unless `skipUnderstand` (then `0`). ListNeuron: schema generation — `0` when a custom `observationSchema` is supplied. Observe and understand prompts are assembled deterministically — no LLM call. |
-| **`adjust(directive)`** | `1–3` | `blueprintModel` | 1 classify + (if config changes) 1 instruction-rewrite + 1 prompt/schema regen. Observe and understand prompts are re-assembled deterministically — TextNeuron spends the extra call on skill regen, ListNeuron on schema regen |
-| → + Understanding rewrite | `+1–15` | `learning.understand` | Only if directive changes what the neuron knows, not just how it behaves |
-| **`update(config)`** | `0–1` | `blueprintModel` | 0 if mechanical (model/threshold changes). 1 if instructions changed (schema/skill regen — the observe/understand prompts themselves regenerate without an LLM call) |
+| → Neuron init | `0` | — | No LLM call. Neuron config is saved as given |
+| **`adjust(directive)`** | `0` | — | Adds the directive as a rule for both stages. Memory is not edited |
+| **`update(config)`** | `0` | — | Replaces config fields. Memory is not edited |
 
 ### Evolution Operations
 
@@ -64,11 +64,10 @@ N = number of neurons, B = number of batches.
 
 Routing the right model to the right slot is the cheapest performance win. Some heuristics:
 
-- **`learning.observer`** — runs on every batch, every neuron. Use the cheapest model that can follow the observation schema. A relevance-classification call doesn't need a frontier model.
-- **`learning.understand`** — runs less often but is what determines knowledge quality. Use a smart model.
+- **`learning.model`** — extract and update run on every batch, every neuron. Plain text, no schema: a small model works. This is where most calls go.
 - **`learning.query`** — runs once per ask per neuron. Smart model recommended; the answer the user sees is shaped here.
 - **`query` (brain ask synthesis)** — final integration step. Smart model.
-- **`init` / `blueprintModel`** — one-time and rare (decomposition, per-neuron skill/schema generation). Smart model. Cost is amortized.
+- **`init` / `blueprintModel`** — one-time and rare (decomposition, neuron config generation). Smart model. Cost is amortized.
 - **`evolution`** — runs when signals accumulate. Smart model with tool-calling support is required.
 
 See [Configuration — Model Cascade](./configuration#model-cascade) for the full cascade and the `Cost-optimized setup` example.
@@ -77,8 +76,7 @@ See [Configuration — Model Cascade](./configuration#model-cascade) for the ful
 
 Per-call latency is dominated by the model and provider, not Adapt. A few observations:
 
-- Observe phase runs in parallel across neurons within a batch.
-- Synthesize runs once per neuron when its buffer crosses a threshold — not every batch.
+- Neurons learn in parallel within a batch. Each neuron makes 1–2 calls in a row (extract, then update).
 - Internal neurons run a second pass after user-facing neurons. They use queries that resolve asynchronously and often complete on the next inject.
 - Deep-mode ask is variable: 2–12 calls depending on the agent's path.
 

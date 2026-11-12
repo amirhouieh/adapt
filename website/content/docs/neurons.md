@@ -1,9 +1,9 @@
 ---
 title: Neurons
-description: TextNeuron and ListNeuron — learning, querying, governance, and schemas.
+description: TextNeuron — two-stage learning, querying, and memory strategies.
 ---
 
-API guide for `TextNeuron` and `ListNeuron`. For when to pick each, see [Concepts — Neuron Types](./concepts#neuron-types).
+API guide for `TextNeuron`, the neuron Adapt uses to learn. For the mental model, see [Concepts](./concepts).
 
 ## TextNeuron
 
@@ -28,7 +28,26 @@ const understanding = await neuron.getUnderstanding() // string
 const result = await neuron.query('What are the key design principles?')
 ```
 
-You can control how the neuron grows and when it synthesizes. **Governance** determines how understanding evolves over time (see [Governance Strategies](#governance-strategies) below). **Thresholds** control how many observations accumulate before synthesis triggers:
+### How a neuron learns
+
+A neuron keeps one memory: plain text. Each `learn()` call runs two stages, at most two model calls:
+
+1. **Extract** — the model reads the batch against the neuron's `instructions` and pulls out what is relevant. If nothing is, it replies `NONE` and the neuron dismisses the batch.
+2. **Update** — the model rewrites the memory with what was extracted. The result is the new memory.
+
+No schema, no buffer, no thresholds to wait for: `learn()` returns once the memory is updated.
+
+`learn()` takes `string` items or `TextInput` items (when you own ids and times):
+
+```typescript
+await neuron.learn([
+  { deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00Z' },
+])
+```
+
+### Memory strategies
+
+`governance` controls what happens when the memory grows. The strategy runs right after the update stage, before the memory is saved.
 
 ```typescript
 const neuron = await TextNeuron.create({
@@ -36,11 +55,23 @@ const neuron = await TextNeuron.create({
   instructions: 'Track product design principles and user research insights.',
   store: new MemoryNeuronStore(),
   governance: { strategy: 'decay', maxTokens: 8000 },
-  understand: { thresholds: { maxObservations: 5, minImportance: 0.3 } },
 })
+
+neuron.getGovernance() // { strategy: 'decay', maxTokens: 8000 }
+await neuron.update({ governance: { strategy: 'cumulative' } })
 ```
 
-To restore a previously persisted neuron from disk, use `TextNeuron.restore`:
+| Strategy | What happens | Good for |
+|---|---|---|
+| `continuous` (neuron default) | Nothing. The update stage keeps the memory as it is. | Low-volume topics where every detail matters |
+| `cumulative` (Brain default) | Over `maxTokens`, one model call summarizes the memory into a seed that starts the next cycle. | General learning — bounded size, periodic consolidation |
+| `decay` | At 80% of `maxTokens`, one model call compresses older parts and keeps recent detail (Current / Recent / Historical). | Topics where recent data matters most |
+
+Tokens are estimated as characters / 4. `maxTokens` defaults to 4000 for a standalone neuron and 8000 for Brain-created neurons. It is capped by the memory size of the learning setup (8192 tokens by default).
+
+### Restore
+
+To restore a persisted neuron, use `TextNeuron.restore`:
 
 ```typescript
 import { SQLiteNeuronStore } from '@unbody-io/adapt/sqlite'
@@ -63,205 +94,43 @@ const neuron = await TextNeuron.restore('./neuron.db', {
 
 The `model` argument rehydrates persisted model refs through the LLM plugin. See [Brain — Fresh vs Restored](./brain#fresh-vs-restored) for the full runtime semantics — it applies identically to neuron `restore`.
 
-`ListNeuron` exposes the same `create` / `restore` shape. Constructors are private — `create` and `restore` are the only public entry points, and both fully initialize the neuron (no separate `init()` call).
+Constructors are private — `create` and `restore` are the only public entry points, and both fully initialize the neuron (no separate `init()` call). Memory strategy settings are saved with the neuron and come back on restore.
 
-### Phase Instructions
-
-A neuron's `instructions` feed both the observe and understand phases verbatim. You can override either phase independently, and skip a phase entirely:
-
-```typescript
-const neuron = await TextNeuron.create({
-  model: openai('gpt-4o'),
-  instructions: 'Track product design principles and user research insights.',
-  store: new MemoryNeuronStore(),
-  observeInstructions: 'Keep any data about design decisions, user research, or accessibility.',
-  understandInstructions: 'Synthesize into a coherent set of design principles with evidence.',
-  focus: 'design systems and component libraries',
-})
-```
-
-| Field | Phase | Effect |
-|---|---|---|
-| `instructions` | both | Required. Shared verbatim instructions used by observe and understand. |
-| `observeInstructions` | observe | Optional. Overrides the verbatim instructions for the observe prompt. Falls back to `instructions` when omitted or `null`. |
-| `understandInstructions` | understand | Optional. Overrides the verbatim instructions for the understand prompt. Falls back to `instructions` when omitted or `null`. |
-| `focus` | observe | Optional. Appended to the observe instructions to narrow relevance filtering. |
-| `skipObservation` | — | When `true`, the observe phase is skipped — data goes straight into the understanding buffer unfiltered. |
-| `skipUnderstand` | — | When `true`, the observe phase runs and observations are retained, but understanding is **never** synthesized — not on threshold, not on `forceSynthesize`. The symmetric counterpart of `skipObservation`. |
-
-A `skipUnderstand` neuron is a pure observation collector: query it, inspect its buffer, and drive synthesis externally via `setUnderstanding()` if needed. No understand prompt is built for it.
-
-### Cognitive Skills
-
-A TextNeuron's synthesizer applies two built-in skill sets when integrating observations — automatic, not configurable. Instructions influence *what domain* the skills are applied to (see [Prompt Design](./prompt-design)).
-
-| Skill Set | Skills | What the neuron asks itself |
-|---|---|---|
-| **Compare** | `confirms`, `contradicts`, `extends`, `new` | "Does this observation reinforce, challenge, add to, or introduce something new relative to what I already know?" |
-| **Dynamics** | `recurs`, `intensifies`, `fades`, `shifts`, `avoids` | "Is this pattern repeating? Getting stronger? Declining? Changing direction? Being avoided?" |
-
-These skills produce grounded output ("cancelled gym 6 times in 3 weeks") rather than vague summaries ("sometimes skips gym").
-
-### Governance Strategies
-
-`governance.strategy` controls what happens when accumulated understanding gets large enough to risk losing the LLM's focus during queries.
-
-| Strategy | How it works | Good for |
-|---|---|---|
-| `continuous` | Understanding grows indefinitely with no compression | Low-volume domains where you want every detail preserved (e.g., design decisions) |
-| `cumulative` (default) | Grows until `maxTokens`, then the LLM compresses it to a ~500-token seed summary and starts a new cycle. The seed carries forward the most important patterns | General-purpose learning — bounded size with periodic consolidation |
-| `decay` | Organizes understanding into temporal sections (Current / Recent / Historical). As it grows, older content is progressively compressed while recent stays detailed | Domains where recency matters — the latest observations get the most detail |
-
-## ListNeuron
-
-Same required fields as TextNeuron — `model`, `instructions`, `store`:
-
-```typescript
-import { ListNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
-import { openai } from '@ai-sdk/openai'
-
-const neuron = await ListNeuron.create({
-  model: openai('gpt-4o'),
-  instructions: 'Track restaurants with cuisine type, location, price range, and rating.',
-  store: new MemoryNeuronStore(),
-})
-
-await neuron.learn([
-  'Had amazing ramen at Ichiran in Shibuya — rich tonkotsu broth, ¥1200',
-  'Tried the new Italian place on 5th — mediocre pasta, overpriced',
-])
-
-const items = await neuron.getUnderstanding() // ListItem[]
-```
-
-The LLM generates the data schema from your instructions. For "track restaurants with cuisine, location, price range, and rating," it produces fields like `name`, `cuisine`, `location`, `priceRange`, `rating`.
-
-During synthesis, the LLM works like an agent with tools: it reads the buffered observations and decides how to update the collection using `addItem`, `updateItem`, `removeItem`, and other collection management tools. For example, if an observation mentions a restaurant the neuron already tracks, the LLM calls `updateItem` to revise it rather than creating a duplicate.
-
-**Schema generation depends on your instructions.** The fields in the schema come directly from what you describe. If your instructions say "track whether it's been rejected by the PM," the schema will have a rejection field. If you don't mention it, it won't exist — and that data will be lost even if it appears in observations. See [Prompt Design](./prompt-design) for guidance.
-
-### Custom Schemas
-
-You can bypass LLM schema generation entirely by providing `observationSchema` and/or `understandingSchema` in the neuron config:
-
-```typescript
-const brain = await Brain.create({
-  prompt: 'Track therapy sessions.',
-  model: openai('gpt-4o'),
-  autoSetup: false,
-  neurons: [{
-    id: 'relationships',
-    type: 'list',
-    name: 'Relationships',
-    description: 'Key people, client descriptions, shifts in perception',
-    instructions: 'Track the key people in this client\'s life and how perception evolves.',
-    governance: { deduplication: 'strict', maxItems: 100, pruning: 'least-confident' },
-    observationSchema: {
-      type: 'object',
-      properties: {
-        person_name: { type: 'string' },
-        relationship_to_client: { type: 'string' },
-        description: { type: 'string' },
-      },
-      required: ['person_name', 'description'],
-    },
-    understandingSchema: {
-      type: 'object',
-      properties: {
-        person_name: { type: 'string' },
-        relationship_to_client: { type: 'string' },
-        emotional_charge: { type: 'string', enum: ['positive', 'negative', 'ambivalent', 'neutral'] },
-        role_in_client_patterns: { type: 'string' },
-        perception_shift_observed: { type: 'boolean' },
-      },
-      required: ['person_name', 'relationship_to_client'],
-    },
-  }],
-})
-```
-
-When provided, schemas are used as-is — no LLM call, fully deterministic. This works for both `TextNeuron` and `ListNeuron`, and for both standalone neurons and Brain-managed explicit neurons.
-
-### Item Structure
-
-```typescript
-{
-  id: string
-  data: Record<string, unknown>   // Fields matching the schema
-  metadata: {
-    confidence: number            // 0–1, mechanical: touchCount / maxTouchCount
-    touchCount: number            // How many times this item was referenced in observations
-    firstSeen: string             // ISO 8601
-    lastUpdated: string           // ISO 8601
-    signals: string[]             // Accumulated tags
-  }
-}
-```
-
-**Confidence tells you how much evidence backs an item.** It's calculated mechanically, not by the LLM: each time an observation references an item (via `updateItem`), its `touchCount` increments. After each synthesis, confidence is normalized across all items as `touchCount / maxTouchCount`. The most-referenced item always has confidence 1.0. Items mentioned only once will have low confidence — this helps you distinguish well-established items from one-off mentions.
-
-**Deduplication is automatic.** When the LLM calls `addItem` during synthesis, the system searches existing items for similar matches. If it finds any, it returns them to the LLM and suggests using `updateItem` instead — preventing the same entity from appearing multiple times.
-
-### List Governance
-
-| Option | Values | Default |
-|---|---|---|
-| `deduplication` | `'strict'` / `'none'` | `'strict'` |
-| `maxItems` | number | `200` |
-| `pruning` | `'oldest'` / `'least-confident'` / `'none'` | `'oldest'` |
-
-## Common Neuron API
-
-Both `TextNeuron` and `ListNeuron` share:
+## Neuron API
 
 ```typescript
 // Learning
 await neuron.learn(batch)                    // LearnOutput
-await neuron.learn(batch, { forceSynthesize: true }) // Force understand phase
 
 // Querying
 const result = await neuron.query('...')     // QueryResult
 const stream = await neuron.queryStream('...') // AdaptStreamResult
 
-// Understanding
-await neuron.getUnderstanding()              // string (text) or ListItem[] (list)
-await neuron.setUnderstanding(value)         // Set directly
+// Memory
+await neuron.getUnderstanding()              // string
+await neuron.setUnderstanding(text)          // Starting memory (empty neuron only)
 await neuron.getSummary()                    // Prose summary
-await neuron.hasKnowledge()                  // Has any understanding?
+await neuron.hasKnowledge()                  // Has any memory?
+
+// Memory strategy
+neuron.getGovernance()                       // { strategy, maxTokens }
 
 // Introspection
 neuron.getHealth()                           // { activation, status, signalThresholds }
 neuron.getMetrics()                          // { ingestion: { dismissalRate, ... }, query: { ... } }
 await neuron.getEvolution()                  // EvolutionRecord[]
-neuron.getObservationSchema()                // JSON Schema for observations
-neuron.getUnderstandingSchema()              // JSON Schema for understanding
 neuron.getMetadata()                         // NeuronMetadata
-
-// Buffer
-await neuron.getBufferState()               // { count, avgImportance, totalTokens }
-await neuron.getBufferedObservations()       // Array<{ text, importance }> — pending only, condensed
-
-// Observations (full history, full ObservationRecord shape)
-await neuron.getObservations()               // ObservationRecord[]
-await neuron.getObservations({ status: 'pending' })   // filter
-await neuron.getObservations({ status: 'processed' })
-await neuron.setObservations(records)        // bulk replace
-await neuron.updateObservation(id, patch)
-await neuron.removeObservation(id)
 
 // Config
 await neuron.adjust('natural language directive')
-await neuron.update({ instructions: '...' })
+await neuron.update({ instructions: '...', governance: { strategy: 'decay' } })
 
 // Identity
 neuron.id                                    // string
 neuron.name                                  // string
-neuron.instructions                          // string — shared verbatim instructions
-neuron.observeInstructions                   // string | null — observe-phase override
-neuron.understandInstructions                // string | null — understand-phase override
+neuron.instructions                          // string
 neuron.description                           // string
-neuron.type                                  // 'text' | 'list'
-neuron.focus                                 // string | null
+neuron.type                                  // 'text'
 neuron.origin                                // 'prompt' | 'developer' | 'emergent'
 ```
 
@@ -273,26 +142,17 @@ neuron.origin                                // 'prompt' | 'developer' | 'emerge
 const result = await neuron.learn(data)
 
 switch (result.status) {
-  case 'observed':
-    // Observations buffered, threshold not met yet
-    console.log(`Buffered ${result.output.length} observations`)
-    break
-
   case 'synthesized':
-    // Understanding updated
-    console.log(`Significance: ${result.significance}`) // routine | notable | critical
+    // Memory changed
     console.log(`What changed: ${result.evolution}`)
     break
 
   case 'observe:dismissed':
-    // Data not relevant to this neuron
-    console.log(`Gaps: ${result.gaps}`)
+    // Extract found nothing relevant (replied NONE)
     break
 
-  case 'observe:error':
   case 'synthesize:dismissed':
-  case 'synthesize:error':
-    // Error or LLM chose not to update
+    // Relevant, but the memory did not change
     break
 }
 ```

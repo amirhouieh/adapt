@@ -54,19 +54,17 @@ async function main() {
 		})
 
 		let proactiveInsightFired = false
-		brain.on('neuron:synthesized', async (payload) => {
-			if (payload.significance === 'critical' || payload.significance === 'notable') {
-				const insight = await brain.ask('What new patterns or tensions have emerged?')
-				if (insight.sources.some(s => s.confidence > 0.7)) {
-					proactiveInsightFired = true
-				}
+		brain.on('neuron:synthesized', async () => {
+			const insight = await brain.ask('What new patterns or tensions have emerged?')
+			if (insight.sources.some(s => s.confidence > 0.7)) {
+				proactiveInsightFired = true
 			}
 		})
 		assert(true, 'Proactive insights event handler registered')
 
 		await brain.inject([
-			{ type: 'data', content: 'Important pattern data 1' },
-			{ type: 'data', content: 'Important pattern data 2' },
+			'data: Important pattern data 1',
+			'data: Important pattern data 2',
 		])
 
 		// ── Quality Gating ───────────────────────────────────────────────
@@ -134,10 +132,10 @@ async function main() {
 
 		// Session brain: fixed structure, short-lived
 		const sessionNeuronDefs = [
-			{ id: 'obs', type: 'text' as const, name: 'Observations', description: 'Session observations', instructions: 'Extract observations from this session.' },
+			{ id: 'obs', type: 'text' as const, name: 'Session', description: 'What happened in the session', instructions: 'Extract what happened in this session.' },
 		]
 		const sessionBrain = await Brain.create({
-			prompt: 'Extract observations from this session.',
+			prompt: 'Extract what happened in this session.',
 			model,
 			autoSetup: false,
 			neurons: sessionNeuronDefs,
@@ -153,7 +151,7 @@ async function main() {
 		for (const neuron of sessionBrain.getNeurons()) {
 			const understanding = await neuron.getUnderstanding()
 			if (understanding) {
-				await longTermBrain.inject({ source: neuron.name, content: understanding })
+				await longTermBrain.inject(`${neuron.name}:\n${understanding}`)
 			}
 		}
 		assert(true, 'Session knowledge transferred to long-term brain')
@@ -178,7 +176,7 @@ async function main() {
 			syncBrain.on('brain:inject:completed', () => resolve())
 		})
 
-		await syncBrain.inject([{ data: 'sync test' }])
+		await syncBrain.inject(['sync test'])
 		await injectDone
 		assert(true, 'Event-driven sync: brain:inject:completed resolves')
 

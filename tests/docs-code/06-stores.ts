@@ -93,7 +93,7 @@ async function main() {
 			model,
 			store: new SQLiteBrainStore(brainDb),
 		})
-		await brain1.inject([{ note: 'Session 1 data — persistence test' }])
+		await brain1.inject(['note: Session 1 data — persistence test'])
 		assert(true, 'Session 1: brain initialized and data injected')
 		await brain1.dispose()
 

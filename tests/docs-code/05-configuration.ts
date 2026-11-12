@@ -46,23 +46,19 @@ async function main() {
 		ingest: { batchSize: 20 },
 
 		learning: {
-			observer: {
-				model,
-				blueprintModel: model,
+			model,
+			blueprintModel: model,
+			query: { model },
+			governance: {
+				strategy: 'cumulative',
+				maxTokens: 8000,
 			},
 			understand: {
-				model,
-				blueprintModel: model,
 				thresholds: {
 					maxObservations: 10,
 					maxTokens: 8000,
 					minImportance: 0.5,
 				},
-			},
-			query: { model },
-			governance: {
-				strategy: 'cumulative',
-				maxTokens: 16000,
 			},
 		},
 
@@ -106,9 +102,12 @@ async function main() {
 		blueprintModel: smart,
 		init: { model: smart },
 		query: { model: smart },
+	})
+
+	// Per-neuron settings go through update()
+	await costBrain.update({
 		learning: {
-			observer: { model: fast },
-			understand: { model: smart },
+			model: fast,
 			query: { model: smart },
 		},
 	})

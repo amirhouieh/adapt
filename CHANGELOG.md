@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `TextNeuron` learns in two stages, in plain text: extract what is relevant, then update the memory. The observe/understand engine, observation buffer, thresholds-driven synthesis, cognitive skills, custom schemas, `skipObservation` / `skipUnderstand` and `forceSynthesize` are gone.
+- **Breaking:** `ListNeuron` is removed. Brains with list neurons are refused by the v0.0.6 migration.
+- **Breaking:** `learn()` and `Brain.inject()` take `string | TextInput` items only.
+- `adjust()` adds the directive as a rule for both stages, with no LLM call. Memory is not edited.
+- Memory strategies (`continuous`, `cumulative`, `decay`) run after each update, before the memory is saved. `getGovernance()` and `update({ governance })` on `TextNeuron`.
+
 ## [0.0.6] - 2026-05-18
 
 ### Changed

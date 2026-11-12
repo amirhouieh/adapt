@@ -32,10 +32,6 @@ const brain = await Brain.create({
   // Per-neuron data is derived from this store automatically
   // (e.g. ./brain.db → sibling files for each neuron).
   store: new SQLiteBrainStore('./brain.db'),
-  learning: {
-    // Synthesize understanding after every 5 observations instead of the default 10
-    understand: { thresholds: { maxObservations: 5 } },
-  },
   // Evolution is on by default — shown here for clarity
   evolution: { enabled: true },
 })
@@ -119,10 +115,10 @@ For stubborn structured-output failures, Adapt also supports an opt-in `repairWi
 ## Injecting Data
 
 ```typescript
-// Array or single item — anything serializable
+// Array or single item — plain text
 await brain.inject([
-  { type: 'note', text: 'Users prefer dark mode' },
-  { type: 'commit', message: 'refactor: move to composition API' },
+  'note: Users prefer dark mode',
+  'commit: refactor: move to composition API',
 ])
 
 // With custom ID
@@ -131,30 +127,25 @@ await brain.inject(data, { id: 'session-42' })
 
 Items are batched by `ingest.batchSize` (default: 20). Routing is parallel — every neuron sees every item. Batches dismissed by *all* neurons get tracked as coverage gaps for [evolution](./evolution).
 
-### What observers see
+### What neurons see
 
-The observer receives your data as `JSON.stringify(data, null, 2)`. It sees the raw structure — keys, values, nesting. Structure your data so the observer can reason about it:
+Neurons learn from plain text. `inject()` takes `string` items, or `TextInput` items when you own ids and times (`{ deliveryId, text, observedAt }`). Write the text so the model can reason about it:
 
 ```typescript
-// Good — structured, self-describing, rich context
+// Good — self-describing, rich context
 await brain.inject([
-  {
-    type: 'bookmark',
-    url: 'https://example.com/local-first',
-    title: 'Local-First Software',
-    highlights: ['CRDTs enable...', 'Offline-first is...'],
-    tags: ['architecture', 'sync'],
-    savedAt: '2025-03-01T10:30:00Z',
-  },
+  `bookmark (saved 2025-03-01): "Local-First Software" — https://example.com/local-first
+highlights: CRDTs enable...; Offline-first is...
+tags: architecture, sync`,
 ])
 
-// Bad — opaque, no context for the observer to reason about
+// Bad — opaque, no context to reason about
 await brain.inject(['https://example.com/local-first'])
 ```
 
-The observer does **not** see the neuron's accumulated knowledge when filtering — it only uses the neuron's identity (derived from `instructions`) to decide relevance. This is intentional: it keeps observation fast and stateless, but it also means the observer can't filter based on "I already know this." That trade-off is handled downstream during synthesis, where the neuron integrates new observations with existing knowledge.
+Each neuron extracts what is relevant to its `instructions`, then updates its memory with it. The update step sees the existing memory, so repeated facts merge instead of piling up.
 
-**Timestamps matter.** If your use case involves temporal patterns, include timestamps in the data. The observer and synthesizer will see them and can reason about time if the neuron's instructions ask for it.
+**Timestamps matter.** If your use case involves temporal patterns, include timestamps in the text. The neuron can reason about time if its instructions ask for it.
 
 ## Querying
 
@@ -215,7 +206,7 @@ The four internal neurons (introduced in [Concepts — Evolution](./concepts#evo
 | Internal Neuron | Type | What it tracks | When to consult it |
 |---|---|---|---|
 | Global Understanding | text | Cross-domain patterns from all neuron knowledge | "What themes connect my different domains?" |
-| Global Query Understanding | list | Query topics, frequency, clusters | "What are users asking about most?" |
+| Global Query Understanding | text | Query topics, frequency, clusters | "What are users asking about most?" |
 | Injection Gaps | text | Data no neuron could process | "What data am I not capturing?" |
 | Query Gaps | text | Questions no neuron could answer well | "Where are my blind spots?" |
 
@@ -329,7 +320,7 @@ Status survives restarts via the brain store. Every transition emits a `brain:ne
 
 These are different operations:
 
-**`brain.adjustNeuron(id, directive)`** — Natural language steering. The LLM sees the neuron's current state and evolves it incrementally. Preserves all existing observations and understanding. Think "steering."
+**`brain.adjustNeuron(id, directive)`** — Natural language steering. The directive is added verbatim as a rule for the neuron's extract and update stages. No LLM call; the existing memory is kept. Think "steering."
 
 ```typescript
 await brain.adjustNeuron('topics', 'Be stricter about what counts as a distinct topic')
@@ -341,7 +332,7 @@ await brain.adjustNeuron('patterns', 'Also track testing patterns going forward'
 ```typescript
 // Mechanical: cascades immediately to all neurons
 await brain.update({
-  learning: { understand: { thresholds: { maxObservations: 20 } } },
+  learning: { governance: { strategy: 'decay' } },
 })
 
 // Semantic: triggers evolution evaluation
@@ -351,12 +342,12 @@ await brain.update({ prompt: 'Track design systems instead of coding patterns.' 
 **Standalone neuron equivalents:**
 
 ```typescript
-// adjust() — incremental, LLM sees current state
+// adjust() — adds a rule, no LLM call
 await neuron.adjust('Also track performance metrics')
 
-// update() — replace config, regenerate from scratch
+// update() — replace config fields
 await neuron.update({
   instructions: 'Track only React performance patterns.',
-  understand: { thresholds: { maxObservations: 5 } },
+  governance: { strategy: 'cumulative', maxTokens: 6000 },
 })
 ```

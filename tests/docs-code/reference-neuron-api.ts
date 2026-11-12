@@ -54,19 +54,25 @@ async function main() {
 	assert('status' in learnResult, 'LearnOutput has status')
 
 	// Verify all possible status values
-	const validStatuses = ['observed', 'synthesized', 'observe:dismissed', 'observe:error', 'synthesize:dismissed', 'synthesize:error']
+	const validStatuses = ['synthesized', 'observe:dismissed', 'synthesize:dismissed']
 	assert(validStatuses.includes(learnResult.status), `LearnOutput.status is valid: ${learnResult.status}`)
 
-	// learn() options: { forceSynthesize?: boolean }
-	const forceResult = await textNeuron.learn(['more data'], { forceSynthesize: true })
-	assert('status' in forceResult, 'learn({ forceSynthesize }) returns LearnOutput')
+	// learn() takes TextInput items too
+	const inputResult = await textNeuron.learn([
+		{ deliveryId: 'ref-1', text: 'more data', observedAt: new Date().toISOString() },
+	])
+	assert('status' in inputResult, 'learn(TextInput[]) returns LearnOutput')
+
+	// Memory strategy
+	const gov = textNeuron.getGovernance()
+	assert(gov.strategy === 'continuous' && gov.maxTokens === 4000, 'getGovernance() returns neuron defaults')
 
 	// Verify synthesized fields if we got a synthesized result
-	if (forceResult.status === 'synthesized') {
-		assert(typeof forceResult.newUnderstanding !== 'undefined', 'synthesized: has newUnderstanding')
-		assert(typeof forceResult.significance === 'string', 'synthesized: has significance')
-		assert(['routine', 'notable', 'critical'].includes(forceResult.significance), 'significance is valid enum')
-		assert(typeof forceResult.evolution === 'string', 'synthesized: has evolution')
+	if (inputResult.status === 'synthesized') {
+		assert(typeof inputResult.newUnderstanding !== 'undefined', 'synthesized: has newUnderstanding')
+		assert(typeof inputResult.significance === 'string', 'synthesized: has significance')
+		assert(['routine', 'notable', 'critical'].includes(inputResult.significance), 'significance is valid enum')
+		assert(typeof inputResult.evolution === 'string', 'synthesized: has evolution')
 	}
 
 	// ── Querying ─────────────────────────────────────────────────────────
@@ -105,16 +111,6 @@ async function main() {
 
 	const hasKnowledge = await textNeuron.hasKnowledge()
 	assert(typeof hasKnowledge === 'boolean', 'hasKnowledge() returns boolean')
-
-	// ── Buffer ───────────────────────────────────────────────────────────
-	section('TextNeuron — Buffer')
-
-	assert(typeof textNeuron.getBufferState === 'function', 'getBufferState() exists')
-
-	const bufState = await textNeuron.getBufferState()
-	assert('count' in bufState, 'BufferState has count')
-	assert('avgImportance' in bufState, 'BufferState has avgImportance')
-	assert('totalTokens' in bufState, 'BufferState has totalTokens')
 
 	// ── Introspection ────────────────────────────────────────────────────
 	section('TextNeuron — Introspection')

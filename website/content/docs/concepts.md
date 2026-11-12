@@ -1,6 +1,6 @@
 ---
 title: Concepts
-description: The mental model — architecture, pipeline, neuron types, evolution, and steering. Read this once; guide pages assume it.
+description: The mental model — architecture, learning, neurons, evolution, and steering. Read this once; guide pages assume it.
 ---
 
 This page is the canonical mental model for Adapt. The guide pages assume you've read it — they jump straight into API usage rather than re-explaining the concepts here.
@@ -30,10 +30,10 @@ Adapt has two building blocks: **Brain** (an orchestrator) and **Neurons** (spec
                 ▼               ▼               ▼
           ┌──────────┐    ┌──────────┐    ┌──────────┐
           │Neuron A  │    │Neuron B  │    │Neuron N  │
-          │  (Text)  │    │  (List)  │    │  (Text)  │
+          │  (Text)  │    │  (Text)  │    │  (Text)  │
           └────┬─────┘    └────┬─────┘    └────┬─────┘
                │               │               │
-               │  Observe → Buffer → Understand │
+               │        Extract → Update       │
                └───────────────┬───────────────┘
                                │
                     ┌──────────┼──────────┐
@@ -45,37 +45,30 @@ Adapt has two building blocks: **Brain** (an orchestrator) and **Neurons** (spec
                                    └───────────┘
 ```
 
-## Learning Pipeline
+## Learning
 
-When data flows into a neuron (via `learn()` on a standalone neuron, or `inject()` on a Brain), it goes through two phases:
+When data flows into a neuron (via `learn()` on a standalone neuron, or `inject()` on a Brain), it runs two stages. The memory is plain text.
 
-1. **Observe** — the neuron decides what's relevant. An LLM reads each item against the neuron's purpose and filters out what doesn't belong. Relevant items become observations, each scored by importance (0–1). Irrelevant items are dismissed but tracked, so the system can detect coverage gaps over time. Observations are buffered until there are enough to synthesize.
+1. **Extract** — the model reads the batch against the neuron's purpose and pulls out what is relevant. If nothing is relevant, the neuron dismisses the batch. Brain keeps dismissed data so it can spot coverage gaps.
 
-2. **Understand** — once enough observations have accumulated (controlled by configurable thresholds — observation count or token count), the neuron synthesizes them into knowledge. How this works depends on the neuron type. Each synthesis produces a significance rating (`routine`, `notable`, `critical`).
+2. **Update** — the model rewrites the neuron's memory with what was extracted.
 
-**Querying** is separate from learning: when you ask a question, the LLM reads the neuron's accumulated understanding and answers with relevance and confidence scores. It doesn't re-process raw data.
+A **memory strategy** (`continuous`, `cumulative`, `decay`) then decides whether the memory needs compressing before it is saved.
+
+**Querying** is separate from learning: when you ask a question, the LLM reads the neuron's memory and answers with relevance and confidence scores. It doesn't re-process raw data.
 
 ## Brain vs Standalone
 
 | | Use this when |
 |---|---|
 | **Brain** (`Brain.create`) | You want auto-decomposition into multiple specialists, parallel routing, multi-neuron synthesis, and evolution. |
-| **Standalone neuron** (`TextNeuron.create`, `ListNeuron.create`) | You only need one domain and want direct control. No orchestration, no evolution. |
+| **Standalone neuron** (`TextNeuron.create`) | You only need one domain and want direct control. No orchestration, no evolution. |
 
 Standalone neurons are first-class — they expose the same `learn` / `query` / `update` / `adjust` surface a Brain calls into. Most examples on this site use a Brain because that's the more common starting point.
 
-## Neuron Types
+## Neurons
 
-| | TextNeuron | ListNeuron |
-|---|---|---|
-| **Understanding format** | Narrative prose (string) | Structured collection (items with schema) |
-| **How synthesis works** | LLM integrates observations into one evolving text | LLM agent uses add/update/remove tools to manage items |
-| **Schema** | N/A | Auto-generated from instructions (or provided manually) |
-| **Confidence scoring** | LLM-judged per query ("how well can I answer this?") | Evidence-based — items referenced more often score higher |
-| **Pattern recognition** | Detects confirmation, contradiction, recurrence, intensification, avoidance, and other dynamics | N/A — item management only |
-| **Growth control** | Strategy (`continuous`, `cumulative`, `decay`) + token limit | Deduplication + max items + pruning policy |
-
-**Rule of thumb:** narrative answer → TextNeuron. Table or list of items → ListNeuron. When Brain auto-decomposes a prompt, the LLM chooses per domain and defaults to TextNeuron when in doubt.
+Every neuron is a `TextNeuron`: one plain-text memory, learned in two stages (extract, then update), kept in size by a memory strategy (`continuous`, `cumulative`, `decay` + a token limit). See [Neurons](./neurons).
 
 ## Evolution
 
@@ -93,7 +86,7 @@ Three distinct verbs cover the steering surface. They are not interchangeable:
 
 | Verb | What it feeds | When to use |
 |---|---|---|
-| `inject(data)` | Data — runs through observe → understand | Routine — you have new information |
+| `inject(data)` | Data — runs through extract → update | Routine — you have new information |
 | `signal({ source, description })` | Metadata — feeds the evolution evaluator | "We need a neuron for X" / "These two overlap" / "Restructure now" |
 | `adjustNeuron(id, directive)` / `neuron.adjust()` | Natural-language steering for one neuron | "Stop tracking desktop" / "Be stricter about distinct topics" |
 | `update(config)` | Mechanical config replacement (models, thresholds, prompt) | Threshold tuning, model swap, semantic prompt change |

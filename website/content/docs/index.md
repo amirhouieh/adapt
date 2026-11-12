@@ -37,8 +37,8 @@ const brain = await Brain.create({
 })
 
 await brain.inject([
-  { type: 'commit', message: 'refactor: extract validation into pure functions' },
-  { type: 'review', comment: 'Too heavy — factory functions work fine for our scale.' },
+  'commit: refactor: extract validation into pure functions',
+  'review: Too heavy — factory functions work fine for our scale.',
 ])
 
 const result = await brain.ask('What is my coding philosophy?')
@@ -88,7 +88,7 @@ const brain = await Brain.create({
     {
       id: 'recipes',
       name: 'Recipe Collection',
-      type: 'list',
+      type: 'text',
       description: 'Tracked recipes and ingredients',
       instructions: 'Track recipes with cuisine type, ingredients, and difficulty level.',
     },
@@ -153,5 +153,5 @@ The path-string sugar `Brain.restore('./brain.db', ...)` always uses the Node SQ
 
 - [Concepts](./concepts) — architecture and mental model
 - [Brain](./brain) — full Brain API guide
-- [Neurons](./neurons) — TextNeuron and ListNeuron in depth
+- [Neurons](./neurons) — TextNeuron in depth: two-stage learning and memory strategies
 - [Prompt Design](./prompt-design) — the most important input to a neuron

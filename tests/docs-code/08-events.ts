@@ -70,8 +70,8 @@ async function main() {
 	section('Trigger Events via inject')
 
 	await brain.inject([
-		{ type: 'test', data: 'Event trigger data 1' },
-		{ type: 'test', data: 'Event trigger data 2' },
+		'test: Event trigger data 1',
+		'test: Event trigger data 2',
 	])
 
 	assert(allEvents.length > 0, `Events fired during inject: ${allEvents.length} events`)
@@ -90,7 +90,7 @@ async function main() {
 		})
 	})
 
-	await brain.inject([{ type: 'forward-test' }])
+	await brain.inject(['forward-test'])
 	assert(forwarded.length > 0, 'Events forwarded to simulated UI')
 
 	// ── Neuron Mgmt — status:changed event ───────────────────────────────

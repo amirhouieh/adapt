@@ -67,35 +67,25 @@ async function main() {
 		instructions: 'Track product design principles and user research insights.',
 		store: new MemoryNeuronStore(),
 		governance: { strategy: 'decay', maxTokens: 8000 },
-		understand: { thresholds: { maxObservations: 5, minImportance: 0.3 } },
 	})
 	assert(govNeuron instanceof TextNeuron, 'TextNeuron with governance config created')
+	const gov = govNeuron.getGovernance()
+	assert(gov.strategy === 'decay' && gov.maxTokens === 8000, 'getGovernance() returns config')
+	await govNeuron.update({ governance: { strategy: 'cumulative' } })
+	assert(govNeuron.getGovernance().strategy === 'cumulative', 'update({ governance }) changes strategy')
 	await govNeuron.dispose()
 
-	// ── TextNeuron — Phase Instructions ───────────────────────────────────
-	section('TextNeuron — Phase Instructions')
-
-	const phaseNeuron = await TextNeuron.create({
+	// TextInput items (caller-owned ids and times)
+	const inputNeuron = await TextNeuron.create({
 		model,
-		instructions: 'Track product design principles and user research insights.',
+		instructions: 'Track product launch dates.',
 		store: new MemoryNeuronStore(),
-		observeInstructions: 'Keep any data about design decisions, user research, or accessibility.',
-		understandInstructions: 'Synthesize into a coherent set of design principles with evidence.',
-		focus: 'design systems and component libraries',
 	})
-	assert(phaseNeuron.observeInstructions !== null, 'observeInstructions accessor set')
-	assert(phaseNeuron.understandInstructions !== null, 'understandInstructions accessor set')
-	await phaseNeuron.dispose()
-
-	// skipUnderstand neuron — observes but never synthesizes
-	const skipUnderstandNeuron = await TextNeuron.create({
-		model,
-		instructions: 'Collect raw design feedback.',
-		store: new MemoryNeuronStore(),
-		skipUnderstand: true,
-	})
-	assert(skipUnderstandNeuron instanceof TextNeuron, 'skipUnderstand neuron created')
-	await skipUnderstandNeuron.dispose()
+	const inputResult = await inputNeuron.learn([
+		{ deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00Z' },
+	])
+	assert(inputResult.status !== undefined, 'learn() accepts TextInput')
+	await inputNeuron.dispose()
 
 	// ── TextNeuron — Restore ──────────────────────────────────────────────
 	section('TextNeuron — Restore')
@@ -144,9 +134,6 @@ async function main() {
 	const learnResult = await apiNeuron.learn(['some batch data'])
 	assert(learnResult.status !== undefined, 'learn() returns status')
 
-	const learnForce = await apiNeuron.learn(['force data'], { forceSynthesize: true })
-	assert(learnForce.status !== undefined, 'learn() with forceSynthesize works')
-
 	// Querying
 	const qResult = await apiNeuron.query('test query')
 	assert(typeof qResult.insight === 'string', 'query() returns insight')
@@ -182,12 +169,6 @@ async function main() {
 	const metadata = apiNeuron.getMetadata()
 	assert(typeof metadata === 'object', 'getMetadata() returns object')
 
-	// Buffer
-	const bufState = await apiNeuron.getBufferState()
-	assert('count' in bufState, 'getBufferState() has count')
-	assert('avgImportance' in bufState, 'getBufferState() has avgImportance')
-	assert('totalTokens' in bufState, 'getBufferState() has totalTokens')
-
 	// Config
 	await apiNeuron.adjust('natural language directive')
 	assert(true, 'adjust() succeeds')
@@ -199,11 +180,8 @@ async function main() {
 	assert(typeof apiNeuron.id === 'string', 'neuron.id is string')
 	assert(typeof apiNeuron.name === 'string', 'neuron.name is string')
 	assert(typeof apiNeuron.instructions === 'string', 'neuron.instructions is string')
-	assert(apiNeuron.observeInstructions === null || typeof apiNeuron.observeInstructions === 'string', 'neuron.observeInstructions is string or null')
-	assert(apiNeuron.understandInstructions === null || typeof apiNeuron.understandInstructions === 'string', 'neuron.understandInstructions is string or null')
 	assert(typeof apiNeuron.description === 'string', 'neuron.description is string')
 	assert(apiNeuron.type === 'text', 'neuron.type is text')
-	assert(apiNeuron.focus === null || typeof apiNeuron.focus === 'string', 'neuron.focus is string or null')
 	assert(apiNeuron.origin === 'prompt' || apiNeuron.origin === 'developer' || apiNeuron.origin === 'emergent', 'neuron.origin is valid')
 
 	// ── Learn Output — Discriminated Union ────────────────────────────────
@@ -218,24 +196,18 @@ async function main() {
 	const learnOut = await learnNeuron.learn(['test data item'])
 
 	switch (learnOut.status) {
-		case 'observed':
-			assert(Array.isArray(learnOut.output), 'observed: has output array')
-			console.log(`  Buffered ${learnOut.output.length} observations`)
-			break
 		case 'synthesized':
-			assert(typeof learnOut.significance === 'string', 'synthesized: has significance')
 			assert(typeof learnOut.evolution === 'string', 'synthesized: has evolution')
-			console.log(`  Significance: ${learnOut.significance}`)
+			console.log(`  What changed: ${learnOut.evolution}`)
 			break
 		case 'observe:dismissed':
 			assert(Array.isArray(learnOut.gaps), 'dismissed: has gaps')
-			console.log(`  Gaps: ${learnOut.gaps}`)
 			break
-		case 'observe:error':
 		case 'synthesize:dismissed':
-		case 'synthesize:error':
 			assert(true, `learn returned status: ${learnOut.status}`)
 			break
+		default:
+			assert(false, `unexpected learn status: ${learnOut.status}`)
 	}
 
 	await learnNeuron.dispose()
