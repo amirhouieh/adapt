@@ -352,6 +352,11 @@ export type AdaptGenerateRequest<
 	prompt?: string
 	messages?: AdaptMessage[]
 	output?: AdaptOutputSpec
+	/**
+	 * Schema the reply is checked (and repaired) against. Defaults to the
+	 * output schema. Pass a lenient version to accept replies that leave out
+	 * a field the model was asked for, while still sending the strict schema.
+	 */
 	repairSchema?: ZodSchema
 	tools?: Record<string, AdaptTool>
 	toolChoice?: ToolChoice<Record<string, never>>
@@ -1140,7 +1145,7 @@ async function validateOutput(
 	options: ValidateOutputOptions,
 ): Promise<unknown> {
 	if (!output || output.type === 'text') return undefined
-	const schema = output.schema ?? repairSchema
+	const schema = repairSchema ?? output.schema
 	const text = turn.text ?? stringifyJsonCandidate(turn.json)
 
 	try {

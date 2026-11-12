@@ -15,3 +15,10 @@ All `tests/docs-code/*` files on `google/gemini-2.5-flash` (OpenRouter). The old
 - `brain.ask()` crashed the first run: one neuron's query reply had no `gaps` field, the parse error was thrown, and `Promise.all` failed the whole ask. Fixed: a failed neuron query is now skipped (the neuron still emits `neuron:query:failed`). Second run answered correctly ("Biome", "mostly vegetarian").
 - But in the second run the only queried neuron failed the same way (no `gaps`), so the answer came from the global-understanding neuron alone. **On LFM3 the neuron query reply leaves out `gaps` in both runs.** Making `gaps` optional is not a one-line fix: validation uses the same schema that is sent to the model, and OpenAI strict mode rejects optional fields.
 - Neuron selection for the question "Which formatter does my team use now, and what do I eat?" picked only `food-habits`, not `coding-preferences`.
+
+## After the fix: missing `gaps`
+
+`generate()` now checks a reply against `repairSchema` when given (all callers passed the same schema as `output.schema`, so nothing else changes). The neuron query passes a copy where a missing `gaps` counts as `[]`; the model is still sent the strict schema with `gaps` required. Unit test: [neuron-query-gaps.test.ts](../../tests/neuron-query-gaps.test.ts).
+
+- Probe, one neuron on LFM3, 3 questions: `gaps` present 3/3. So leaving it out is intermittent.
+- Third auto-setup run ([run](../.data/brain-auto-setup-smoke/2026-11-12T22-21-14.957Z)): both neurons were selected and answered (`gaps` present in both), and the answer was correct ("Biome", oats). The lenient check was not needed in this run.
