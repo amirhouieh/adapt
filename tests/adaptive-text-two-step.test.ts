@@ -38,14 +38,6 @@ function config(overrides: Partial<TextLearningConfig> = {}): TextLearningConfig
 		model: modelRef,
 		activeProcedure: twoStepRecipeRef,
 		allowedProcedures: [twoStepRecipeRef],
-		selection: {
-			mode: 'fixed',
-			selector: { id: 'selector', version: '1' },
-			minCommittedRuns: 0,
-			minElapsedMs: 0,
-			maxCatalogueEntries: 4,
-			autoActivatePreEvaluated: false,
-		},
 		batching: {
 			maxItems: 8,
 			maxInputCharacters: 8_000,
@@ -53,18 +45,14 @@ function config(overrides: Partial<TextLearningConfig> = {}): TextLearningConfig
 			maxDelayMs: 1_000,
 			acceptCallerUrgency: true,
 		},
-		input: { maxItemCharacters: 2_000, maxRoutingSpanCharacters: 2_000 },
+		input: { maxItemCharacters: 2_000 },
 		memory: {
 			maxCharacters: 40_000,
-			maxNarrativeTokens: 8_000,
-			splitPressureCharacters: 30_000,
 			allowExplicitClear: false,
-			standaloneCapacity: 'reject',
 		},
 		generation: {
 			loadedContextTokens: 64_000,
 			reservedOutputTokens: 8_000,
-			maxNoteCharacters: 500,
 			maxProviderCalls: 2,
 			maxTokenClaims: 200_000,
 			maxBudgetClaims: 8,
@@ -111,7 +99,6 @@ const tokens = {
 		conservativeUpperBound: true,
 	}),
 	countText: (text: string) => ({ tokens: text.length, conservativeUpperBound: true }),
-	countTextBound: (characters: number) => ({ tokens: characters, conservativeUpperBound: true }),
 }
 
 function ports(outputs: ProseOutcome[], seen: ProseRequest[]): ProcedurePorts {
@@ -137,16 +124,15 @@ afterEach(() => {
 })
 
 describe('two-step procedure', () => {
-	it('registers and validates as a whole-rewrite procedure with no extra settings', () => {
+	it('is the only registered text procedure and validates with no extra settings', () => {
 		const registry = new LearningRegistry()
 		registerAdaptiveTextProcedures(registry)
 		expect(registry.getRecipe(twoStepRecipeRef)).toBeDefined()
+		expect(registry.getRecipe({ id: 'adapt.text-procedure.line-revision', version: '2' })).toBeUndefined()
 		expect(() => validateTextLearningConfig(config())).not.toThrow()
 		expect(() =>
-			validateTextLearningConfig(
-				config({ memory: { ...config().memory, maxNarrativeTokens: 9_000 } }),
-			),
-		).toThrow(/maxNarrativeTokens/)
+			validateTextLearningConfig(config({ activeProcedure: { id: 'adapt.text-procedure.direct-revision', version: '2' } })),
+		).toThrow(/allowed catalogue/)
 	})
 
 	it('extracts from the batch, then updates the understanding, with the eval prompts', async () => {
@@ -162,7 +148,6 @@ describe('two-step procedure', () => {
 		expect(seen[0]).toMatchObject({
 			system: `Here is some data. Our job is to extract whatever valuable and relevant pieces of information it has related to this topic:\n${purpose}\n\nReply with the extracted information only, in plain text. If nothing in the data is relevant, reply with exactly: NONE`,
 			prompt: 'Data:\nPrefers Slack for urgent things.\n\nThe weather was nice.',
-			response: { kind: 'prose', controls: [] },
 		})
 		expect(seen[1]).toMatchObject({
 			system: `Here is information extracted about this topic:\n${purpose}\n\nand here is our existing understanding of it. Update the understanding accordingly.\nReply with the updated understanding only, in plain text.`,
@@ -307,7 +292,7 @@ describe('two-step in the adaptive TextNeuron pipeline', () => {
 			scheduler: { schedule: () => undefined, cancel: () => undefined },
 			policy: {
 				headStateId: 'adaptive:text:head', narrativeMemoryId: 'current',
-				stateKind: 'adaptive-text', selectionStateId: 'adaptive:text:selection',
+				stateKind: 'adaptive-text',
 				maxRetainedProfiles: 20, maxFlushRuns: 20,
 			},
 			countInputTokens: (inputs) => inputs.reduce((total, input) => total + input.text.length, 0),

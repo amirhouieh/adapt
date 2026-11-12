@@ -13,29 +13,12 @@ import type {
 	ProcedureProposal,
 	TextLearningConfig,
 } from './contracts'
+import { modelOperationInputValueSchema } from './schemas'
 import {
-	registerTextProcedureOperations,
+	registerTwoStepOperation,
 	TEXT_PROCEDURE_RUNTIME_CAPABILITY,
-} from './operations'
-import {
-	fieldRevisionRecipe,
-	isFieldRevisionProcedure,
-	registerFieldRevisionOperation,
-	validateFieldRevisionConfig,
-} from './field-revision'
-import {
-	isLineRevisionProcedure,
-	lineRevisionRecipes,
-	lineRevisionVersionOf,
-	registerLineRevisionOperation,
-	validateLineRevisionConfig,
-} from './line-revision'
-import { registerTextProcedureRecipes } from './recipes'
-import { registerTwoStepOperation, twoStepRecipe } from './two-step'
-import {
-	modelOperationInputValueSchema,
-	optionalProseOutcomeValueSchema,
-} from './schemas'
+	twoStepRecipe,
+} from './two-step'
 
 function sameRef(
 	left: { id: string; version: string },
@@ -59,27 +42,12 @@ export function validateTextLearningConfig(config: TextLearningConfig): void {
 		throw new Error('lens purpose must not be empty')
 	if (config.lens.incomingTextRole !== 'data-only')
 		throw new Error('incoming text role must be data-only')
-	positive(
-		config.selection.maxCatalogueEntries,
-		'selection.maxCatalogueEntries',
-	)
-	nonnegative(config.selection.minCommittedRuns, 'selection.minCommittedRuns')
-	nonnegative(config.selection.minElapsedMs, 'selection.minElapsedMs')
 	positive(config.batching.maxItems, 'batching.maxItems')
 	positive(config.batching.maxInputCharacters, 'batching.maxInputCharacters')
 	positive(config.batching.maxInputTokens, 'batching.maxInputTokens')
 	nonnegative(config.batching.maxDelayMs, 'batching.maxDelayMs')
 	positive(config.input.maxItemCharacters, 'input.maxItemCharacters')
-	positive(
-		config.input.maxRoutingSpanCharacters,
-		'input.maxRoutingSpanCharacters',
-	)
 	positive(config.memory.maxCharacters, 'memory.maxCharacters')
-	positive(config.memory.maxNarrativeTokens, 'memory.maxNarrativeTokens')
-	positive(
-		config.memory.splitPressureCharacters,
-		'memory.splitPressureCharacters',
-	)
 	positive(
 		config.generation.loadedContextTokens,
 		'generation.loadedContextTokens',
@@ -88,45 +56,9 @@ export function validateTextLearningConfig(config: TextLearningConfig): void {
 		config.generation.reservedOutputTokens,
 		'generation.reservedOutputTokens',
 	)
-	positive(config.generation.maxNoteCharacters, 'generation.maxNoteCharacters')
 	positive(config.generation.maxProviderCalls, 'generation.maxProviderCalls')
 	positive(config.generation.maxTokenClaims, 'generation.maxTokenClaims')
 	positive(config.generation.maxBudgetClaims, 'generation.maxBudgetClaims')
-	const lineRevisionAllowed = config.allowedProcedures.some(isLineRevisionProcedure)
-	const wholeRewriteAllowed = config.allowedProcedures.some(
-		(ref) => !isLineRevisionProcedure(ref) && !isFieldRevisionProcedure(ref),
-	)
-	if (config.allowedProcedures.some(isFieldRevisionProcedure)) {
-		if (config.fieldRevision === undefined)
-			throw new Error('field revision procedure requires fieldRevision settings')
-		validateFieldRevisionConfig(config.fieldRevision)
-	}
-	if (lineRevisionAllowed) {
-		if (config.lineRevision === undefined)
-			throw new Error('line revision procedure requires lineRevision settings')
-		validateLineRevisionConfig(config.lineRevision)
-		if (
-			config.allowedProcedures.some(
-				(ref) => isLineRevisionProcedure(ref) && lineRevisionVersionOf(ref) === '2',
-			) &&
-			config.lineRevision.strategy === undefined
-		)
-			throw new Error('line revision version 2 requires lineRevision.strategy')
-		if (config.lineRevision.compactAtCharacters > config.memory.maxCharacters)
-			throw new Error(
-				'lineRevision.compactAtCharacters must not exceed memory.maxCharacters',
-			)
-	}
-	// A whole-rewrite writer must emit the complete narrative in one response.
-	// Line revision never does, so the bound applies only to whole rewrites.
-	if (
-		wholeRewriteAllowed &&
-		config.memory.maxNarrativeTokens > config.generation.reservedOutputTokens
-	) {
-		throw new Error(
-			'memory.maxNarrativeTokens must not exceed the reserved output tokens',
-		)
-	}
 	if (
 		config.generation.reservedOutputTokens >=
 		config.generation.loadedContextTokens
@@ -232,13 +164,7 @@ function immediate(
 export function registerAdaptiveTextProcedures(
 	registry: ProcedurePorts['registry'],
 ): void {
-	registerTextProcedureOperations(registry)
-	registerLineRevisionOperation(registry)
-	registerFieldRevisionOperation(registry)
 	registerTwoStepOperation(registry)
-	registerTextProcedureRecipes(registry)
-	for (const recipe of lineRevisionRecipes()) registry.registerRecipe(recipe)
-	registry.registerRecipe(fieldRevisionRecipe())
 	registry.registerRecipe(twoStepRecipe())
 }
 
@@ -288,30 +214,15 @@ export async function runTextProcedure(
 		lens: run.configuration.lens,
 		memory: run.memory,
 		inputs: run.inputs,
-		notes: [],
 		limits: {
 			loadedContextTokens: run.configuration.generation.loadedContextTokens,
 			reservedOutputTokens: run.configuration.generation.reservedOutputTokens,
-			maxNarrativeTokens: run.configuration.memory.maxNarrativeTokens,
-			maxMemoryCharacters: run.configuration.memory.maxCharacters,
-			maxNoteCharacters: run.configuration.generation.maxNoteCharacters,
-			allowExplicitClear: run.configuration.memory.allowExplicitClear,
-			...(run.configuration.lineRevision === undefined
-				? {}
-				: { lineRevision: run.configuration.lineRevision }),
-			...(run.configuration.fieldRevision === undefined
-				? {}
-				: { fieldRevision: run.configuration.fieldRevision }),
 		},
 	}
 	const plan = planRecipe(ports.registry, {
 		recipe: run.pins.procedure,
 		roots: {
 			input: { schema: modelOperationInputValueSchema, value: input },
-			absentOutcome: {
-				schema: optionalProseOutcomeValueSchema,
-				value: undefined,
-			},
 		},
 		memoryType: 'text',
 		availableCapabilities: new Set([TEXT_PROCEDURE_RUNTIME_CAPABILITY]),

@@ -471,12 +471,16 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 	override async adjust(directive: string): Promise<AdjustResult> {
 		if (this.#adaptive !== undefined) {
 			const text = directive.trim()
-			if (text.length === 0) throw new Error('adjust directive must not be empty')
+			if (text.length === 0)
+				throw new Error('adjust directive must not be empty')
 			await this.#activateAdaptive((configuration) => ({
 				...configuration,
 				lens: {
 					...configuration.lens,
-					developerInstructions: [...configuration.lens.developerInstructions, text],
+					developerInstructions: [
+						...configuration.lens.developerInstructions,
+						text,
+					],
 				},
 			}))
 			return {
@@ -493,26 +497,28 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 	 * adaptive convention: `instructions` is the lens purpose, and the phase
 	 * fields (`observeInstructions`, `understandInstructions`, `focus`) are
 	 * carried as labelled developer instructions. Directives added by `adjust`
-	 * are kept. `governance.strategy` sets the line revision strategy. The new
+	 * are kept. The new
 	 * profile is activated first; the neuron's identity fields are then
 	 * written so restore sees a consistent pair.
 	 */
 	async #updateAdaptive(
 		updates: Partial<TextNeuronConfig>,
 	): Promise<{ changedFields: string[] }> {
-		const identityKeys = ['instructions', 'observeInstructions', 'understandInstructions', 'focus'] as const
-		const supported = new Set<string>([...identityKeys, 'governance'])
+		const identityKeys = [
+			'instructions',
+			'observeInstructions',
+			'understandInstructions',
+			'focus',
+		] as const
+		const supported = new Set<string>(identityKeys)
 		const unsupported = Object.keys(updates).filter(
-			(key) => !supported.has(key) && updates[key as keyof TextNeuronConfig] !== undefined,
+			(key) =>
+				!supported.has(key) &&
+				updates[key as keyof TextNeuronConfig] !== undefined,
 		)
 		if (unsupported.length > 0) {
 			throw new Error(
-				`adaptive text update supports instructions, observeInstructions, understandInstructions, focus, and governance.strategy; not ${unsupported.join(', ')}`,
-			)
-		}
-		if (updates.governance?.maxTokens !== undefined) {
-			throw new Error(
-				'adaptive text memory size is set by lineRevision and memory settings, not governance.maxTokens',
+				`adaptive text update supports instructions, observeInstructions, understandInstructions, and focus; not ${unsupported.join(', ')}`,
 			)
 		}
 		const before = {
@@ -535,13 +541,11 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 			}
 			changedFields.push(key)
 		}
-		const strategy = updates.governance?.strategy
-		if (strategy !== undefined) changedFields.push('governance.strategy')
 		if (changedFields.length === 0) return { changedFields }
 		const oldProtected = new Set(protectedDeveloperInstructions(before))
 		const newProtected = protectedDeveloperInstructions(after)
-		await this.#activateAdaptive((configuration) => {
-			let next: TextLearningConfig = {
+		await this.#activateAdaptive(
+			(configuration): TextLearningConfig => ({
 				...configuration,
 				lens: {
 					...configuration.lens,
@@ -553,17 +557,13 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 						),
 					],
 				},
-			}
-			if (strategy !== undefined) {
-				if (next.lineRevision === undefined)
-					throw new Error('governance.strategy requires a line revision profile')
-				next = { ...next, lineRevision: { ...next.lineRevision, strategy } }
-			}
-			return next
-		})
+			}),
+		)
 		const identityUpdates: Record<string, unknown> = {}
-		for (const key of identityKeys) if (after[key] !== before[key]) identityUpdates[key] = after[key]
-		if (Object.keys(identityUpdates).length > 0) await this.setState(identityUpdates as never)
+		for (const key of identityKeys)
+			if (after[key] !== before[key]) identityUpdates[key] = after[key]
+		if (Object.keys(identityUpdates).length > 0)
+			await this.setState(identityUpdates as never)
 		return { changedFields }
 	}
 
@@ -571,10 +571,13 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		change: (configuration: TextLearningConfig) => TextLearningConfig,
 	): Promise<void> {
 		const adaptive = this.#adaptive
-		if (adaptive === undefined) throw new Error('adaptive text mode is not active')
+		if (adaptive === undefined)
+			throw new Error('adaptive text mode is not active')
 		const result = await adaptive.updateConfiguration(change)
 		if (result.status !== 'activated') {
-			throw new Error(`adaptive text profile change was not activated: ${result.status}`)
+			throw new Error(
+				`adaptive text profile change was not activated: ${result.status}`,
+			)
 		}
 	}
 
@@ -596,7 +599,6 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		const result: AdaptiveTextLearnOutput = {
 			...learned,
 			runs: flushed.runs,
-			...(flushed.activation ? { activation: flushed.activation } : {}),
 			state: flushed.state,
 		}
 		return result

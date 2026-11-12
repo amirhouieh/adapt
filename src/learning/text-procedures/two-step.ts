@@ -15,7 +15,6 @@ import type {
 	TextInput,
 	TextLearningLens,
 } from './contracts'
-import { TEXT_PROCEDURE_RUNTIME_CAPABILITY } from './operations'
 import { modelOperationInputValueSchema } from './schemas'
 
 /**
@@ -26,6 +25,9 @@ import { modelOperationInputValueSchema } from './schemas'
  * small on its own. Prompts are the eval arm `twostep` in
  * evals/scripts/bare-text-arm.ts, unchanged.
  */
+
+/** Capability under which a run's provider and token counter reach the operation. */
+export const TEXT_PROCEDURE_RUNTIME_CAPABILITY = 'adapt.text-procedure.runtime'
 
 export const twoStepOperationRef = Object.freeze({
 	id: 'adapt.text-procedure.narrative.two-step',
@@ -73,7 +75,6 @@ function request(
 	return {
 		system,
 		prompt,
-		response: { kind: 'prose', controls: [] },
 		loadedContextTokens: input.limits.loadedContextTokens,
 		reservedOutputTokens: input.limits.reservedOutputTokens,
 	}
@@ -154,30 +155,21 @@ async function generate(
  */
 function failed(
 	step: 'extract' | 'update',
-	outcome: ProseOutcome,
+	outcome: Extract<ProseOutcome, { status: 'failure' }>,
 	input: ModelOperationInput,
 ): LearningResult {
-	const pendingInputIds = input.inputs.map(({ deliveryId }) => deliveryId)
-	if (outcome.status === 'failure' && outcome.code === 'finish_length') {
+	if (outcome.code === 'finish_length') {
 		return {
 			outcome: 'defer',
 			reason: `two_step_${step}_cut_off`,
-			pendingInputIds,
-		}
-	}
-	if (outcome.status === 'failure') {
-		return {
-			outcome: 'failure',
-			code: outcome.code,
-			reason: `two-step ${step}: ${outcome.code}`,
-			retryable: outcome.retryable,
+			pendingInputIds: input.inputs.map(({ deliveryId }) => deliveryId),
 		}
 	}
 	return {
 		outcome: 'failure',
-		code: `two_step_${step}_${outcome.status}`,
-		reason: `two-step ${step} returned ${outcome.status} instead of text`,
-		retryable: false,
+		code: outcome.code,
+		reason: `two-step ${step}: ${outcome.code}`,
+		retryable: outcome.retryable,
 	}
 }
 

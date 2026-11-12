@@ -8,7 +8,7 @@ import ts from 'typescript'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { TextNeuron, createAiSdkLLM, type AdaptLLMPlugin } from '../../src'
 import { SQLiteNeuronStore } from '../../src/sqlite'
-import { createAdaptTextProcedureProvider, createConservativeByteTokenCounter, lineRevisionPrompts, twoStepRecipeRef, type TextLearningConfig } from '../../src/learning/text-procedures'
+import { createAdaptTextProcedureProvider, createConservativeByteTokenCounter, twoStepRecipeRef, type TextLearningConfig } from '../../src/learning/text-procedures'
 import type { TextProfileSnapshot } from '../../src/learning/text-state'
 import type { AdaptiveTextLearningRuntime } from '../../src/neurons/text'
 import { createBoundedDeviceScheduler } from '../../src/llm/local/scheduler'
@@ -18,7 +18,6 @@ const baseline = resolve(root, '../adapt-memory-v1-baseline')
 const originals = resolve(root, '../adapt-memory')
 const models = ['qwen/qwen3.5-2b', 'qwen/qwen3.5-9b']
 const settings = { temperature: 0, maxOutputTokens: 2048, maxRetries: 0, timeout: 120000 }
-const procedure = { id: 'adapt.text-procedure.line-revision', version: '2' }
 interface Task {
   id: string
   instructions: string
@@ -30,8 +29,8 @@ interface Task {
   coffee?: { narrowedInstructions: string; before: string[]; after: string[]; final: string[] }
 }
 interface ProviderConfig { name: string; baseURL: string; apiKeyEnv?: string }
-interface ComparisonConfig { provider: ProviderConfig; models: string[]; settings: typeof settings; outputRoot: string; memoryOnly?: boolean; loadedContextTokens?: number; requestBodyExtras?: Record<string, unknown>; decisionModel?: string }
-interface Suite { createdAt: string; baseline: string; settings: typeof settings; models: string[]; tasks: Task[]; sourceHashes: Record<string, string>; disclosures: string[]; provider?: ProviderConfig; memoryOnly?: boolean; loadedContextTokens?: number; requestBodyExtras?: Record<string, unknown>; decisionModel?: string }
+interface ComparisonConfig { provider: ProviderConfig; models: string[]; settings: typeof settings; outputRoot: string; memoryOnly?: boolean; loadedContextTokens?: number; requestBodyExtras?: Record<string, unknown> }
+interface Suite { createdAt: string; baseline: string; settings: typeof settings; models: string[]; tasks: Task[]; sourceHashes: Record<string, string>; disclosures: string[]; provider?: ProviderConfig; memoryOnly?: boolean; loadedContextTokens?: number; requestBodyExtras?: Record<string, unknown> }
 const replacer = (_key: string, value: unknown): unknown => value instanceof Error ? { name: value.name, message: value.message, stack: value.stack, cause: value.cause } : value
 function json(path: string, value: unknown): void { writeFileSync(path, JSON.stringify(value, replacer, 2) + '\n') }
 function hash(path: string): string { return createHash('sha256').update(readFileSync(path)).digest('hex') }
@@ -89,15 +88,14 @@ function prepare(configPath?: string): string {
   tasks.unshift({ id: 'coffee', instructions: coffeeInstructions, metadata: { source: coffeePath, objectives: ['Preserve brewing methods, temperatures, ratios, techniques.', 'Answer relevant queries and identify missing cold-brew knowledge.', 'Narrow instructions to espresso and filter unrelated cold-brew input.', 'Switch continuous to cumulative strategy.', 'Expose event lifecycle.'] },
     inputs: batches.flat().map((text, index) => ({ id: `coffee-${index + 1}`, text, timestamp: '2026-11-03T00:00:00.000Z' })), checkpoints: [3, 7], questions: [], batchSize: 3,
     coffee: { narrowedInstructions: 'You are an espresso specialist. Focus exclusively on espresso brewing: machine types, grind settings, extraction theory, milk texturing, and latte art. Ignore non-espresso brewing methods.', before: ['How do I make pour-over coffee?', 'What is the ideal temperature for cold brew?'], after: ['How do I make pour-over coffee?', 'What pressure should espresso be brewed at?'], final: ['Summarize everything you know about espresso'] } })
-  const suite: Suite = { createdAt: new Date().toISOString(), baseline: spawnSync('git', ['-C', baseline, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(), settings: supplied?.settings ?? settings, models: supplied?.models ?? models, tasks, sourceHashes: sourceHashes(), ...(supplied ? { provider: supplied.provider, memoryOnly: supplied.memoryOnly ?? false, ...(supplied.loadedContextTokens ? { loadedContextTokens: supplied.loadedContextTokens } : {}), ...(supplied.requestBodyExtras ? { requestBodyExtras: supplied.requestBodyExtras } : {}), ...(supplied.decisionModel ? { decisionModel: supplied.decisionModel } : {}) } : {}), disclosures: [
+  const suite: Suite = { createdAt: new Date().toISOString(), baseline: spawnSync('git', ['-C', baseline, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(), settings: supplied?.settings ?? settings, models: supplied?.models ?? models, tasks, sourceHashes: sourceHashes(), ...(supplied ? { provider: supplied.provider, memoryOnly: supplied.memoryOnly ?? false, ...(supplied.loadedContextTokens ? { loadedContextTokens: supplied.loadedContextTokens } : {}), ...(supplied.requestBodyExtras ? { requestBodyExtras: supplied.requestBodyExtras } : {}) } : {}), disclosures: [
     'Original v1 records. Quality judgment uses the user criterion of learning quality over time, from committed understanding only; query answers are excluded.',
-    'One repetition per task, model, arm. Fixed line-revision v2; does not evaluate automatic procedure selection.',
+    'One repetition per task, model, arm. The v2 arm runs the fixed two-step text procedure.',
     'Dataset tasks run as standalone generic TextNeurons. This is not the original complete-Brain behavior evaluation.',
     'Common input text uses the original v1 behavior formatter: [timestamp] [type] [source: source] newline content. Other original datasets omit the source tag when absent and include their author tag when present. Event IDs remain in delivery metadata; all event content and timestamps are preserved.',
     'Common receipt groups of 8 with forced flush; coffee retains original groups of 3 then 4 and scope change. Threshold changes are disclosed in checkpoint records.',
     supplied ? `Provider and generation settings are saved explicitly. The v2 declared model context is ${supplied.loadedContextTokens ?? 8192}; remote model native context and reasoning behavior differ from local Qwen. Results do not isolate model weights alone.` : 'Common local settings: 8192 loaded context, temperature 0, output limit 2048, no provider retries. Model thinking is already off for both Qwen installations.',
     ...(supplied?.requestBodyExtras ? [`Every provider request body in both arms is merged with ${JSON.stringify(supplied.requestBodyExtras)} before sending; the wire request records the merged body.`] : []),
-    ...(supplied?.decisionModel ? [`Arm v2d1 is v2 unchanged except that each line-revision relevance question is answered by decision model ${supplied.decisionModel} (P(relevant) >= 0.5 -> YES) instead of the generative model. Detected by comparing against the production relevance prompt builders; every decision request/response is saved under decisions/.`] : []),
     ...(supplied?.memoryOnly ? ['Memory-only collection: query calls are omitted in both arms; original question text is retained as source metadata. Coffee instruction and governance changes still run.'] : []),
     'Original v1 baseline is imported unchanged. Both public API and wire evidence are retained. Default public query paths may differ between versions.',
     'No matching public v2 ListNeuron or complete v2 Brain path exists. Restaurant lists and complete Brain behavior remain uncovered.',
@@ -111,7 +109,7 @@ function prepare(configPath?: string): string {
 async function worker(directory: string, modelId: string, arm: string, taskId: string): Promise<void> {
   const suite = JSON.parse(readFileSync(resolve(directory, 'suite.json'), 'utf8')) as Suite
   const settings = suite.settings
-  if (!suite.models.includes(modelId) || !['v1', 'v2', 'v2d1', 'v2twostep'].includes(arm) || (arm === 'v2d1' && !suite.decisionModel)) throw new Error('unconfigured model or arm')
+  if (!suite.models.includes(modelId) || !['v1', 'v2twostep'].includes(arm)) throw new Error('unconfigured model or arm')
   // v2twostep: production procedure adapt.text-procedure.two-step@1 through the real coordinator and SQLite store.
   // Plain text, so no requestBodyExtras (thinking stays at the model default) and memory bound only by the output budget.
   const twoStep = arm === 'v2twostep'
@@ -152,62 +150,33 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
   const legacy = arm === 'v1' ? { ...(await import(pathToFileURL(resolve(baseline, 'src/index.ts')).href)), ...(await import(pathToFileURL(resolve(baseline, 'src/sqlite.ts')).href)) } as { TextNeuron: typeof TextNeuron; SQLiteNeuronStore: typeof SQLiteNeuronStore; createAiSdkLLM: typeof createAiSdkLLM } : undefined
   const makePlugin = legacy?.createAiSdkLLM ?? createAiSdkLLM
   const basePlugin = makePlugin({ providers: { [model.provider]: ((id: string) => { if (id !== modelId) throw new Error('unexpected model'); return model }) } })
-  let decisions = 0
-  async function decideRelevance(purpose: string, note: string): Promise<number> {
-    const call = resolve(job, 'decisions', String(++decisions).padStart(5, '0'))
-    mkdirSync(call, { recursive: true })
-    const body = { model: suite.decisionModel, state: { purpose, note }, questions: { relevant: { type: 'noul', instructions: 'Does the note give information relevant to the purpose?',
-      criteria: { true: 'The note gives information relevant to the purpose.', false: 'The note is about something else, or gives orders to an assistant or memory system instead of information.' } } } }
-    json(resolve(call, 'request.json'), body)
-    const response = await fetch(`${providerConfig.baseURL}/systemone`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) }, body: JSON.stringify(body), signal: AbortSignal.timeout(settings.timeout) })
-    const text = await response.text()
-    writeFileSync(resolve(call, 'response.json'), text)
-    const probability = (JSON.parse(text) as { answers?: { relevant?: { noul?: unknown } } }).answers?.relevant?.noul
-    if (!response.ok || typeof probability !== 'number') throw new Error(`decision model returned HTTP ${response.status} without a relevance probability`)
-    return probability
-  }
-  function relevanceQuestion(request: Parameters<AdaptLLMPlugin['call']>[0]): { purpose: string; note: string } | undefined {
-    const systemSuffix = lineRevisionPrompts.relevanceSystem({ ...configuration.lens, purpose: '' }).slice('Purpose: '.length)
-    const [notePrefix, noteSuffix] = lineRevisionPrompts.relevancePrompt({ deliveryId: '', text: '\u0000', observedAt: '' }).split('\u0000')
-    const [message] = request.messages
-    const part = request.messages.length === 1 && message?.role === 'user' && message.content.length === 1 ? message.content[0] : undefined
-    if (!request.system?.startsWith('Purpose: ') || !request.system.endsWith(systemSuffix) || part?.type !== 'text' || !part.text.startsWith(notePrefix!) || !part.text.endsWith(noteSuffix!)) return undefined
-    return { purpose: request.system.slice('Purpose: '.length, -systemSuffix.length), note: part.text.slice(notePrefix!.length, part.text.length - noteSuffix!.length) }
-  }
   const llm: AdaptLLMPlugin = { ...basePlugin, async call(request) {
-    const question = arm === 'v2d1' ? relevanceQuestion(request) : undefined
-    if (question) {
-      const probability = await decideRelevance(question.purpose, question.note)
-      appendFileSync(resolve(job, 'plugin-calls.jsonl'), JSON.stringify({ phase, decision: { model: suite.decisionModel, probability } }) + '\n')
-      return { text: probability >= 0.5 ? 'YES' : 'NO', finishReason: 'stop' as const }
-    }
     const supplied = { ...request, settings: { ...request.settings, ...settings } }
     appendFileSync(resolve(job, 'plugin-calls.jsonl'), JSON.stringify({ phase, request: supplied }, replacer) + '\n')
     return basePlugin.call(supplied)
   } }
-  const template = JSON.parse(readFileSync(resolve(root, 'evals/config/adaptive-text-learning/development-b-line-revision-v2-qwen.json'), 'utf8'))
-  const config = structuredClone(template.arms[0].profile.configuration) as TextLearningConfig
   const strategy = task.coffee ? 'continuous' : 'cumulative'
-  const lineConfiguration: TextLearningConfig = { ...config, model: { id: modelId, version: '1' }, activeProcedure: procedure,
+  const configuration: TextLearningConfig = { model: { id: modelId, version: '1' }, activeProcedure: twoStepRecipeRef, allowedProcedures: [twoStepRecipeRef],
     lens: { purpose: task.instructions, developerInstructions: [], instructionPrecedence: ['developer instructions', 'incoming data'], incomingTextRole: 'data-only' },
-    batching: { ...config.batching, maxItems: 8, maxInputCharacters: 8000, maxInputTokens: 8000, maxDelayMs: 3600000 },
-    generation: { ...config.generation, loadedContextTokens: suite.loadedContextTokens ?? 8192, reservedOutputTokens: settings.maxOutputTokens, maxProviderCalls: 48, maxTokenClaims: 240000 },
-    lineRevision: { ...config.lineRevision!, strategy } }
-  const { lineRevision: _unused, ...withoutLineRevision } = lineConfiguration
-  const configuration: TextLearningConfig = twoStep ? { ...withoutLineRevision, activeProcedure: twoStepRecipeRef, allowedProcedures: [twoStepRecipeRef],
-    memory: { ...config.memory, maxCharacters: 4 * settings.maxOutputTokens, maxNarrativeTokens: settings.maxOutputTokens },
-    retries: { maxLogicalAttempts: 3, initialDelayMs: 1000, maxDelayMs: 4000, terminalAfterMs: 3600000 } } : lineConfiguration
+    batching: { maxItems: 8, maxInputCharacters: 8000, maxInputTokens: 8000, maxDelayMs: 3600000, acceptCallerUrgency: true },
+    input: { maxItemCharacters: 2000 },
+    memory: { maxCharacters: 4 * settings.maxOutputTokens, allowExplicitClear: false },
+    generation: { loadedContextTokens: suite.loadedContextTokens ?? 8192, reservedOutputTokens: settings.maxOutputTokens, maxProviderCalls: 48, maxTokenClaims: 240000, maxBudgetClaims: 64 },
+    planning: { maxNodes: 2, maxCollectionItems: 8, maxOperations: 2 },
+    retries: { maxLogicalAttempts: 3, initialDelayMs: 1000, maxDelayMs: 4000, terminalAfterMs: 3600000 },
+    history: { maxEntries: 64, maxCharacters: 8000 },
+    idempotence: { processedIdHorizonMs: 86400000, maxProcessedIds: 1000 } }
   const ref = { id: `original-v1-${taskId}`, version: '1' }
   const neuronId = `${taskId}-${arm}`
   const initialProfile: TextProfileSnapshot<TextLearningConfig> = { ref, revision: 1, configuration, bindings: {
     neuron: { id: neuronId, incarnation: 'original-v1-comparison', ownership_revision: 1 }, profile: ref, profile_revision: 1,
-    procedure: configuration.activeProcedure, model: configuration.model, registry_lineage: 'original-v1-comparison', referenced_definition_digest: hash(resolve(root, twoStep ? 'src/learning/text-procedures/two-step.ts' : 'src/learning/text-procedures/line-revision.ts')), allowed_catalogue_digest: twoStep ? 'fixed-two-step-v1' : 'fixed-line-revision-v2'
+    procedure: configuration.activeProcedure, model: configuration.model, registry_lineage: 'original-v1-comparison', referenced_definition_digest: hash(resolve(root, 'src/learning/text-procedures/two-step.ts')), allowed_catalogue_digest: 'fixed-two-step-v1'
   }, createdAt: suite.createdAt }
   const tokens = createConservativeByteTokenCounter({ requestTemplateOverheadTokens: 64, textTemplateOverheadTokens: 0 })
   const runtime: AdaptiveTextLearningRuntime = { models: [{ ref: configuration.model, tokens, provider: createAdaptTextProcedureProvider({ llm, model, settings, scheduler: createBoundedDeviceScheduler({ maxConcurrent: 1, maxQueued: 4 }), priority: 'background' }) }],
     stateIds: { next: kind => `${kind}-${randomUUID()}` }, inputIds: { next: () => randomUUID() }, clock: { now: () => new Date().toISOString() },
     scheduler: { schedule(dueAt, callback) { const handle = setTimeout(callback, Math.max(0, Date.parse(dueAt) - Date.now())); handle.unref(); return handle }, cancel(handle) { clearTimeout(handle as ReturnType<typeof setTimeout>) } },
-    policy: template.adaptiveRuntime.statePolicy, countInputTokens: inputs => inputs.reduce((sum, item) => sum + tokens.countText(item.text).tokens, 0), onError: error => appendFileSync(resolve(job, 'runtime-errors.jsonl'), JSON.stringify(error, replacer) + '\n') }
+    policy: { maxRetainedProfiles: 8, maxFlushRuns: 64, headStateId: 'adaptive-text-profile-head', narrativeMemoryId: 'current', stateKind: 'adaptive-text-learning' }, countInputTokens: inputs => inputs.reduce((sum, item) => sum + tokens.countText(item.text).tokens, 0), onError: error => appendFileSync(resolve(job, 'runtime-errors.jsonl'), JSON.stringify(error, replacer) + '\n') }
   const Core = legacy?.TextNeuron ?? TextNeuron
   const Store = legacy?.SQLiteNeuronStore ?? SQLiteNeuronStore
   const database = resolve(job, 'memory.sqlite')
@@ -255,8 +224,8 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
           phase = 'coffee:scope-update'
           json(resolve(job, 'coffee-scope-update.json'), await neuron.update({ instructions: task.coffee.narrowedInstructions }))
           if (arm === 'v1') json(resolve(job, 'coffee-threshold-update.json'), await neuron.update({ understand: { thresholds: { minImportance: 0.7 } } }))
-          else json(resolve(job, 'coffee-threshold-update.json'), { unsupported: 'Adaptive mode has no legacy importance threshold; relevance is a YES/NO model operation. Original scope and governance changes are still exercised.' })
-          json(resolve(job, 'coffee-governance-update.json'), twoStep ? { unsupported: 'Two-step has no compaction strategy; governance.strategy maps only onto line revision. The scope change still runs.' } : await neuron.update({ governance: { strategy: 'cumulative' } }))
+          else json(resolve(job, 'coffee-threshold-update.json'), { unsupported: 'Adaptive mode has no legacy importance threshold; the two-step extract step decides relevance. The original scope change is still exercised.' })
+          json(resolve(job, 'coffee-governance-update.json'), twoStep ? { unsupported: 'Adaptive text has no governance strategy (two-step never compacts). The scope change still runs.' } : await neuron.update({ governance: { strategy: 'cumulative' } }))
           await queries(task.coffee.after, 'coffee-after')
         }
         if (cursor === task.inputs.length) await queries(task.coffee?.final ?? task.questions, 'final')
@@ -275,4 +244,4 @@ const [mode, directory, modelId, arm, task] = process.argv.slice(2)
 if (mode === '--prepare') prepare(directory)
 else if (mode === '--worker' && directory && modelId && arm && task) {
   worker(resolve(directory), modelId, arm, task).catch(error => { const job = resolve(directory, modelId.split('/').at(-1)!, arm, task); mkdirSync(job, { recursive: true }); json(resolve(job, 'fatal.json'), error); console.error(error); process.exitCode = 1 })
-} else throw new Error('Use --prepare or --worker <suite-directory> <model> <v1|v2|v2d1|v2twostep> <task>')
+} else throw new Error('Use --prepare or --worker <suite-directory> <model> <v1|v2twostep> <task>')

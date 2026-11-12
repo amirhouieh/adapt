@@ -8,15 +8,8 @@ import type { DevicePriority, DeviceScheduler } from '../../llm/local/scheduler'
 import type {
 	ProcedurePorts,
 	ProseOutcome,
-	ProseRequest,
 	RequestTokenCount,
 } from './contracts'
-
-const controls = Object.freeze({
-	ADAPT_NO_CHANGE: 'no_change',
-	ADAPT_CLEAR: 'clear',
-	ADAPT_DEFER: 'defer',
-} as const)
 
 export interface AdaptTextProcedureProviderConfig {
 	readonly llm: AdaptLLMPlugin
@@ -24,19 +17,6 @@ export interface AdaptTextProcedureProviderConfig {
 	readonly settings: AdaptCallSettings & { readonly maxOutputTokens: number }
 	readonly scheduler: DeviceScheduler
 	readonly priority: DevicePriority
-}
-
-function allowedControl(
-	request: ProseRequest,
-	status: 'no_change' | 'clear' | 'defer',
-): boolean {
-	if (request.response.kind === 'exact-token') {
-		if (status === 'defer') return request.response.allowDefer
-		if (status === 'no_change')
-			return request.response.tokens.includes('ADAPT_NO_CHANGE')
-		return false
-	}
-	return request.response.controls.includes(status)
 }
 
 export function createAdaptTextProcedureProvider(
@@ -79,28 +59,6 @@ export function createAdaptTextProcedureProvider(
 							finishReason: 'stop' as const,
 							usage: result.usage,
 							raw: result.raw,
-						}
-						const known = controls[result.text as keyof typeof controls]
-						if (known !== undefined) {
-							return allowedControl(request, known)
-								? { status: known, completion }
-								: {
-										status: 'failure',
-										code: 'disallowed_control',
-										retryable: false,
-										cause: result.raw,
-									}
-						}
-						if (
-							request.response.kind === 'exact-token' &&
-							!request.response.tokens.includes(result.text)
-						) {
-							return {
-								status: 'failure',
-								code: 'invalid_exact_token',
-								retryable: false,
-								cause: result.raw,
-							}
 						}
 						if (result.text.trim().length === 0) {
 							return {
@@ -155,11 +113,5 @@ export function createConservativeByteTokenCounter(
 		countRequest: (request) =>
 			count(JSON.stringify(request), config.requestTemplateOverheadTokens),
 		countText: (text) => count(text, config.textTemplateOverheadTokens),
-		countTextBound(maxCharacters) {
-			if (!Number.isInteger(maxCharacters) || maxCharacters < 0) {
-				throw new Error('text character bound must be a nonnegative integer')
-			}
-			return { tokens: maxCharacters * 6, conservativeUpperBound: true }
-		},
 	}
 }

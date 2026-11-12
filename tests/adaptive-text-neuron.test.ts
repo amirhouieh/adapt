@@ -13,7 +13,7 @@ import {
 } from '../src'
 import type { TextProfileSnapshot } from '../src/learning/text-state'
 import {
-	textProcedureRecipeRefs,
+	twoStepRecipeRef,
 	type ProseOutcome,
 	type ProseRequest,
 	type TextLearningConfig,
@@ -62,7 +62,7 @@ function fakeLlm(calls: { value: number }): AdaptLLMPlugin {
 	}
 }
 
-function learningConfig(procedure = textProcedureRecipeRefs.direct, mode: 'fixed' | 'periodic' = 'fixed'): TextLearningConfig {
+function learningConfig(): TextLearningConfig {
 	return {
 		lens: {
 			purpose: 'Remember engineering preferences.',
@@ -78,25 +78,19 @@ function learningConfig(procedure = textProcedureRecipeRefs.direct, mode: 'fixed
 			incomingTextRole: 'data-only',
 		},
 		model: modelRef,
-		activeProcedure: procedure,
-		allowedProcedures: Object.values(textProcedureRecipeRefs),
-		selection: {
-			mode, selector: { id: 'selector', version: '1' }, minCommittedRuns: 1,
-			minElapsedMs: 0, maxCatalogueEntries: 4, autoActivatePreEvaluated: true,
-		},
+		activeProcedure: twoStepRecipeRef,
+		allowedProcedures: [twoStepRecipeRef],
 		batching: {
 			maxItems: 4, maxInputCharacters: 4_000, maxInputTokens: 4_000,
 			maxDelayMs: 1_000, acceptCallerUrgency: true,
 		},
-		input: { maxItemCharacters: 2_000, maxRoutingSpanCharacters: 2_000 },
+		input: { maxItemCharacters: 2_000 },
 		memory: {
-			maxCharacters: 4_000, maxNarrativeTokens: 800,
-			splitPressureCharacters: 3_500, allowExplicitClear: true,
-			standaloneCapacity: 'reject',
+			maxCharacters: 4_000, allowExplicitClear: true,
 		},
 		generation: {
 			loadedContextTokens: 8_000, reservedOutputTokens: 1_000,
-			maxNoteCharacters: 200, maxProviderCalls: 3,
+			maxProviderCalls: 3,
 			maxTokenClaims: 20_000, maxBudgetClaims: 20,
 		},
 		planning: { maxNodes: 4, maxCollectionItems: 4, maxOperations: 4 },
@@ -106,13 +100,13 @@ function learningConfig(procedure = textProcedureRecipeRefs.direct, mode: 'fixed
 	}
 }
 
-function profile(version = '1', procedure = textProcedureRecipeRefs.direct, mode: 'fixed' | 'periodic' = 'fixed'): TextProfileSnapshot<TextLearningConfig> {
+function profile(version = '1'): TextProfileSnapshot<TextLearningConfig> {
 	const ref = { id: 'adaptive-profile', version }
 	return {
-		ref, revision: Number(version), configuration: learningConfig(procedure, mode), createdAt: at,
+		ref, revision: Number(version), configuration: learningConfig(), createdAt: at,
 		bindings: {
 			neuron: { id: 'preferences', incarnation: 'incarnation-1', ownership_revision: 0 },
-			profile: ref, profile_revision: Number(version), procedure, model: modelRef,
+			profile: ref, profile_revision: Number(version), procedure: twoStepRecipeRef, model: modelRef,
 			registry_lineage: 'adaptive-text-registry-1',
 			referenced_definition_digest: `definitions-${version}`,
 			allowed_catalogue_digest: 'catalogue-1',
@@ -127,7 +121,7 @@ function complete(text: string): ProseOutcome {
 function runtime(
 	outputs: ProseOutcome[],
 	requests: ProseRequest[],
-	options?: { clock?: Clock; selectionProfile?: TextProfileSnapshot<TextLearningConfig>; requestTokens?: number },
+	options?: { clock?: Clock; requestTokens?: number },
 ): AdaptiveTextLearningRuntime {
 	const clock = options?.clock ?? new Clock()
 	const ids = new Ids()
@@ -137,7 +131,8 @@ function runtime(
 			provider: {
 				async generate(request) {
 					requests.push(request)
-					if (request.response.kind === 'exact-token') return complete('COMPARE')
+					// Two-step: the extract step answers itself; queued outputs answer the update step.
+					if (request.system.startsWith('Here is some data.')) return complete('Extracted facts.')
 					const output = outputs.shift()
 					if (output === undefined) throw new Error('missing test procedure output')
 					return output
@@ -146,7 +141,6 @@ function runtime(
 			tokens: {
 				countRequest: () => ({ tokens: options?.requestTokens ?? 10, conservativeUpperBound: true }),
 				countText: (text) => ({ tokens: text.length, conservativeUpperBound: true }),
-				countTextBound: (characters) => ({ tokens: characters, conservativeUpperBound: true }),
 			},
 		}],
 		stateIds: ids,
@@ -155,29 +149,11 @@ function runtime(
 		scheduler: new DueScheduler(),
 		policy: {
 			headStateId: 'adaptive:text:head', narrativeMemoryId: 'current',
-			stateKind: 'adaptive-text', selectionStateId: 'adaptive:text:selection',
+			stateKind: 'adaptive-text',
 			maxRetainedProfiles: 20, maxFlushRuns: 20,
 		},
 		countInputTokens: (inputs) => inputs.reduce((total, input) => total + input.text.length, 0),
 		onError: (error) => { throw error },
-		...(options?.selectionProfile ? {
-			selection: {
-				catalogue: [
-					{
-						token: 'DIRECT', expectedEffect: 'revise the narrative directly',
-						profile: profile('1', textProcedureRecipeRefs.direct, 'periodic'),
-						evaluation: { model: modelRef, profile: { id: 'adaptive-profile', version: '1' }, evidenceRefs: ['development-eval-1'] },
-					},
-					{
-						token: 'COMPARE', expectedEffect: 'reconcile corrections before rewriting',
-						profile: options.selectionProfile,
-						evaluation: { model: modelRef, profile: options.selectionProfile.ref, evidenceRefs: ['development-eval-1'] },
-					},
-				],
-				limits: { maxContextCharacters: 20_000, maxLearnedChanges: 10, maxPendingInputs: 10, maxFeedbackEntries: 10 },
-				feedback: async () => [],
-			},
-		} : {}),
 	}
 }
 
@@ -208,7 +184,7 @@ describe('adaptive TextNeuron public integration', () => {
 		expect((await neuron.flush()).runs[0]).toMatchObject({ status: 'settled', commit: { status: 'committed' } })
 		expect(await neuron.getUnderstanding()).toBe('Prefers simple functions.')
 		expect((await neuron.learn([input]))).toMatchObject({ enqueued: [{ status: 'deduplicated', coverage: 'processed' }] })
-		expect(requests).toHaveLength(1)
+		expect(requests).toHaveLength(2)
 		expect(requests[0]?.system).toContain('Keep uncertainty explicit.')
 		expect(calls.value).toBe(0)
 		await expect(neuron.setUnderstanding('bypass')).rejects.toThrow('learning coordinator')
@@ -280,7 +256,7 @@ describe('adaptive TextNeuron public integration', () => {
 			enqueued: [{ status: 'queued' }, { status: 'queued' }],
 			runs: [{ status: 'settled' }],
 		})
-		expect(requests).toHaveLength(1)
+		expect(requests).toHaveLength(2)
 		expect(requests[0]?.prompt).toContain('First fact.')
 		expect(requests[0]?.prompt).toContain('Second fact.')
 		expect((await neuron.getLearningState()).pendingDeliveryIds).toEqual([])
@@ -337,13 +313,13 @@ describe('adaptive TextNeuron public integration', () => {
 		const neuron = await createNeuron(new MemoryNeuronStore(), runtime([], requests, { requestTokens: 7_001 }))
 		await neuron.learn([{ deliveryId: 'capacity-1', text: 'Keep this pending.', observedAt: at }])
 		expect((await neuron.flush()).runs).toEqual([
-			{ status: 'memory-capacity', reason: 'a complete procedure request exceeds the loaded context' },
+			{ status: 'memory-capacity', reason: 'a two-step request exceeds the loaded context' },
 		])
 		const state = await neuron.getLearningState()
 		expect(state.pendingDeliveryIds).toEqual(['capacity-1'])
 		expect(state.capacity).toEqual([
 			expect.objectContaining({
-				reason: 'a complete procedure request exceeds the loaded context',
+				reason: 'a two-step request exceeds the loaded context',
 			}),
 		])
 		expect(requests).toEqual([])
@@ -429,167 +405,6 @@ describe('adaptive TextNeuron public integration', () => {
 		expect(await restored.getUnderstanding()).toBe('Durable narrative.')
 		expect((await restored.getLearningState()).activeProfile).toEqual({ id: 'adaptive-profile', version: '1' })
 		await restored.dispose()
-	})
-
-	it('activates an explicitly evaluated procedure and uses it on later learning', async () => {
-		const directory = mkdtempSync(join(tmpdir(), 'adapt-adaptive-text-selection-'))
-		directories.push(directory)
-		const path = join(directory, 'neuron.sqlite')
-		const requests: ProseRequest[] = []
-		const selectedProfile = profile('2', textProcedureRecipeRefs.compare, 'fixed')
-		const adaptiveRuntime = runtime([
-			complete('Initial narrative.'),
-			complete('The new statement corrects the old preference.'),
-			complete('Reconciled narrative.'),
-		], requests, { selectionProfile: selectedProfile })
-		const neuron = await createNeuron(new SQLiteNeuronStore(path), adaptiveRuntime, profile('1', textProcedureRecipeRefs.direct, 'periodic'))
-		await neuron.learn([{ deliveryId: 'first', text: 'Initial preference.', observedAt: at }])
-		const firstFlush = await neuron.flush()
-		expect(firstFlush.activation).toMatchObject({ status: 'activated', profile: selectedProfile.ref })
-		expect((await neuron.getLearningState()).activeProfile).toEqual(selectedProfile.ref)
-
-		await neuron.learn([{ deliveryId: 'second', text: 'Correction.', observedAt: later }])
-		await neuron.flush()
-		expect(await neuron.getUnderstanding()).toBe('Reconciled narrative.')
-		expect(requests.filter(({ response }) => response.kind === 'prose')).toHaveLength(3)
-		expect(requests.some(({ response }) => response.kind === 'exact-token')).toBe(true)
-		await neuron.dispose()
-
-		const restored = await TextNeuron.restore(path, {
-			model: queryModel, llm: fakeLlm({ value: 0 }),
-			learning: { mode: 'adaptive', runtime: runtime([], requests) },
-		})
-		expect((await restored.getLearningState()).activeProfile).toEqual(selectedProfile.ref)
-		await restored.dispose()
-	})
-
-	it('runs due-timer selection after bounded history has reached retention', async () => {
-		const clock = new Clock()
-		const requests: ProseRequest[] = []
-		const selected = profile('2', textProcedureRecipeRefs.compare, 'fixed')
-		const initialBase = profile('1', textProcedureRecipeRefs.direct, 'periodic')
-		const initial: TextProfileSnapshot<TextLearningConfig> = {
-			...initialBase,
-			configuration: {
-				...initialBase.configuration,
-				selection: { ...initialBase.configuration.selection, minCommittedRuns: 2 },
-				history: { ...initialBase.configuration.history, maxEntries: 1 },
-			},
-		}
-		const adaptiveRuntime = runtime([
-			complete('First timer narrative.'), complete('Second timer narrative.'),
-		], requests, { clock, selectionProfile: selected })
-		const scheduler = adaptiveRuntime.scheduler as DueScheduler
-		const neuron = await createNeuron(new MemoryNeuronStore(), adaptiveRuntime, initial)
-
-		await neuron.learn([{ deliveryId: 'timer-1', text: 'First.', observedAt: at }])
-		clock.value = later
-		scheduler.scheduled[scheduler.scheduled.length - 1]?.callback()
-		await new Promise<void>((resolve) => setTimeout(resolve, 0))
-		await new Promise<void>((resolve) => setTimeout(resolve, 0))
-		expect((await neuron.getLearningState()).activeProfile).toEqual(initial.ref)
-
-		await neuron.learn([{ deliveryId: 'timer-2', text: 'Second.', observedAt: later }])
-		clock.value = '2026-10-10T16:02:00.000Z'
-		scheduler.scheduled[scheduler.scheduled.length - 1]?.callback()
-		await new Promise<void>((resolve) => setTimeout(resolve, 0))
-		await new Promise<void>((resolve) => setTimeout(resolve, 0))
-		expect((await neuron.getLearningState()).activeProfile).toEqual(selected.ref)
-		expect(requests.filter(({ response }) => response.kind === 'exact-token')).toHaveLength(1)
-		await neuron.dispose()
-	})
-
-	it('wakes periodic selection when elapsed time becomes due', async () => {
-		const clock = new Clock()
-		const requests: ProseRequest[] = []
-		const selected = profile('2', textProcedureRecipeRefs.compare, 'fixed')
-		const base = profile('1', textProcedureRecipeRefs.direct, 'periodic')
-		const initial: TextProfileSnapshot<TextLearningConfig> = {
-			...base,
-			configuration: {
-				...base.configuration,
-				selection: {
-					...base.configuration.selection,
-					minCommittedRuns: 1,
-					minElapsedMs: 60_000,
-				},
-			},
-		}
-		const adaptiveRuntime = runtime([complete('Timer narrative.')], requests, {
-			clock,
-			selectionProfile: selected,
-		})
-		const scheduler = adaptiveRuntime.scheduler as DueScheduler
-		const neuron = await createNeuron(
-			new MemoryNeuronStore(),
-			adaptiveRuntime,
-			initial,
-		)
-
-		await neuron.learn([
-			{ deliveryId: 'elapsed-1', text: 'One change.', observedAt: at },
-		])
-		await neuron.flush()
-		expect((await neuron.getLearningState()).activeProfile).toEqual(initial.ref)
-		const selectionTimer = scheduler.scheduled.find(
-			(entry) => !entry.cancelled && entry.dueAt === later,
-		)
-		expect(selectionTimer).toBeDefined()
-		clock.value = later
-		selectionTimer?.callback()
-		await new Promise<void>((resolve) => setTimeout(resolve, 0))
-		await new Promise<void>((resolve) => setTimeout(resolve, 0))
-
-		expect((await neuron.getLearningState()).activeProfile).toEqual(selected.ref)
-		expect(
-			requests.filter(({ response }) => response.kind === 'exact-token'),
-		).toHaveLength(1)
-		await neuron.dispose()
-	})
-
-	it('rejects an ambiguous selector mapping without changing profiles', async () => {
-		const requests: ProseRequest[] = []
-		const selected = profile('2', textProcedureRecipeRefs.compare, 'fixed')
-		const alsoSelected = profile('3', textProcedureRecipeRefs.compare, 'fixed')
-		const baseRuntime = runtime([complete('Initial narrative.')], requests, {
-			selectionProfile: selected,
-		})
-		const selection = baseRuntime.selection
-		if (selection === undefined) throw new Error('test selection runtime is missing')
-		const adaptiveRuntime: AdaptiveTextLearningRuntime = {
-			...baseRuntime,
-			selection: {
-				...selection,
-				catalogue: [
-					...selection.catalogue,
-					{
-						token: 'COMPARE_ALT',
-						expectedEffect: 'reconcile corrections before rewriting',
-						profile: alsoSelected,
-						evaluation: {
-							model: modelRef,
-							profile: alsoSelected.ref,
-							evidenceRefs: ['development-eval-2'],
-						},
-					},
-				],
-			},
-		}
-		const initial = profile('1', textProcedureRecipeRefs.direct, 'periodic')
-		const neuron = await createNeuron(
-			new MemoryNeuronStore(),
-			adaptiveRuntime,
-			initial,
-		)
-
-		await neuron.learn([
-			{ deliveryId: 'ambiguous-1', text: 'Initial fact.', observedAt: at },
-		])
-		const flushed = await neuron.flush()
-
-		expect(flushed.activation).toBeUndefined()
-		expect((await neuron.getLearningState()).activeProfile).toEqual(initial.ref)
-		await neuron.dispose()
 	})
 
 	it('drains an in-flight commit before closing SQLite', async () => {
