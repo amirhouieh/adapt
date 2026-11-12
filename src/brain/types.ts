@@ -2,6 +2,7 @@ import type { AdaptLLMPlugin, AdaptRepairOptions, LanguageModel } from '../llm'
 import type { LearnOutput } from '../neurons/base/class'
 import type { SharedNeuronEventMap } from '../neurons/base/types'
 import type { GeneratedNeuronConfig } from '../neurons/schema.config'
+import type { Strategy } from '../neurons/text/strategies'
 import type { TokenUsage } from '../neurons/types'
 import type { BrainStore, NeuronStatus } from '../stores'
 import type {
@@ -34,6 +35,14 @@ export interface QueryPhaseConfig {
 }
 
 /**
+ * Governance configuration (text neuron memory strategy)
+ */
+export interface GovernanceConfig {
+	strategy?: Strategy
+	maxTokens?: number
+}
+
+/**
  * Learning config - applied to all auto-generated neurons
  *
  * Semantic fields (instructions, name, description) go through the evaluator
@@ -48,6 +57,7 @@ export interface LearningConfig extends CascadableConfig {
 	description?: string
 	understand?: UnderstandPhaseConfig
 	query?: QueryPhaseConfig
+	governance?: GovernanceConfig
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,9 +109,9 @@ export interface EvolutionConfig {
 }
 
 /**
- * Per-internal-neuron config: true = enabled, false = disabled
+ * Per-internal-neuron config: true = enabled with defaults, object = enabled with overrides, false = disabled
  */
-export type InternalNeuronToggle = boolean
+export type InternalNeuronToggle = boolean | Partial<LearningConfig>
 
 /**
  * Configuration for Brain's internal neurons

@@ -24,6 +24,11 @@ import {
 } from './adaptive-runtime'
 import { resolveTextNeuronConfig } from './config.resolver'
 import {
+	applyStrategy,
+	DEFAULT_GOVERNANCE,
+	type GovernanceConfig,
+} from './strategies'
+import {
 	defaultTwoStepLearning,
 	defaultTwoStepRuntime,
 } from './two-step-defaults'
@@ -61,11 +66,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		const config = resolveTextNeuronConfig(preparedConfig, parentModels)
 		const llm = resolveRuntimeLLM({
 			llm: rawConfig.llm,
-			models: [
-				config.model,
-				config.blueprintModel,
-				config.query.model,
-			],
+			models: [config.model, config.blueprintModel, config.query.model],
 		})
 		const learning =
 			suppliedLearning ??
@@ -125,6 +126,10 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 				},
 			},
 			dismissal_signal_fired: false,
+			governance: {
+				...DEFAULT_GOVERNANCE,
+				...definedOnly(rawConfig.governance),
+			},
 		}
 
 		super(config.id, llm, rawConfig.store, initialState, {
@@ -133,7 +138,20 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		})
 		this.#defaultLearning = suppliedLearning === undefined
 		this.#adaptiveConfig = learning
-		this.#adaptive = new AdaptiveTextRuntime(rawConfig.store, learning.runtime)
+		this.#adaptive = new AdaptiveTextRuntime(
+			rawConfig.store,
+			learning.runtime,
+			(memory, { maxCharacters, signal }) =>
+				applyStrategy({
+					memory,
+					governance: this.state.governance,
+					maxCharacters,
+					llm: this.llm,
+					model: this.state.models.default,
+					abortSignal: signal,
+					...this.llmRepairOptions,
+				}),
+		)
 	}
 
 	override async init(opts?: { expect?: 'fresh' | 'restore' }): Promise<void> {
@@ -224,6 +242,10 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		return 'direct'
 	}
 
+	getGovernance(): Required<GovernanceConfig> {
+		return { ...this.state.governance }
+	}
+
 	override async getBufferState(): Promise<{
 		count: number
 		avgImportance: number
@@ -238,6 +260,21 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 
 	// ── Typed update wrapper ───────────────────────────────────────────────────
 
+	async #updateGovernance(
+		update: Partial<GovernanceConfig> | undefined,
+	): Promise<string[]> {
+		if (update === undefined) return []
+		const current = this.state.governance
+		const changed = (['strategy', 'maxTokens'] as const).filter(
+			(key) => update[key] !== undefined && update[key] !== current[key],
+		)
+		if (changed.length === 0) return []
+		await this.setState({
+			governance: { ...current, ...definedOnly(update) },
+		})
+		return changed.map((key) => `governance.${key}`)
+	}
+
 	async update(
 		updates: Partial<TextNeuronConfig>,
 	): Promise<{ changedFields: string[] }> {
@@ -250,6 +287,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		const identity = await this.#updateIdentity(updates)
 		const changedFields = [
 			...identity.changedFields,
+			...(await this.#updateGovernance(updates.governance)),
 			...(await this.updateSettings(settings)),
 		]
 		if (changedFields.length > 0) {
@@ -658,4 +696,10 @@ function sameProfile(
 	right: TextProfileSnapshot<TextLearningConfig>,
 ): boolean {
 	return isDeepStrictEqual(left, right)
+}
+
+function definedOnly<T extends object>(value: T | undefined): Partial<T> {
+	return Object.fromEntries(
+		Object.entries(value ?? {}).filter(([, v]) => v !== undefined),
+	) as Partial<T>
 }

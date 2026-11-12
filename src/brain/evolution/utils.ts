@@ -9,7 +9,7 @@ import type { GeneratedNeuronConfig } from '../../neurons'
  * Create a complete GeneratedNeuronConfig from partial config
  *
  * Handlers only generate name, description, and instructions.
- * This fills in the required fields (id, type).
+ * This fills in the required fields (id, type, governance).
  */
 export function createCompleteConfig(partial: {
 	name: string
@@ -24,6 +24,9 @@ export function createCompleteConfig(partial: {
 		instructions: partial.instructions,
 		focus: null,
 		type: 'text',
+		governance: {
+			strategy: 'continuous',
+		},
 	}
 }
 

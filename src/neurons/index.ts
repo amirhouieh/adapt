@@ -51,6 +51,8 @@ export type {
 export { protectedDeveloperInstructions, TextNeuron } from './text'
 // Descriptors
 export { textNeuronDescriptor } from './text/descriptor'
+export type { GovernanceConfig, Strategy } from './text/strategies'
+export { STRATEGIES } from './text/strategies'
 export type {
 	Neuron,
 	NeuronHealth,

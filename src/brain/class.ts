@@ -593,6 +593,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				name: config.name,
 				description: config.description,
 				store: this.store.getNeuronStore(config.id),
+				governance: this.#governanceFor(config),
 				understand: {
 					thresholds: {
 						maxObservations: 3,
@@ -732,6 +733,16 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		})
 	}
 
+	/** Text neurons default to Brain's governance (cumulative) when none is set. */
+	#governanceFor(config: GeneratedNeuronConfig) {
+		return (
+			config.governance ?? {
+				strategy: BRAIN_DEFAULTS.learning.governance.strategy,
+				maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
+			}
+		)
+	}
+
 	/**
 	 * Create a neuron from a generated config (factory — routes by config.type)
 	 */
@@ -775,6 +786,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		const neuron = descriptor.factory({
 			...shared,
 			store: this.store.getNeuronStore(config.id),
+			governance: this.#governanceFor(config),
 		})
 
 		// Forward all neuron events through Brain
@@ -2355,6 +2367,9 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		}
 		if (updates.learning?.query) {
 			neuronUpdate.query = updates.learning.query
+		}
+		if (updates.learning?.governance) {
+			neuronUpdate.governance = updates.learning.governance
 		}
 
 		// Forward to all neurons (each ignores fields it doesn't recognize)

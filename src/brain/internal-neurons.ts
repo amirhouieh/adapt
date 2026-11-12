@@ -6,7 +6,7 @@
  */
 
 import type { GeneratedNeuronConfig } from '../neurons/schema.config'
-import type { InternalNeuronsConfig } from './types'
+import type { InternalNeuronsConfig, LearningConfig } from './types'
 
 // ── Internal Neuron IDs ────────────────────────────────────────────────────
 
@@ -56,6 +56,7 @@ Track answers to:
 - What does the network understand right now, taken as a whole?
 - What connections exist between specialists' domains that they can't see individually?
 - How is the network's collective understanding changing over time?`,
+			governance: { strategy: 'decay', maxTokens: 16000 },
 		},
 	},
 	{
@@ -79,6 +80,7 @@ Track answers to:
 - What topics do users ask about most frequently?
 - What query clusters exist and how are they related?
 - Where are the coverage gaps between what users ask and what the system knows?`,
+			governance: { strategy: 'decay', maxTokens: 16000 },
 		},
 	},
 	{
@@ -103,6 +105,7 @@ Track:
 - What new neuron(s) would be needed to cover these domains
 
 Drop topics that haven't appeared recently — if a gap stops being reported, it's likely been resolved.`,
+			governance: { strategy: 'decay', maxTokens: 8000 },
 		},
 	},
 	{
@@ -125,6 +128,7 @@ Track answers to:
 - What questions are consistently unanswerable?
 - Are there topic clusters of unanswerable questions?
 - What knowledge would need to be acquired to close these gaps?`,
+			governance: { strategy: 'cumulative', maxTokens: 8000 },
 		},
 	},
 ]
@@ -133,6 +137,7 @@ Track answers to:
 
 /**
  * Returns configs for all enabled internal neurons.
+ * Merges user-provided LearningConfig overrides into each definition.
  */
 export function getInternalNeuronConfigs(
 	internalNeuronsConfig?: InternalNeuronsConfig,
@@ -142,7 +147,20 @@ export function getInternalNeuronConfigs(
 	for (const def of definitions) {
 		const toggle = internalNeuronsConfig?.[def.key] ?? true // enabled by default
 
-		if (toggle) configs.push(def.config)
+		if (toggle === false) continue
+
+		if (toggle === true) {
+			configs.push(def.config)
+		} else {
+			// Merge user overrides into the default config
+			const overrides = toggle as Partial<LearningConfig>
+			configs.push({
+				...def.config,
+				governance: overrides.governance
+					? { ...def.config.governance, ...overrides.governance }
+					: def.config.governance,
+			})
+		}
 	}
 
 	return configs

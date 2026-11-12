@@ -10,6 +10,7 @@ import type {
 } from '../base/types'
 import type { NeuronOrigin, Significance } from '../types'
 import type { AdaptiveTextLearningConfig } from './adaptive-runtime'
+import type { GovernanceConfig } from './strategies'
 
 /**
  * TextNeuron event map
@@ -72,6 +73,8 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	origin?: NeuronOrigin
 	/** Injected store */
 	store: NeuronStore
+	/** Memory strategy: continuous (default), cumulative or decay. */
+	governance?: Partial<GovernanceConfig>
 	/** Thresholds Brain reads for health signals and evolution. */
 	understand?: { thresholds?: UnderstandThresholds }
 	/** Query phase configuration */
@@ -95,4 +98,6 @@ export interface TextNeuronUpdateResult {
 
 // ── State ──────────────────────────────────────────────────────────────────
 
-export type TextNeuronState = BaseNeuronState
+export interface TextNeuronState extends BaseNeuronState {
+	governance: Required<GovernanceConfig>
+}

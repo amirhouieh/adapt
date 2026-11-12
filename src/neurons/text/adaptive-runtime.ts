@@ -44,6 +44,11 @@ export interface AdaptiveTextLearningRuntime {
 	readonly onError: (error: unknown) => void
 }
 
+export type AfterUpdate = (
+	memory: string,
+	context: { maxCharacters: number; signal: AbortSignal },
+) => Promise<string>
+
 export interface AdaptiveTextLearningConfig {
 	readonly mode: 'adaptive'
 	readonly initialProfile: TextProfileSnapshot<TextLearningConfig>
@@ -181,7 +186,15 @@ export class AdaptiveTextRuntime {
 	readonly #activeOperations = new Set<Promise<void>>()
 	#disposed = false
 
-	constructor(store: NeuronStore, runtime: AdaptiveTextLearningRuntime) {
+	/**
+	 * @param afterUpdate Runs on a changed memory after the update step,
+	 *   before it is saved (same commit). Used for memory strategies.
+	 */
+	constructor(
+		store: NeuronStore,
+		runtime: AdaptiveTextLearningRuntime,
+		afterUpdate?: AfterUpdate,
+	) {
 		this.#store = store
 		this.#runtime = runtime
 		positive(runtime.policy.maxRetainedProfiles, 'policy.maxRetainedProfiles')
@@ -217,7 +230,14 @@ export class AdaptiveTextRuntime {
 					clock: runtime.clock,
 				})
 				this.#procedureResults?.push(proposal.result)
-				return decision(proposal)
+				const result = decision(proposal)
+				if (result.status !== 'change' || afterUpdate === undefined)
+					return result
+				const narrative = await afterUpdate(result.narrative, {
+					maxCharacters: snapshot.configuration.memory.maxCharacters,
+					signal: snapshot.signal,
+				})
+				return { ...result, narrative }
 			},
 		})
 	}
