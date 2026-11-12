@@ -1171,7 +1171,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		)
 
 		const specialistResults = neuronQueries
-			.filter((r): r is NonNullable<typeof r> => r !== null && r.relevant)
+			.filter((r): r is NonNullable<typeof r> => r?.relevant === true)
 			.map((r) => ({
 				id: r.id,
 				relevance: r.relevance,
@@ -1329,7 +1329,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 
 		const specialistResults = neuronQueries
-			.filter((r): r is NonNullable<typeof r> => r !== null && r.relevant)
+			.filter((r): r is NonNullable<typeof r> => r?.relevant === true)
 			.map((r) => ({
 				id: r.id,
 				relevance: r.relevance,
