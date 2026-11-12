@@ -5,6 +5,7 @@ import type {
 import type { LanguageModel } from 'ai'
 import { describe, expect, it } from 'vitest'
 import { Brain } from '../src/brain'
+import { createCompleteConfig } from '../src/brain/evolution/utils'
 import type { TextNeuron } from '../src/neurons'
 import { MemoryBrainStore } from '../src/stores'
 
@@ -87,6 +88,14 @@ describe('Brain applies learning config to the neurons it creates', () => {
 		calls.length = 0
 		await brain.getNeuron('plain')?.learn(['I like tea.'])
 		expect(calls).toEqual(['learner', 'learner'])
+		await brain.dispose()
+	})
+
+	it('neurons from split/merge configs follow learning.governance', async () => {
+		const brain = await createBrain([], { governance: { strategy: 'decay', maxTokens: 6000 } })
+		const config = createCompleteConfig({ name: 'Split part', description: 'd', instructions: 'Track x.' })
+		const created = (await brain.addNeuron(config)) as unknown as TextNeuron
+		expect(created.getGovernance()).toEqual({ strategy: 'decay', maxTokens: 6000 })
 		await brain.dispose()
 	})
 
