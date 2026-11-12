@@ -102,10 +102,6 @@ async function main() {
 		blueprintModel: smart,
 		init: { model: smart },
 		query: { model: smart },
-	})
-
-	// Per-neuron settings go through update()
-	await costBrain.update({
 		learning: {
 			model: fast,
 			query: { model: smart },

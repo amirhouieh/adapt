@@ -110,7 +110,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	private evolutionOrchestrator?: EvolutionOrchestrator
 
 	// Constructor config (not persisted, used during init only)
-	private readonly learningConfig?: LearningConfig
+	private learningConfig?: LearningConfig
 	private readonly autoSetup: boolean
 	private readonly configNeurons?: GeneratedNeuronConfig[]
 	private readonly internalNeuronsConfig: BrainConfig['internalNeurons']
@@ -132,6 +132,8 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				rawConfig.init?.model,
 				rawConfig.query?.model,
 				rawConfig.evolution?.model,
+				rawConfig.learning?.model,
+				rawConfig.learning?.blueprintModel,
 				rawConfig.learning?.query?.model,
 			],
 		})
@@ -733,14 +735,14 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		})
 	}
 
-	/** Text neurons default to Brain's governance (cumulative) when none is set. */
+	/** Brain defaults, then `learning.governance`, then the neuron's own governance. */
 	#governanceFor(config: GeneratedNeuronConfig) {
-		return (
-			config.governance ?? {
-				strategy: BRAIN_DEFAULTS.learning.governance.strategy,
-				maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
-			}
-		)
+		return {
+			strategy: BRAIN_DEFAULTS.learning.governance.strategy,
+			maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
+			...definedOnly(this.learningConfig?.governance),
+			...definedOnly(config.governance),
+		}
 	}
 
 	/**
@@ -752,10 +754,12 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			health?: Partial<NeuronHealth>
 		},
 	): Promise<BaseNeuron<unknown>> {
+		const learning = this.learningConfig
 		const shared = {
 			id: config.id,
-			model: this.state.models.default,
-			blueprintModel: this.state.models.blueprint,
+			model: learning?.model ?? this.state.models.default,
+			blueprintModel: learning?.blueprintModel ?? this.state.models.blueprint,
+			...(learning?.query ? { query: learning.query } : {}),
 			llm: this.llm,
 			...this.llmRepairOptions,
 			instructions: config.instructions,
@@ -2371,6 +2375,21 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		if (updates.learning?.governance) {
 			neuronUpdate.governance = updates.learning.governance
 		}
+		// Neurons created later (evolution, addNeuron) follow the same settings.
+		if (updates.learning) {
+			const current = this.learningConfig ?? {}
+			this.learningConfig = {
+				...current,
+				...updates.learning,
+				governance: { ...current.governance, ...updates.learning.governance },
+				understand: {
+					thresholds: {
+						...current.understand?.thresholds,
+						...updates.learning.understand?.thresholds,
+					},
+				},
+			}
+		}
 
 		// Forward to all neurons (each ignores fields it doesn't recognize)
 		if (Object.keys(neuronUpdate).length > 0) {
@@ -2456,4 +2475,11 @@ async function resolveBrainStore(
 	if (typeof input !== 'string') return input
 	const { SQLiteBrainStore } = await import('../stores/sqlite/node/brain')
 	return new SQLiteBrainStore(input)
+}
+
+function definedOnly<T extends object>(value: T | undefined): Partial<T> {
+	if (!value) return {}
+	return Object.fromEntries(
+		Object.entries(value).filter(([, v]) => v !== undefined),
+	) as Partial<T>
 }

@@ -96,10 +96,6 @@ const brain = await Brain.create({
   blueprintModel: smart,            // Neuron config generation: smart model
   init: { model: smart },           // Decomposition: smart model
   query: { model: smart },          // ask() synthesis: smart model
-})
-
-// Per-neuron settings go through update():
-await brain.update({
   learning: {
     model: fast,                    // Extract + update: cheap model (high volume)
     query: { model: smart },        // Per-neuron query: smart model
@@ -107,7 +103,7 @@ await brain.update({
 })
 ```
 
-> **Note:** today `learning.model`, `learning.query` and `learning.governance` reach neurons through `brain.update({ learning })`. At `Brain.create`, neurons use `model` and the default memory strategy.
+`learning` applies to every neuron Brain creates (at create, and later by evolution or `addNeuron`). `brain.update({ learning })` changes existing neurons and the ones created after it. Internal neurons keep their own settings.
 
 For a per-operation breakdown of how many LLM calls each method makes — and where to spend a smarter model vs a cheaper one — see [Cost & Performance](./cost).
 
@@ -173,7 +169,7 @@ If your model doesn't support tool calling, **TextNeuron in direct mode** still 
 
 ## Memory Strategies
 
-`learning.governance` (via `brain.update({ learning })`) sets the memory strategy for Brain's neurons. Neurons Brain creates start with `cumulative`, 8000 tokens. The strategy runs after each update, before the memory is saved:
+`learning.governance` sets the memory strategy for Brain's neurons (default: `cumulative`, 8000 tokens). A neuron's own `governance` in `neurons: [...]` wins per field. The strategy runs after each update, before the memory is saved:
 
 - **`continuous`** — Memory grows. No compression. Use for low-volume topics where you want full detail.
 

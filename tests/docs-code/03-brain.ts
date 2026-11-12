@@ -56,6 +56,7 @@ async function main() {
 			prompt: 'Track user coding patterns and development philosophy.',
 			model,
 			store: new SQLiteBrainStore(join(tmpDir, 'brain.db')),
+			learning: { governance: { strategy: 'decay', maxTokens: 6000 } },
 			evolution: { enabled: true },
 		})
 		assert(brain2 instanceof Brain, 'Brain created with full config')

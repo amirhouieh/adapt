@@ -19,7 +19,7 @@ const brain = await Brain.create({
 })
 ```
 
-With just these two fields, the Brain will auto-decompose the prompt into neurons, store everything in memory, and enable evolution — all with sensible defaults. When you need more control, you can configure persistence, learning thresholds, and evolution behavior:
+With just these two fields, the Brain will auto-decompose the prompt into neurons, store everything in memory, and enable evolution — all with sensible defaults. When you need more control, you can configure persistence, the memory strategy, and evolution behavior:
 
 ```typescript
 import { Brain } from '@unbody-io/adapt'
@@ -32,6 +32,8 @@ const brain = await Brain.create({
   // Per-neuron data is derived from this store automatically
   // (e.g. ./brain.db → sibling files for each neuron).
   store: new SQLiteBrainStore('./brain.db'),
+  // Memory strategy for every neuron (default: cumulative, 8000 tokens)
+  learning: { governance: { strategy: 'decay', maxTokens: 6000 } },
   // Evolution is on by default — shown here for clarity
   evolution: { enabled: true },
 })
