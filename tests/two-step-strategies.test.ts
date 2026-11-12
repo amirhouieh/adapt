@@ -8,7 +8,13 @@ import type { LanguageModel } from '../src/llm'
 
 // Plain-text model: replies are returned in order, one per call.
 // A missing reply throws, so an unexpected strategy call fails the test.
-function scriptedModel(replies: string[]): LanguageModel {
+// A reply is text, or text with a finish reason other than 'stop'.
+type Reply = string | { text: string; finish: 'length' }
+
+function scriptedModel(
+	replies: Reply[],
+	limits: Array<number | undefined> = [],
+): LanguageModel {
 	const usage: LanguageModelV3GenerateResult['usage'] = {
 		inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },
 		outputTokens: { total: 0, text: 0, reasoning: 0 },
@@ -19,12 +25,15 @@ function scriptedModel(replies: string[]): LanguageModel {
 		provider: 'test',
 		modelId: 'scripted',
 		supportedUrls: {},
-		async doGenerate() {
-			const text = replies[call++]
-			if (text === undefined) throw new Error(`no reply for call ${call}`)
+		async doGenerate(options) {
+			limits.push(options.maxOutputTokens)
+			const reply = replies[call++]
+			if (reply === undefined) throw new Error(`no reply for call ${call}`)
+			const { text, finish } =
+				typeof reply === 'string' ? { text: reply, finish: 'stop' as const } : reply
 			return {
 				content: [{ type: 'text', text }],
-				finishReason: { unified: 'stop', raw: 'stop' },
+				finishReason: { unified: finish, raw: finish },
 				usage,
 				warnings: [],
 				request: {},
@@ -92,6 +101,36 @@ describe('two-step memory strategies', () => {
 		)
 		expect(result.status).toBe('synthesized')
 		expect(memory).toBe('Current State: uses Biome.')
+	})
+
+	it('the strategy call uses the same output limit as the update step', async () => {
+		const limits: Array<number | undefined> = []
+		const neuron = await TextNeuron.create({
+			model: scriptedModel(['Prefers Biome.', LONG, 'Seed: uses Biome.'], limits),
+			instructions: 'Track coding preferences.',
+			store: new MemoryNeuronStore(),
+			governance: { strategy: 'cumulative', maxTokens: 10 },
+		})
+		await neuron.learn(['We switched to Biome.'])
+		await neuron.dispose()
+		// extract, update, strategy
+		expect(limits).toEqual([8192, 8192, 8192])
+	})
+
+	it('a cut-off strategy reply (finish: length) is not saved', async () => {
+		const neuron = await TextNeuron.create({
+			model: scriptedModel([
+				'Prefers Biome.',
+				LONG,
+				{ text: 'Current State: uses Bi', finish: 'length' },
+			]),
+			instructions: 'Track coding preferences.',
+			store: new MemoryNeuronStore(),
+			governance: { strategy: 'decay', maxTokens: 10 },
+		})
+		await neuron.learn(['We switched to Biome.'])
+		expect(await neuron.getUnderstanding()).toBe('')
+		await neuron.dispose()
 	})
 
 	it('governance can be changed with update()', async () => {

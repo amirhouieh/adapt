@@ -41,3 +41,12 @@ The strategy call sets no output limit. LFM3 used 5–7k output tokens of thinki
 ## Conclusion
 
 Both strategies run on LFM3 and keep the memory far smaller than continuous. But on this model the compression step (1) does not reach its size target, so it runs every batch, and (2) adds invented facts and advice that then stay in memory. Continuous was the most accurate memory here.
+
+## After the fix: strategy output limit
+
+The strategy call now uses the update step's output limit (8192), and, like the update step, rejects a reply that is not `finish: stop` or is empty.
+
+- 10 decay calls on r1's batch 3 memory: 9 ok (4–8k output tokens, 15–34 s), 1 hit the limit (`finish: length`) and returned 662 chars of **cut-off text**. Before this fix such text was saved as memory; now it is rejected.
+- [r3](../.data/two-step-strategies-lfm3/2026-11-12T20-33-35.045Z) (decay + cumulative, 24 inputs): decay replied empty twice (batches 2 and 3). Both were rejected and retried; all 24 inputs were learned and no cut-off memory was saved.
+
+So the limit does not stop LFM3 from sometimes thinking until it runs out. It makes the failure safe: reject, retry, never save a half memory.

@@ -46,7 +46,12 @@ export interface AdaptiveTextLearningRuntime {
 
 export type AfterUpdate = (
 	memory: string,
-	context: { maxCharacters: number; signal: AbortSignal },
+	context: {
+		maxCharacters: number
+		/** Output limit of the learning setup; the update step uses the same. */
+		maxOutputTokens: number
+		signal: AbortSignal
+	},
 ) => Promise<string>
 
 export interface AdaptiveTextLearningConfig {
@@ -235,6 +240,8 @@ export class AdaptiveTextRuntime {
 					return result
 				const narrative = await afterUpdate(result.narrative, {
 					maxCharacters: snapshot.configuration.memory.maxCharacters,
+					maxOutputTokens:
+						snapshot.configuration.generation.reservedOutputTokens,
 					signal: snapshot.signal,
 				})
 				return { ...result, narrative }

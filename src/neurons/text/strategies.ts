@@ -38,6 +38,8 @@ export async function applyStrategy(
 		governance: GovernanceConfig
 		/** The memory cap of the learning setup; limits stay below it. */
 		maxCharacters: number
+		/** Output limit for the strategy call, the same as the update step's. */
+		maxOutputTokens: number
 		llm: AdaptLLMPlugin
 		model: LanguageModel
 		abortSignal?: AbortSignal
@@ -60,13 +62,17 @@ export async function applyStrategy(
 		llm: input.llm,
 		model: input.model,
 		prompt,
+		maxOutputTokens: input.maxOutputTokens,
 		abortSignal: input.abortSignal,
 		repairWithFeedback: input.repairWithFeedback,
 		maxRepairAttempts: input.maxRepairAttempts,
 	})
+	// Like the update step: a cut-off or empty reply is not a memory.
 	const text = result.text.trim()
-	if (!text)
-		throw new Error(`${governance.strategy} strategy returned no memory`)
+	if (result.finishReason !== 'stop' || !text)
+		throw new Error(
+			`${governance.strategy} strategy returned no usable memory (finish: ${result.finishReason}, ${text.length} chars)`,
+		)
 	return text
 }
 
