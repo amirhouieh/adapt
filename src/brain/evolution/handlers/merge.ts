@@ -85,7 +85,7 @@ export class MergeHandler extends EvolutionActionHandler<MergeActionResult> {
 
 				const completeConfig = createCompleteConfig({
 					...config,
-					type: neuronType as 'text' | 'list',
+					type: neuronType as 'text',
 				})
 				const newNeuron =
 					await this.brain.createNeuronFromConfig(completeConfig)

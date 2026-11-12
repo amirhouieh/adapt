@@ -15,7 +15,6 @@ import {
 	type AdjustResult,
 	type BaseNeuron,
 	type GeneratedNeuronConfig,
-	listNeuronDescriptor,
 	type NeuronHealth,
 	type NeuronTypeDescriptor,
 	type TokenUsage,
@@ -188,10 +187,9 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			rawConfig.dismissedBatchBuffer?.maxSize ??
 			BRAIN_DEFAULTS.dismissedBatchBuffer.maxSize
 
-		// Register neuron type descriptors (default: text + list)
+		// Register neuron type descriptors
 		this.neuronTypes = new Map([
 			[textNeuronDescriptor.type, textNeuronDescriptor],
-			[listNeuronDescriptor.type, listNeuronDescriptor],
 		])
 	}
 

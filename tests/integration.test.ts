@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
-import { TextNeuron, ListNeuron, MemoryNeuronStore } from '../src'
+import { TextNeuron, MemoryNeuronStore } from '../src'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import type { LanguageModel } from 'ai'
 
@@ -75,46 +75,6 @@ describe('TextNeuron lifecycle', () => {
 		// Should be dismissed or observed with low importance
 		expect(['observe:dismissed', 'observed']).toContain(result.status)
 	}, 30_000)
-})
-
-// ── ListNeuron lifecycle ────────────────────────────────────────────────────
-
-describe('ListNeuron lifecycle', () => {
-	it('learn → builds structured items → query returns relevant answer', async () => {
-		const neuron = await ListNeuron.create({
-			model,
-			id: 'test-list',
-			instructions: 'Track restaurants with cuisine type, location, and price range.',
-			store: new MemoryNeuronStore(),
-			understand: {
-				thresholds: { minImportance: 0.2, maxObservations: 3 },
-			},
-		})
-
-		const result = await neuron.learn([
-			'Had amazing ramen at Ichiran in Shibuya — rich tonkotsu broth, about ¥1200.',
-			'Tried the new Italian place Trattoria Roma on 5th Avenue — great pasta, around $25 per plate.',
-			'Best tacos at El Fogon in downtown — authentic Mexican, only $8.',
-		])
-
-		expect(result.status).toBe('synthesized')
-
-		const understanding = await neuron.getUnderstanding()
-		expect(understanding).toBeTruthy()
-		expect(Array.isArray(understanding)).toBe(true)
-		expect(understanding!.length).toBeGreaterThanOrEqual(2)
-
-		// Each item should have data and metadata
-		for (const item of understanding!) {
-			expect(item.id).toBeTruthy()
-			expect(item.data).toBeTruthy()
-			expect(item.metadata).toBeTruthy()
-			expect(item.metadata.touchCount).toBeGreaterThanOrEqual(1)
-		}
-
-		const queryResult = await neuron.query('What are the cheapest restaurants?')
-		expect(queryResult.insight).toBeTruthy()
-	}, 60_000)
 })
 
 // ── Neuron update with instruction change ───────────────────────────────────

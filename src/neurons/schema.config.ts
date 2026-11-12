@@ -45,10 +45,8 @@ Track answers to:
 			'Optional focus areas to narrow observation filtering (null if none)',
 		),
 	type: z
-		.enum(['text', 'list'])
-		.describe(
-			'Neuron type. "text" — builds narrative prose understanding, best for qualitative patterns, preferences, philosophies. "list" — tracks a structured collection of items, best for entities, catalogs, inventories.',
-		),
+		.enum(['text'])
+		.describe('Neuron type. "text" — builds a plain-text understanding.'),
 })
 
 /**

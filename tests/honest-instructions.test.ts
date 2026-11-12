@@ -5,7 +5,7 @@ import type {
 	LanguageModelV3CallOptions,
 	LanguageModelV3GenerateResult,
 } from '@ai-sdk/provider'
-import { ListNeuron, MemoryNeuronStore, TextNeuron } from '../src'
+import { MemoryNeuronStore, TextNeuron } from '../src'
 
 function createQueuedJsonModel(responses: unknown[]) {
 	let callCount = 0
@@ -214,29 +214,6 @@ describe('honest neuron instructions', () => {
 		expect(neuron.getUnderstandSystemPrompt()).toContain(instructions)
 		expect(neuron.getUnderstandSystemPrompt()).not.toContain(
 			'LEGACY UNDERSTAND PROMPT',
-		)
-	})
-
-	it('migrates legacy list-neuron understand placeholders on restore', async () => {
-		const store = new MemoryNeuronStore()
-		const instructions = 'Track feature requests as collection items.'
-
-		await store.state.add(makeState('instructions', instructions))
-		await store.state.add(makeState('observe_prompt', 'LEGACY OBSERVE PROMPT'))
-		await store.state.add(
-			makeState('understand_prompt', '(list-understand: identity initialized)'),
-		)
-
-		const neuron = await ListNeuron.restore(store, { id: 'legacy-list' })
-
-		expect(neuron.getObserveSystemPrompt()).toContain(instructions)
-		expect(neuron.getObserveSystemPrompt()).not.toContain('LEGACY OBSERVE PROMPT')
-		expect(neuron.getUnderstandSystemPrompt()).toContain(
-			'You are the understand phase of a list neuron.',
-		)
-		expect(neuron.getUnderstandSystemPrompt()).toContain(instructions)
-		expect(neuron.getUnderstandSystemPrompt()).not.toContain(
-			'list-understand: identity initialized',
 		)
 	})
 

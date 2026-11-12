@@ -31,20 +31,6 @@ export type {
 export { BaseNeuron } from './base'
 export type { QueryOptions, QueryResult } from './base/query'
 export { ToolBasedMethod } from './base/query'
-export type {
-	ListGovernanceConfig,
-	ListItem,
-	ListNeuronConfig,
-	ListNeuronEvent,
-	ListNeuronEventMap,
-	ListNeuronUpdateResult,
-	ListOperation,
-	ResolvedListGovernanceConfig,
-	ResolvedListNeuronConfig,
-} from './list'
-// ListNeuron
-export { ListNeuron } from './list'
-export { listNeuronDescriptor } from './list/descriptor'
 // Schemas
 export {
 	type GeneratedNeuronConfig,

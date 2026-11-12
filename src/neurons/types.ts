@@ -84,7 +84,7 @@ export interface TokenUsage {
  * Brain's evolution system uses descriptors for dispatch and LLM prompts.
  */
 export interface NeuronTypeDescriptor {
-	/** Type identifier: 'text' | 'list' | future types */
+	/** Type identifier: 'text' | future types */
 	type: string
 	/** When to use this type (for evaluator/decomposition prompts) */
 	description: string

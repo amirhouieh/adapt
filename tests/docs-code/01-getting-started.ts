@@ -97,7 +97,7 @@ async function main() {
 				{
 					id: 'recipes',
 					name: 'Recipe Collection',
-					type: 'list',
+					type: 'text',
 					description: 'Tracked recipes and ingredients',
 					instructions: 'Track recipes with cuisine type, ingredients, and difficulty level.',
 				},

@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/04-neurons.ts
  */
 
-import { Brain, TextNeuron, ListNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { SQLiteNeuronStore } from '@unbody-io/adapt/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -130,66 +130,6 @@ async function main() {
 	})
 	assert(restoredWithId instanceof TextNeuron, 'TextNeuron.restore(path, { id, model }) succeeds')
 	await restoredWithId.dispose()
-
-	// ── ListNeuron — Basic ───────────────────────────────────────────────
-	section('ListNeuron — Basic')
-
-	const listNeuron = await ListNeuron.create({
-		model,
-		instructions: 'Track restaurants with cuisine type, location, price range, and rating.',
-		store: new MemoryNeuronStore(),
-	})
-
-	await listNeuron.learn([
-		'Had amazing ramen at Ichiran in Shibuya — rich tonkotsu broth, ¥1200',
-		'Tried the new Italian place on 5th — mediocre pasta, overpriced',
-	])
-
-	const items = await listNeuron.getUnderstanding()
-	assert(Array.isArray(items), 'ListNeuron getUnderstanding() returns array')
-
-	// ── Custom Schemas via Brain ─────────────────────────────────────────
-	section('Custom Schemas via Brain')
-
-	const customSchemaBrain = await Brain.create({
-		prompt: 'Track therapy sessions.',
-		model,
-		autoSetup: false,
-		neurons: [{
-			id: 'relationships',
-			type: 'list',
-			name: 'Relationships',
-			description: 'Key people, client descriptions, shifts in perception',
-			instructions: 'Track the key people in this client\'s life and how perception evolves.',
-			governance: { deduplication: 'strict', maxItems: 100, pruning: 'least-confident' },
-			observationSchema: {
-				type: 'object',
-				properties: {
-					person_name: { type: 'string' },
-					relationship_to_client: { type: 'string' },
-					description: { type: 'string' },
-				},
-				required: ['person_name', 'description'],
-			},
-			understandingSchema: {
-				type: 'object',
-				properties: {
-					person_name: { type: 'string' },
-					relationship_to_client: { type: 'string' },
-					emotional_charge: { type: 'string', enum: ['positive', 'negative', 'ambivalent', 'neutral'] },
-					role_in_client_patterns: { type: 'string' },
-					perception_shift_observed: { type: 'boolean' },
-				},
-				required: ['person_name', 'relationship_to_client'],
-			},
-		}],
-	})
-
-	const relNeuron = customSchemaBrain.getNeuron('relationships')
-	assert(relNeuron !== undefined, 'custom schema neuron created')
-	assert(relNeuron!.type === 'list', 'custom schema neuron is list type')
-
-	await customSchemaBrain.dispose()
 
 	// ── Common Neuron API ────────────────────────────────────────────────
 	section('Common Neuron API')
@@ -334,7 +274,6 @@ async function main() {
 	await learnNeuron.dispose()
 	await apiNeuron.dispose()
 	await textNeuron.dispose()
-	await listNeuron.dispose()
 	} finally {
 		rmSync(tmpDir, { recursive: true, force: true })
 	}

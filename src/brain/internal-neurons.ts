@@ -67,7 +67,7 @@ Track answers to:
 			name: 'Global Query Understanding',
 			description:
 				'Tracks what users ask — query topics, frequency, clusters, and coverage gaps',
-			type: 'list',
+			type: 'text',
 			focus: null,
 			instructions: `Track and categorize all user queries to understand what information users need.
 
@@ -81,6 +81,7 @@ Track answers to:
 - What topics do users ask about most frequently?
 - What query clusters exist and how are they related?
 - Where are the coverage gaps between what users ask and what the system knows?`,
+			governance: { strategy: 'decay', maxTokens: 16000 },
 			skipObservation: true,
 		},
 	},

@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto'
-import type { EvolutionLensDefinition } from '../evolution/contracts'
 import type {
 	BrainNeuronRecord,
 	NeuronStoreSnapshot,
 	StateRecord,
 	UnderstandingRecord,
 } from '../../stores'
+import type { EvolutionLensDefinition } from '../evolution/contracts'
 import type {
 	LegacyMigrationInspectInput,
 	LegacyMigrationInspectionResult,
@@ -79,7 +79,11 @@ function nonEmptyString(value: unknown): value is string {
 	return typeof value === 'string' && value.length > 0
 }
 
-function validNumber(value: unknown, minimum: number, maximum: number): boolean {
+function validNumber(
+	value: unknown,
+	minimum: number,
+	maximum: number,
+): boolean {
 	return (
 		typeof value === 'number' &&
 		Number.isFinite(value) &&
@@ -97,27 +101,8 @@ function validateUniqueIds(
 	if (
 		records.some(({ id }) => !nonEmptyString(id)) ||
 		new Set(records.map(({ id }) => id)).size !== records.length
-	) recordIssue(issues, `${name} ids must be non-empty and unique`, lensId)
-}
-
-function validListItem(record: LegacyV006NeuronSnapshot['understanding'][number]): boolean {
-	if (!record.data || typeof record.data !== 'object' || Array.isArray(record.data)) return false
-	const item = record.data as Record<string, unknown>
-	if (
-		item.id !== record.id || !item.data || typeof item.data !== 'object' ||
-		Array.isArray(item.data) || !item.metadata || typeof item.metadata !== 'object' ||
-		Array.isArray(item.metadata)
-	) return false
-	const metadata = item.metadata as Record<string, unknown>
-	return (
-		validNumber(metadata.confidence, 0, 1) &&
-		Number.isSafeInteger(metadata.touchCount) &&
-		(metadata.touchCount as number) >= 0 &&
-		nonEmptyString(metadata.firstSeen) && validTimestamp(metadata.firstSeen) &&
-		nonEmptyString(metadata.lastUpdated) && validTimestamp(metadata.lastUpdated) &&
-		Array.isArray(metadata.signals) &&
-		metadata.signals.every(nonEmptyString)
 	)
+		recordIssue(issues, `${name} ids must be non-empty and unique`, lensId)
 }
 
 function validateNeuronRecords(
@@ -127,38 +112,70 @@ function validateNeuronRecords(
 	lensId: string,
 ): void {
 	validateUniqueIds(snapshot.state, 'legacy neuron state', issues, lensId)
-	validateUniqueIds(snapshot.observations, 'legacy observations', issues, lensId)
-	validateUniqueIds(snapshot.understanding, 'legacy understanding', issues, lensId)
-	validateUniqueIds(snapshot.evolution, 'legacy neuron evolution', issues, lensId)
+	validateUniqueIds(
+		snapshot.observations,
+		'legacy observations',
+		issues,
+		lensId,
+	)
+	validateUniqueIds(
+		snapshot.understanding,
+		'legacy understanding',
+		issues,
+		lensId,
+	)
+	validateUniqueIds(
+		snapshot.evolution,
+		'legacy neuron evolution',
+		issues,
+		lensId,
+	)
 	for (const record of snapshot.state) {
 		if (!validTimestamp(record.updated_at)) {
-			recordIssue(issues, `legacy state ${record.id} has an invalid timestamp`, lensId)
+			recordIssue(
+				issues,
+				`legacy state ${record.id} has an invalid timestamp`,
+				lensId,
+			)
 		}
 	}
 	for (const record of snapshot.observations) {
 		if (
 			!validNumber(record.metadata_importance, 0, 1) ||
-			!Number.isSafeInteger(record.metadata_tokens) || record.metadata_tokens < 0 ||
-			(record.metadata_status !== 'pending' && record.metadata_status !== 'processed') ||
+			!Number.isSafeInteger(record.metadata_tokens) ||
+			record.metadata_tokens < 0 ||
+			(record.metadata_status !== 'pending' &&
+				record.metadata_status !== 'processed') ||
 			!validTimestamp(record.metadata_created_at)
-		) recordIssue(issues, `legacy observation ${record.id} is invalid`, lensId)
+		)
+			recordIssue(issues, `legacy observation ${record.id} is invalid`, lensId)
 	}
 	for (const record of snapshot.understanding) {
 		if (
 			!validNumber(record.metadata_confidence, 0, 1) ||
 			!validTimestamp(record.metadata_created_at) ||
 			!validTimestamp(record.metadata_updated_at) ||
-			(type === 'text' && typeof record.data !== 'string') ||
-			(type === 'list' && !validListItem(record))
-		) recordIssue(issues, `legacy understanding ${record.id} is invalid`, lensId)
+			(type === 'text' && typeof record.data !== 'string')
+		)
+			recordIssue(
+				issues,
+				`legacy understanding ${record.id} is invalid`,
+				lensId,
+			)
 	}
 	for (const record of snapshot.evolution) {
 		if (
 			!nonEmptyString(record.summary) ||
-			(record.reasoning !== undefined && typeof record.reasoning !== 'string') ||
+			(record.reasoning !== undefined &&
+				typeof record.reasoning !== 'string') ||
 			!['routine', 'notable', 'critical'].includes(record.significance) ||
 			!validTimestamp(record.created_at)
-		) recordIssue(issues, `legacy neuron evolution ${record.id} is invalid`, lensId)
+		)
+			recordIssue(
+				issues,
+				`legacy neuron evolution ${record.id} is invalid`,
+				lensId,
+			)
 	}
 }
 
@@ -168,7 +185,11 @@ function validateBrainRecords(
 ): void {
 	validateUniqueIds(source.state, 'legacy Brain state', issues)
 	validateUniqueIds(source.neurons, 'legacy Brain neurons', issues)
-	validateUniqueIds(source.internalNeurons, 'legacy Brain internal neurons', issues)
+	validateUniqueIds(
+		source.internalNeurons,
+		'legacy Brain internal neurons',
+		issues,
+	)
 	validateUniqueIds(source.evolution, 'legacy Brain evolution', issues)
 	validateUniqueIds(source.dismissedBatches, 'legacy dismissed batches', issues)
 	const allNeuronIds = [
@@ -176,18 +197,31 @@ function validateBrainRecords(
 		...source.internalNeurons.map(({ id }) => id),
 	]
 	if (new Set(allNeuronIds).size !== allNeuronIds.length) {
-		recordIssue(issues, 'legacy external and internal neuron ids must be distinct')
+		recordIssue(
+			issues,
+			'legacy external and internal neuron ids must be distinct',
+		)
 	}
 	for (const record of source.state) {
 		if (!validTimestamp(record.updated_at)) {
-			recordIssue(issues, `legacy Brain state ${record.id} has an invalid timestamp`)
+			recordIssue(
+				issues,
+				`legacy Brain state ${record.id} has an invalid timestamp`,
+			)
 		}
 	}
 	for (const record of [...source.neurons, ...source.internalNeurons]) {
 		if (
 			!nonEmptyString(record.type) ||
-			(record.status !== undefined && record.status !== 'active' && record.status !== 'inactive')
-		) recordIssue(issues, `legacy Brain neuron ${record.id} is invalid`, record.id)
+			(record.status !== undefined &&
+				record.status !== 'active' &&
+				record.status !== 'inactive')
+		)
+			recordIssue(
+				issues,
+				`legacy Brain neuron ${record.id} is invalid`,
+				record.id,
+			)
 	}
 	for (const record of source.evolution) {
 		if (!nonEmptyString(record.source) || !validTimestamp(record.created_at)) {
@@ -197,16 +231,23 @@ function validateBrainRecords(
 	for (const record of source.dismissedBatches) {
 		if (
 			!validTimestamp(record.timestamp) ||
-			!Number.isSafeInteger(record.retryCount) || record.retryCount < 0 ||
-			!Array.isArray(record.gaps) || !record.gaps.every((gap) => typeof gap === 'string')
-		) recordIssue(issues, `legacy dismissed batch ${record.id} is invalid`)
+			!Number.isSafeInteger(record.retryCount) ||
+			record.retryCount < 0 ||
+			!Array.isArray(record.gaps) ||
+			!record.gaps.every((gap) => typeof gap === 'string')
+		)
+			recordIssue(issues, `legacy dismissed batch ${record.id} is invalid`)
 	}
 	const sourceLensIds = source.lenses.map(({ record }) => record.id)
 	if (
 		new Set(sourceLensIds).size !== sourceLensIds.length ||
 		sourceLensIds.length !== allNeuronIds.length ||
 		allNeuronIds.some((id) => !sourceLensIds.includes(id))
-	) recordIssue(issues, 'legacy Brain lens stores do not match its neuron records')
+	)
+		recordIssue(
+			issues,
+			'legacy Brain lens stores do not match its neuron records',
+		)
 }
 
 function validateStateCompatibility(
@@ -217,7 +258,11 @@ function validateStateCompatibility(
 ): void {
 	const models = stateValue(state, 'models')
 	if (!models || typeof models !== 'object' || Array.isArray(models)) {
-		recordIssue(issues, 'legacy neuron model slots are missing or invalid', record.id)
+		recordIssue(
+			issues,
+			'legacy neuron model slots are missing or invalid',
+			record.id,
+		)
 	} else {
 		for (const [slot, reference] of Object.entries(models)) {
 			const message = input.compatibility.validateModelReference({
@@ -289,7 +334,12 @@ function validateLensDefinition(
 			record.id,
 		)
 	}
-	if (!input.compatibility.hasRecipe({ reference: lens.recipe, memoryType: lens.type })) {
+	if (
+		!input.compatibility.hasRecipe({
+			reference: lens.recipe,
+			memoryType: lens.type,
+		})
+	) {
 		issues.push({
 			code: 'unavailable-recipe',
 			message: `recipe ${lens.recipe.id}@${lens.recipe.version} is unavailable for ${lens.type}`,
@@ -299,25 +349,22 @@ function validateLensDefinition(
 }
 
 function migratedUnderstanding(
-	type: string,
 	records: LegacyV006NeuronSnapshot['understanding'],
 ): UnderstandingRecord[] {
 	return records.map((record) => ({
 		...record,
-		metadata_confidence_provenance:
-			type === 'list' ? 'legacy-touch-count' : 'legacy-default',
+		metadata_confidence_provenance: 'legacy-default',
 	}))
 }
 
 function migratedSnapshot(
-	type: string,
 	source: LegacyV006NeuronSnapshot,
 	input: LegacyMigrationInspectInput,
 	createdAt: string,
 ): NeuronStoreSnapshot {
 	return structuredClone({
 		observations: source.observations,
-		understanding: migratedUnderstanding(type, source.understanding),
+		understanding: migratedUnderstanding(source.understanding),
 		evolution: source.evolution,
 		state: source.state,
 		learningHistory: [],
@@ -327,12 +374,14 @@ function migratedSnapshot(
 		processedInputs: [],
 		outbox: [],
 		learningAttempts: [],
-		learningRevisions: [{
-			id: 'current',
-			memory_revision: input.revisions.initialMemoryRevision,
-			config_revision: input.revisions.initialConfigRevision,
-			updated_at: createdAt,
-		}],
+		learningRevisions: [
+			{
+				id: 'current',
+				memory_revision: input.revisions.initialMemoryRevision,
+				config_revision: input.revisions.initialConfigRevision,
+				updated_at: createdAt,
+			},
+		],
 	})
 }
 
@@ -353,10 +402,13 @@ async function targetFor(
 	createdAt: string,
 	issues: LegacyMigrationIssue[],
 ): Promise<LegacyMigrationTarget | undefined> {
-	if (record.type !== 'text' && record.type !== 'list') {
+	if (record.type !== 'text') {
 		issues.push({
 			code: 'unsupported-lens-type',
-			message: `legacy lens type ${record.type} is unsupported`,
+			message:
+				record.type === 'list'
+					? 'legacy list lenses are not supported in v2; upgrade refused'
+					: `legacy lens type ${record.type} is unsupported`,
 			lensId: record.id,
 		})
 		return undefined
@@ -407,7 +459,7 @@ async function targetFor(
 			record.id,
 		)
 	}
-	const snapshot = migratedSnapshot(record.type, source, input, createdAt)
+	const snapshot = migratedSnapshot(source, input, createdAt)
 	return {
 		lensId: record.id,
 		internal,
@@ -419,7 +471,11 @@ async function targetFor(
 }
 
 function validateInput(input: LegacyMigrationInspectInput): void {
-	if (!input.ids.migrationId || !input.ids.journalStateId || !input.source.sourceId) {
+	if (
+		!input.ids.migrationId ||
+		!input.ids.journalStateId ||
+		!input.source.sourceId
+	) {
 		throw new Error('migration, journal, and source ids are required')
 	}
 	if (
@@ -429,11 +485,13 @@ function validateInput(input: LegacyMigrationInspectInput): void {
 		!validLimit(input.bounds.maxRecordsPerLens) ||
 		!validLimit(input.bounds.maxSnapshotChars) ||
 		!validLimit(input.bounds.maxDismissedBatches)
-	) throw new Error('migration bounds must be positive safe integers')
+	)
+		throw new Error('migration bounds must be positive safe integers')
 	if (
 		!validRevision(input.revisions.initialMemoryRevision) ||
 		!validRevision(input.revisions.initialConfigRevision)
-	) throw new Error('initial revisions must be nonnegative safe integers')
+	)
+		throw new Error('initial revisions must be nonnegative safe integers')
 }
 
 function planIntent(plan: Omit<LegacyMigrationPlan, 'intentDigest'>): unknown {
@@ -451,7 +509,9 @@ export async function inspectLegacyV006Migration(
 			message: `declared legacy version ${input.source.declaredVersion} is unsupported`,
 		})
 	}
-	if (!['memory', 'sqlite-node', 'sqlite-bun'].includes(input.source.storeKind)) {
+	if (
+		!['memory', 'sqlite-node', 'sqlite-bun'].includes(input.source.storeKind)
+	) {
 		issues.push({
 			code: 'unsupported-store',
 			message: `legacy store kind ${String(input.source.storeKind)} is unsupported`,
@@ -486,8 +546,11 @@ export async function inspectLegacyV006Migration(
 		validateBrainRecords(source, issues)
 		validateBrainModels(input, source.state, issues)
 		const brainRecordCount =
-			source.state.length + source.neurons.length + source.internalNeurons.length +
-			source.evolution.length + source.dismissedBatches.length
+			source.state.length +
+			source.neurons.length +
+			source.internalNeurons.length +
+			source.evolution.length +
+			source.dismissedBatches.length
 		if (brainRecordCount > input.bounds.maxBrainRecords) {
 			issues.push({
 				code: 'bounds-exceeded',
@@ -532,7 +595,10 @@ export async function inspectLegacyV006Migration(
 			if (target) targets.push(target)
 		}
 		if (source.state.some((record) => record.id === input.ids.journalStateId)) {
-			recordIssue(issues, 'migration journal state id collides with legacy Brain state')
+			recordIssue(
+				issues,
+				'migration journal state id collides with legacy Brain state',
+			)
 		}
 		brain = structuredClone({
 			state: source.state,
@@ -545,7 +611,10 @@ export async function inspectLegacyV006Migration(
 			!input.ids.targetRegistryRevisionId ||
 			!validRevision(input.ids.targetRegistryRevision ?? Number.NaN)
 		) {
-			recordIssue(issues, 'Brain migration requires a target registry revision id and revision')
+			recordIssue(
+				issues,
+				'Brain migration requires a target registry revision id and revision',
+			)
 		}
 	}
 	if (
@@ -554,7 +623,10 @@ export async function inspectLegacyV006Migration(
 			(record) => record.id === input.ids.journalStateId,
 		)
 	) {
-		recordIssue(issues, 'migration journal state id collides with legacy neuron state')
+		recordIssue(
+			issues,
+			'migration journal state id collides with legacy neuron state',
+		)
 	}
 	const logicalIds = targets.map(({ lensId }) => lensId)
 	if (new Set(logicalIds).size !== logicalIds.length) {

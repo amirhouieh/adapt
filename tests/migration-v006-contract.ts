@@ -35,12 +35,13 @@ const fixture = {
 	targetId: 'v2-target',
 	registryId: 'registry-migrated',
 	textLensId: 'text-lens',
-	listLensId: 'list-lens',
+	internalLensId: 'internal-lens',
 	textPhysicalId: 'physical-text',
-	listPhysicalId: 'list-lens',
+	internalPhysicalId: 'internal-lens',
 	textUnderstanding: 'Durable learned text.',
 	textObservation: 'Derived text observation.',
-	listObservation: 'Derived list observation.',
+	internalUnderstanding: 'Internal learned text.',
+	internalObservation: 'Derived internal observation.',
 	dismissedPendingText: 'Unresolved pending batch.',
 	dismissedRetriedText: 'Unresolved retried batch.',
 }
@@ -51,55 +52,34 @@ function state(id: string, value: unknown) {
 
 async function seedLegacyNeuron(
 	store: NeuronStore,
-	type: 'text' | 'list',
+	kind: 'text' | 'internal',
 ): Promise<void> {
-	await store.state.add(state('instructions', `Track ${type} knowledge.`))
+	const internal = kind === 'internal'
+	await store.state.add(state('instructions', `Track ${kind} knowledge.`))
 	await store.state.add(state('models', {
 		default: { plugin: 'local-test', provider: 'fixture', id: 'model-1' },
 		query: { plugin: 'local-test', provider: 'fixture', id: 'model-1' },
 	}))
 	await store.state.add(state('observation_schema', { type: 'string' }))
-	await store.state.add(state('understanding_schema', {
-		type: type === 'text' ? 'string' : 'object',
-	}))
+	await store.state.add(state('understanding_schema', { type: 'string' }))
 	await store.observations.add({
-		id: `${type}-observation`,
-		data: type === 'text' ? fixture.textObservation : fixture.listObservation,
+		id: `${kind}-observation`,
+		data: internal ? fixture.internalObservation : fixture.textObservation,
 		metadata_importance: 0.8,
 		metadata_tokens: 5,
-		metadata_status: type === 'text' ? 'processed' : 'pending',
+		metadata_status: internal ? 'pending' : 'processed',
 		metadata_created_at: fixture.createdAt,
 	})
-	if (type === 'text') {
-		await store.understanding.add({
-			id: 'current',
-			data: fixture.textUnderstanding,
-			metadata_confidence: 1,
-			metadata_created_at: fixture.createdAt,
-			metadata_updated_at: fixture.updatedAt,
-		})
-	} else {
-		await store.understanding.add({
-			id: 'list-item',
-			data: {
-				id: 'list-item',
-				data: { name: 'Atlas' },
-				metadata: {
-					confidence: 0.5,
-					touchCount: 2,
-					firstSeen: fixture.createdAt,
-					lastUpdated: fixture.updatedAt,
-					signals: ['confirmed'],
-				},
-			},
-			metadata_confidence: 0.5,
-			metadata_created_at: fixture.createdAt,
-			metadata_updated_at: fixture.updatedAt,
-		})
-	}
+	await store.understanding.add({
+		id: 'current',
+		data: internal ? fixture.internalUnderstanding : fixture.textUnderstanding,
+		metadata_confidence: 1,
+		metadata_created_at: fixture.createdAt,
+		metadata_updated_at: fixture.updatedAt,
+	})
 	await store.evolution.add({
-		id: `${type}-evolution`,
-		summary: `Learned ${type} state.`,
+		id: `${kind}-evolution`,
+		summary: `Learned ${kind} state.`,
 		significance: 'notable',
 		created_at: fixture.updatedAt,
 	})
@@ -112,9 +92,9 @@ async function seedLegacyBrain(store: BrainStore): Promise<void> {
 		query: { plugin: 'local-test', provider: 'fixture', id: 'model-1' },
 	}))
 	await store.neurons.add({ id: fixture.textLensId, type: 'text', status: 'active' })
-	await store.internalNeurons.add({ id: fixture.listLensId, type: 'list', status: 'active' })
+	await store.internalNeurons.add({ id: fixture.internalLensId, type: 'text', status: 'active' })
 	await seedLegacyNeuron(store.getNeuronStore(fixture.textLensId), 'text')
-	await seedLegacyNeuron(store.getNeuronStore(fixture.listLensId), 'list')
+	await seedLegacyNeuron(store.getNeuronStore(fixture.internalLensId), 'internal')
 	await store.evolution.add({
 		id: 'brain-evolution',
 		decisions: [{ action: 'create', lens: fixture.textLensId }],
@@ -156,7 +136,7 @@ function compatibility(overrides: Partial<LegacyMigrationRuntimeCompatibility> =
 				id: record.id,
 				name: record.id,
 				description: `Migrated ${record.type} lens.`,
-				type: record.type as 'text' | 'list',
+				type: record.type as 'text',
 				memory_schema: { id: `adapt.memory.${record.type}`, version: '1' },
 				recipe: { id: `adapt.learning.${record.type}`, version: '1' },
 				recipe_composition: [],
@@ -196,7 +176,7 @@ function inspectInput(
 			targetRegistryRevision: 1,
 			targetPhysicalStoreIds: {
 				[fixture.textLensId]: fixture.textPhysicalId,
-				[fixture.listLensId]: fixture.listPhysicalId,
+				[fixture.internalLensId]: fixture.internalPhysicalId,
 			},
 		},
 		revisions: { initialMemoryRevision: 1, initialConfigRevision: 1 },
@@ -226,12 +206,9 @@ export function registerMigrationV006Contract(
 				expect(inspected.status).toBe('ready')
 				if (inspected.status !== 'ready') return
 				const textTarget = inspected.plan.targets.find(({ lensId }) => lensId === fixture.textLensId)
-				const listTarget = inspected.plan.targets.find(({ lensId }) => lensId === fixture.listLensId)
+				const internalTarget = inspected.plan.targets.find(({ lensId }) => lensId === fixture.internalLensId)
 				expect(textTarget?.snapshot.understanding[0]?.metadata_confidence_provenance).toBe('legacy-default')
-				expect(listTarget?.snapshot.understanding[0]?.metadata_confidence_provenance).toBe('legacy-touch-count')
-				expect((listTarget?.snapshot.understanding[0]?.data as {
-					metadata: { touchCount: number }
-				}).metadata.touchCount).toBe(2)
+				expect(internalTarget?.snapshot.understanding[0]?.data).toBe(fixture.internalUnderstanding)
 				expect(inspected.plan.brain?.dismissedBatches.map(({ status }) => status)).toEqual(['pending', 'retried'])
 
 				let interrupted = false
@@ -282,6 +259,30 @@ export function registerMigrationV006Contract(
 				await reopened.dispose()
 			} finally {
 				await scenario.sourceBrain.dispose()
+				scenario.cleanup()
+			}
+		})
+
+		it('refuses a legacy Brain with a list lens', async () => {
+			const scenario = createScenario()
+			try {
+				await seedLegacyBrain(scenario.sourceBrain)
+				await scenario.sourceBrain.neurons.add({ id: 'list-lens', type: 'list', status: 'active' })
+				const source = createLegacyV006BrainSource({
+					sourceId: fixture.sourceId, storeKind: 'memory', declaredVersion: '0.0.6',
+					assertExclusive() {}, store: scenario.sourceBrain,
+				})
+				const result = await inspectLegacyV006Migration(inspectInput(source))
+				expect(result.status).toBe('incompatible')
+				if (result.status === 'incompatible') {
+					expect(result.issues).toContainEqual(expect.objectContaining({
+						code: 'unsupported-lens-type', lensId: 'list-lens',
+					}))
+				}
+				expect(await scenario.targetBrain.state.count()).toBe(0)
+			} finally {
+				await scenario.sourceBrain.dispose()
+				await scenario.targetBrain.dispose()
 				scenario.cleanup()
 			}
 		})

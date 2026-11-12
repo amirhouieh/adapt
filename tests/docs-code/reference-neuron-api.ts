@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/reference-neuron-api.ts
  */
 
-import { TextNeuron, ListNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -195,64 +195,6 @@ async function main() {
 	assert(textNeuron.origin === 'prompt' || textNeuron.origin === 'developer' || textNeuron.origin === 'emergent', 'neuron.origin is valid')
 
 	await textNeuron.dispose()
-
-	// ── ListNeuron — Verify Same API ─────────────────────────────────────
-	section('ListNeuron — API Parity')
-
-	const listNeuron = await ListNeuron.create({
-		model,
-		instructions: 'Track items for API ref test.',
-		store: new MemoryNeuronStore(),
-	})
-
-	// Lifecycle
-	assert(typeof ListNeuron.create === 'function', 'ListNeuron.create() exists')
-	assert(typeof ListNeuron.restore === 'function', 'ListNeuron.restore() exists')
-	assert(typeof listNeuron.dispose === 'function', 'listNeuron.dispose() exists')
-	assert(typeof listNeuron.isInitialized === 'function', 'listNeuron.isInitialized() exists')
-
-	// Learning
-	assert(typeof listNeuron.learn === 'function', 'listNeuron.learn() exists')
-
-	// Querying
-	assert(typeof listNeuron.query === 'function', 'listNeuron.query() exists')
-	assert(typeof listNeuron.queryStream === 'function', 'listNeuron.queryStream() exists')
-
-	// Understanding
-	assert(typeof listNeuron.getUnderstanding === 'function', 'listNeuron.getUnderstanding() exists')
-	assert(typeof listNeuron.setUnderstanding === 'function', 'listNeuron.setUnderstanding() exists')
-	assert(typeof listNeuron.getSummary === 'function', 'listNeuron.getSummary() exists')
-	assert(typeof listNeuron.hasKnowledge === 'function', 'listNeuron.hasKnowledge() exists')
-
-	// Buffer
-	assert(typeof listNeuron.getBufferState === 'function', 'listNeuron.getBufferState() exists')
-	assert(typeof listNeuron.getBufferedObservations === 'function', 'listNeuron.getBufferedObservations() exists')
-
-	// Observations API
-	assert(typeof listNeuron.getObservations === 'function', 'listNeuron.getObservations() exists')
-	assert(typeof listNeuron.setObservations === 'function', 'listNeuron.setObservations() exists')
-	assert(typeof listNeuron.updateObservation === 'function', 'listNeuron.updateObservation() exists')
-	assert(typeof listNeuron.removeObservation === 'function', 'listNeuron.removeObservation() exists')
-
-	// Introspection
-	assert(typeof listNeuron.getHealth === 'function', 'listNeuron.getHealth() exists')
-	assert(typeof listNeuron.getMetrics === 'function', 'listNeuron.getMetrics() exists')
-	assert(typeof listNeuron.getMetadata === 'function', 'listNeuron.getMetadata() exists')
-	assert(typeof listNeuron.getEvolution === 'function', 'listNeuron.getEvolution() exists')
-	assert(typeof listNeuron.getObservationSchema === 'function', 'listNeuron.getObservationSchema() exists')
-	assert(typeof listNeuron.getUnderstandingSchema === 'function', 'listNeuron.getUnderstandingSchema() exists')
-
-	// Config
-	assert(typeof listNeuron.update === 'function', 'listNeuron.update() exists')
-	assert(typeof listNeuron.adjust === 'function', 'listNeuron.adjust() exists')
-
-	// Identity
-	assert(typeof listNeuron.id === 'string', 'listNeuron.id is string')
-	assert(listNeuron.type === 'list', 'listNeuron.type is "list"')
-	assert(typeof listNeuron.name === 'string', 'listNeuron.name is string')
-	assert(typeof listNeuron.instructions === 'string', 'listNeuron.instructions is string')
-
-	await listNeuron.dispose()
 
 	// ── Summary ──────────────────────────────────────────────────────────
 	console.log(`\n${'═'.repeat(60)}`)

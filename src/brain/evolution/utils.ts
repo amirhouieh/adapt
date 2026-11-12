@@ -15,18 +15,8 @@ export function createCompleteConfig(partial: {
 	name: string
 	description: string
 	instructions: string
-	type?: 'text' | 'list'
+	type?: 'text'
 }): GeneratedNeuronConfig {
-	if (partial.type === 'list') {
-		return {
-			id: nanoid(),
-			name: partial.name,
-			description: partial.description,
-			instructions: partial.instructions,
-			focus: null,
-			type: 'list',
-		}
-	}
 	return {
 		id: nanoid(),
 		name: partial.name,

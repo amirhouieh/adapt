@@ -126,7 +126,7 @@ export const sizedSchema = z.object({
 							'that a provider with weak output enforcement might truncate.',
 					),
 				focus: z.string().nullable().describe('Optional focus area (null if none)'),
-				type: z.enum(['text', 'list']).describe('Neuron type'),
+				type: z.enum(['text']).describe('Neuron type'),
 			}),
 		)
 		.min(3)
