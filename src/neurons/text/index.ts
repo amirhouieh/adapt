@@ -3,5 +3,5 @@
  */
 
 export * from './adaptive-runtime'
-export { protectedDeveloperInstructions, TextNeuron } from './class'
+export { TextNeuron } from './class'
 export * from './types'

@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
 	MemoryNeuronStore,
 	TextNeuron,
-	protectedDeveloperInstructions,
 	type AdaptiveTextLearningRuntime,
 	type AdaptLLMPlugin,
 } from '../src'
@@ -67,11 +66,8 @@ function learningConfig(): TextLearningConfig {
 		lens: {
 			purpose: 'Remember engineering preferences.',
 			developerInstructions: [
-				...protectedDeveloperInstructions({
-					observeInstructions: 'Keep direct statements.',
-					understandInstructions: 'Keep uncertainty explicit.',
-					focus: 'Engineering preferences only.',
-				}),
+				'Keep direct statements.',
+				'Keep uncertainty explicit.',
 				'Never weaken protected instructions.',
 			],
 			instructionPrecedence: ['developer instructions', 'current narrative', 'incoming data'],
@@ -161,9 +157,6 @@ async function createNeuron(store: MemoryNeuronStore | SQLiteNeuronStore, adapti
 	return TextNeuron.create({
 		id: 'preferences', model: queryModel, llm: fakeLlm(calls), store,
 		instructions: 'Remember engineering preferences.',
-		observeInstructions: 'Keep direct statements.',
-		understandInstructions: 'Keep uncertainty explicit.',
-		focus: 'Engineering preferences only.',
 		learning: { mode: 'adaptive', initialProfile: initial, runtime: adaptiveRuntime },
 	})
 }
@@ -202,8 +195,8 @@ describe('adaptive TextNeuron public integration', () => {
 		)
 		await neuron.learn([{ deliveryId: 'one', text: 'First input.', observedAt: at }])
 		await neuron.flush()
-		expect(await neuron.update({ instructions: 'Remember engineering and release preferences.', understandInstructions: 'Keep scope explicit.' })).toEqual({
-			changedFields: ['instructions', 'understandInstructions'],
+		expect(await neuron.update({ instructions: 'Remember engineering and release preferences.' })).toEqual({
+			changedFields: ['instructions'],
 		})
 		expect(await neuron.adjust('Stop tracking office logistics.')).toEqual({
 			changedFields: ['lens.developerInstructions'], adjustedConfig: true, adjustedUnderstanding: false,
@@ -213,8 +206,7 @@ describe('adaptive TextNeuron public integration', () => {
 		await neuron.flush()
 		const latest = requests.at(-1)?.system ?? ''
 		expect(latest).toContain('Remember engineering and release preferences.')
-		expect(latest).toContain('Understand phase instructions: Keep scope explicit.')
-		expect(latest).not.toContain('Understand phase instructions: Keep uncertainty explicit.')
+		expect(latest).toContain('Keep uncertainty explicit.')
 		expect(latest).toContain('Stop tracking office logistics.')
 		expect(requests[0]?.system).not.toContain('Stop tracking office logistics.')
 		const active = (await neuron.getLearningState()).activeProfile
@@ -358,9 +350,6 @@ describe('adaptive TextNeuron public integration', () => {
 			llm,
 			store: new MemoryNeuronStore(),
 			instructions: 'Remember engineering preferences.',
-			observeInstructions: 'Keep direct statements.',
-			understandInstructions: 'Keep uncertainty explicit.',
-			focus: 'Engineering preferences only.',
 			learning: {
 				mode: 'adaptive',
 				initialProfile: profile(),

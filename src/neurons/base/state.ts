@@ -50,11 +50,8 @@ export interface ModelSlots {
 export interface BaseNeuronState {
 	// Semantic identity
 	instructions: string
-	observeInstructions: string | null
-	understandInstructions: string | null
 	name: string
 	description: string
-	focus: string | null
 	origin: NeuronOrigin
 
 	// Models (model inputs in cache; StoredModelRef in store)

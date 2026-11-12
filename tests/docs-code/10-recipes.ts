@@ -143,7 +143,7 @@ async function main() {
 		})
 
 		// Process data through the session brain
-		const sessionData = [{ event: 'user clicked dark mode toggle 5 times' }]
+		const sessionData = ['event: user clicked dark mode toggle 5 times']
 		await sessionBrain.inject(sessionData)
 		assert(true, 'Session brain injected data')
 

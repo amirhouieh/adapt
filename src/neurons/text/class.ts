@@ -73,18 +73,15 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 			defaultTwoStepLearning({
 				neuronId: config.id,
 				instructions: config.instructions,
-				developerInstructions: protectedDeveloperInstructions(rawConfig),
+				developerInstructions: [],
 				llm,
 				model: config.model,
 			})
 
 		const initialState: TextNeuronState = {
 			instructions: config.instructions,
-			observeInstructions: config.observeInstructions,
-			understandInstructions: config.understandInstructions,
 			name: rawConfig.name || config.id,
 			description: rawConfig.description ?? '',
-			focus: rawConfig.focus ?? null,
 			origin: config.origin,
 			models: {
 				default: config.model,
@@ -327,67 +324,26 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 	}
 
 	/**
-	 * Maps the familiar update fields onto the adaptive profile, following the
-	 * adaptive convention: `instructions` is the lens purpose, and the phase
-	 * fields (`observeInstructions`, `understandInstructions`, `focus`) are
-	 * carried as labelled developer instructions. Directives added by `adjust`
-	 * are kept. The new
-	 * profile is activated first; the neuron's identity fields are then
+	 * `instructions` is the lens purpose. Directives added by `adjust` are
+	 * kept. The new profile is activated first; the instructions are then
 	 * written so restore sees a consistent pair.
 	 */
 	async #updateIdentity(
 		updates: Partial<TextNeuronConfig>,
 	): Promise<{ changedFields: string[] }> {
-		const identityKeys = [
-			'instructions',
-			'observeInstructions',
-			'understandInstructions',
-			'focus',
-		] as const
-		const before = {
-			instructions: this.state.instructions,
-			observeInstructions: this.state.observeInstructions ?? null,
-			understandInstructions: this.state.understandInstructions ?? null,
-			focus: this.state.focus ?? null,
-		}
-		const after = { ...before }
-		const changedFields: string[] = []
-		for (const key of identityKeys) {
-			const value = updates[key]
-			if (value === undefined || value === before[key]) continue
-			if (key === 'instructions') {
-				if (typeof value !== 'string' || value.trim().length === 0)
-					throw new Error('adaptive text instructions must not be empty')
-				after.instructions = value
-			} else {
-				after[key] = value
-			}
-			changedFields.push(key)
-		}
-		if (changedFields.length === 0) return { changedFields }
-		const oldProtected = new Set(protectedDeveloperInstructions(before))
-		const newProtected = protectedDeveloperInstructions(after)
+		const instructions = updates.instructions
+		if (instructions === undefined || instructions === this.state.instructions)
+			return { changedFields: [] }
+		if (instructions.trim().length === 0)
+			throw new Error('adaptive text instructions must not be empty')
 		await this.#activateAdaptive(
 			(configuration): TextLearningConfig => ({
 				...configuration,
-				lens: {
-					...configuration.lens,
-					purpose: after.instructions,
-					developerInstructions: [
-						...newProtected,
-						...configuration.lens.developerInstructions.filter(
-							(instruction) => !oldProtected.has(instruction),
-						),
-					],
-				},
+				lens: { ...configuration.lens, purpose: instructions },
 			}),
 		)
-		const identityUpdates: Record<string, unknown> = {}
-		for (const key of identityKeys)
-			if (after[key] !== before[key]) identityUpdates[key] = after[key]
-		if (Object.keys(identityUpdates).length > 0)
-			await this.setState(identityUpdates as never)
-		return { changedFields }
+		await this.setState({ instructions } as never)
+		return { changedFields: ['instructions'] }
 	}
 
 	async #activateAdaptive(
@@ -545,9 +501,6 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 			repairWithFeedback: runtime?.repairWithFeedback,
 			maxRepairAttempts: runtime?.maxRepairAttempts,
 			instructions: adaptiveState?.instructions ?? '',
-			observeInstructions: adaptiveState?.observeInstructions,
-			understandInstructions: adaptiveState?.understandInstructions,
-			focus: adaptiveState?.focus,
 			id: durableProfile?.bindings.neuron.id ?? runtime?.id,
 			...(durableProfile && runtime?.learning
 				? {
@@ -590,38 +543,10 @@ function prepareAdaptiveConfig(
 		throw new Error('adaptive profile neuron id does not match TextNeuron id')
 	if (profile.configuration.lens.purpose !== raw.instructions)
 		throw new Error('adaptive lens purpose must equal TextNeuron instructions')
-	const required = protectedDeveloperInstructions(raw)
-	if (
-		required.some(
-			(instruction) =>
-				!profile.configuration.lens.developerInstructions.includes(instruction),
-		)
-	) {
-		throw new Error(
-			'adaptive profile does not preserve all TextNeuron phase instructions',
-		)
-	}
 	return {
 		...raw,
 		id: neuronId,
 	}
-}
-
-export function protectedDeveloperInstructions(
-	config: Pick<
-		TextNeuronConfig,
-		'observeInstructions' | 'understandInstructions' | 'focus'
-	>,
-): readonly string[] {
-	return [
-		...(config.observeInstructions
-			? [`Observe phase instructions: ${config.observeInstructions}`]
-			: []),
-		...(config.understandInstructions
-			? [`Understand phase instructions: ${config.understandInstructions}`]
-			: []),
-		...(config.focus ? [`Observe focus: ${config.focus}`] : []),
-	]
 }
 
 function normalizeAdaptiveInput(
@@ -668,28 +593,13 @@ async function readDurableAdaptiveProfile(
 	return undefined
 }
 
-async function readAdaptiveIdentityState(store: NeuronStore): Promise<{
-	instructions: string
-	observeInstructions: string | null
-	understandInstructions: string | null
-	focus: string | null
-}> {
-	const [instructions, observe, understand, focus] = await Promise.all([
-		store.state.get('instructions'),
-		store.state.get('observeInstructions'),
-		store.state.get('understandInstructions'),
-		store.state.get('focus'),
-	])
+async function readAdaptiveIdentityState(
+	store: NeuronStore,
+): Promise<{ instructions: string }> {
+	const instructions = await store.state.get('instructions')
 	if (typeof instructions?.value !== 'string')
 		throw new Error('adaptive TextNeuron durable instructions are missing')
-	return {
-		instructions: instructions.value,
-		observeInstructions:
-			typeof observe?.value === 'string' ? observe.value : null,
-		understandInstructions:
-			typeof understand?.value === 'string' ? understand.value : null,
-		focus: typeof focus?.value === 'string' ? focus.value : null,
-	}
+	return { instructions: instructions.value }
 }
 
 function sameProfile(

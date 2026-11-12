@@ -56,8 +56,8 @@ const brain = await Brain.create({
 	store,
 	autoSetup: false,
 	neurons: [
-		{ id: 'coding', type: 'text', name: 'Coding', description: 'Coding preferences and tools', instructions: 'Track my coding preferences, tools and practices.', focus: null },
-		{ id: 'food', type: 'text', name: 'Food', description: 'Food habits', instructions: 'Track my food habits and diet.', focus: null },
+		{ id: 'coding', type: 'text', name: 'Coding', description: 'Coding preferences and tools', instructions: 'Track my coding preferences, tools and practices.' },
+		{ id: 'food', type: 'text', name: 'Food', description: 'Food habits', instructions: 'Track my food habits and diet.' },
 	],
 	evolution: { enabled: false },
 	ingest: { batchSize: 3 },

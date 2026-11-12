@@ -26,40 +26,15 @@ Watch for:
 Track answers to:
 - [Question 1]
 - [Question 2]`),
-	observeInstructions: z
-		.string()
-		.nullable()
-		.describe(
-			'Optional observe-phase-only instructions. Return null unless the observe phase needs different verbatim developer instructions than the shared instructions.',
-		),
-	understandInstructions: z
-		.string()
-		.nullable()
-		.describe(
-			'Optional understand-phase-only instructions. Return null unless the understand phase needs different verbatim developer instructions than the shared instructions.',
-		),
-	focus: z
-		.string()
-		.nullable()
-		.describe(
-			'Optional focus areas to narrow observation filtering (null if none)',
-		),
 	type: z
 		.enum(['text'])
 		.describe('Neuron type. "text" — builds a plain-text understanding.'),
 })
 
 /**
- * Full neuron config type — the LLM schema with optional phase instructions
+ * Full neuron config type — the LLM schema plus optional governance
  * for programmatic use (explicit neurons, evolution handlers, etc.).
  */
-type GeneratedNeuronConfigFromSchema = z.infer<typeof neuronConfigSchema>
-
-export type GeneratedNeuronConfig = Omit<
-	GeneratedNeuronConfigFromSchema,
-	'observeInstructions' | 'understandInstructions'
-> & {
-	observeInstructions?: string | null
-	understandInstructions?: string | null
+export type GeneratedNeuronConfig = z.infer<typeof neuronConfigSchema> & {
 	governance?: Partial<GovernanceConfig>
 }

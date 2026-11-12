@@ -32,8 +32,6 @@ export interface UnderstandThresholds {
  */
 export interface BaseResolvedConfig extends ResolvedCascadableConfig {
 	instructions: string
-	observeInstructions: string | null
-	understandInstructions: string | null
 	id: string
 	origin: NeuronOrigin
 	understand: { thresholds: Required<UnderstandThresholds> }
@@ -54,9 +52,6 @@ export interface BaseNeuronUpdateInput {
 	model?: LanguageModel
 	blueprintModel?: LanguageModel
 	instructions?: string
-	observeInstructions?: string | null
-	understandInstructions?: string | null
-	focus?: string | null
 	understand?: { thresholds?: UnderstandThresholds }
 	query?: { model?: LanguageModel }
 	health?: Partial<NeuronHealth>

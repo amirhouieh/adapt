@@ -47,7 +47,6 @@ const neuron = (id: string, governance?: { strategy?: 'continuous' | 'cumulative
 	name: id,
 	description: `Tracks ${id}`,
 	instructions: `Track ${id}.`,
-	focus: null,
 	...(governance ? { governance } : {}),
 })
 

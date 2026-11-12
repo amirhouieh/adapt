@@ -160,7 +160,6 @@ async function main() {
 	assert(typeof textNeuron.name === 'string', 'neuron.name is string')
 	assert(typeof textNeuron.description === 'string', 'neuron.description is string')
 	assert(typeof textNeuron.instructions === 'string', 'neuron.instructions is string')
-	assert(textNeuron.focus === null || typeof textNeuron.focus === 'string', 'neuron.focus is string or null')
 	assert(textNeuron.origin === 'prompt' || textNeuron.origin === 'developer' || textNeuron.origin === 'emergent', 'neuron.origin is valid')
 
 	await textNeuron.dispose()

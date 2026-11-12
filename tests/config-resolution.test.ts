@@ -48,21 +48,6 @@ describe('resolveTextNeuronConfig', () => {
 		expect(result.instructions).toBe('Track coding patterns.')
 	})
 
-	it('normalizes phase instruction overrides', () => {
-		const result = resolveTextNeuronConfig({
-			model,
-			instructions: 'shared',
-			observeInstructions: 'observe only',
-			understandInstructions: 'understand only',
-		})
-		expect(result.observeInstructions).toBe('observe only')
-		expect(result.understandInstructions).toBe('understand only')
-
-		const fallback = resolveTextNeuronConfig({ model, instructions: 'shared' })
-		expect(fallback.observeInstructions).toBeNull()
-		expect(fallback.understandInstructions).toBeNull()
-	})
-
 	// ── Model cascade ──
 
 	it('cascades blueprintModel: config > parent > config.model > parent.model', () => {

@@ -92,7 +92,6 @@ const neuronConfigs = [
 		name: 'Coffee Knowledge',
 		description: 'Tracks coffee brewing and origin knowledge',
 		instructions: 'Track coffee brewing methods, bean origins, and flavor notes.',
-		focus: null,
 	},
 	{
 		id: 'cooking',
@@ -100,7 +99,6 @@ const neuronConfigs = [
 		name: 'Cooking Knowledge',
 		description: 'Tracks cooking techniques and recipes',
 		instructions: 'Track cooking techniques, recipes, and ingredient pairings.',
-		focus: null,
 	},
 	{
 		id: 'baking',
@@ -108,7 +106,6 @@ const neuronConfigs = [
 		name: 'Baking Knowledge',
 		description: 'Tracks baking techniques and dough chemistry',
 		instructions: 'Track baking techniques, dough chemistry, and oven methods.',
-		focus: null,
 	},
 ]
 

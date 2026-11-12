@@ -107,10 +107,7 @@ For each neuron, provide:
 
   Track answers to:
   - [Concrete question 1]
-  - [Concrete question 2]
-- observeInstructions: null unless the observe phase needs different verbatim instructions than the shared instructions
-- understandInstructions: null unless the understand phase needs different verbatim instructions than the shared instructions
-- focus: Optional observe-only focus areas, or null if none`
+  - [Concrete question 2]`
 
 function buildTypeSection(descriptors: NeuronTypeDescriptor[]): string {
 	const typeNames = descriptors.map((d) => `"${d.type}"`).join(' or ')

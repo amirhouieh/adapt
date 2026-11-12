@@ -23,7 +23,6 @@ export function createCompleteConfig(partial: {
 		name: partial.name,
 		description: partial.description,
 		instructions: partial.instructions,
-		focus: null,
 		type: 'text',
 	}
 }

@@ -329,24 +329,12 @@ export abstract class BaseNeuron<
 		return this.state.instructions
 	}
 
-	get observeInstructions(): string | null {
-		return this.state.observeInstructions
-	}
-
-	get understandInstructions(): string | null {
-		return this.state.understandInstructions
-	}
-
 	get name(): string {
 		return this.state.name
 	}
 
 	get description(): string {
 		return this.state.description
-	}
-
-	get focus(): string | null {
-		return this.state.focus
 	}
 
 	get origin(): NeuronOrigin {
@@ -498,7 +486,7 @@ export abstract class BaseNeuron<
 	/**
 	 * Apply the non-learning settings: metadata, model slots, thresholds and
 	 * health config. Persists them and returns the changed field names.
-	 * Learning-lens fields (instructions, focus) are the subclass's concern.
+	 * Learning-lens fields (instructions) are the subclass's concern.
 	 */
 	protected async updateSettings(
 		updates: BaseNeuronUpdateInput & Record<string, unknown>,

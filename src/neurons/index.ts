@@ -48,7 +48,7 @@ export type {
 	TextNeuronUpdateResult,
 } from './text'
 // TextNeuron
-export { protectedDeveloperInstructions, TextNeuron } from './text'
+export { TextNeuron } from './text'
 // Descriptors
 export { textNeuronDescriptor } from './text/descriptor'
 export type { GovernanceConfig, Strategy } from './text/strategies'
