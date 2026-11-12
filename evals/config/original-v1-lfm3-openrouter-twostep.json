@@ -1,0 +1,19 @@
+{
+  "provider": {
+    "name": "openrouter",
+    "baseURL": "https://openrouter.ai/api/v1",
+    "apiKeyEnv": "OPENROUTER_API_KEY"
+  },
+  "models": [
+    "liquid/lfm-3-1.7b"
+  ],
+  "settings": {
+    "temperature": 0,
+    "maxOutputTokens": 8192,
+    "maxRetries": 2,
+    "timeout": 300000
+  },
+  "outputRoot": "evals/.data/two-step-production-lfm3-openrouter",
+  "memoryOnly": true,
+  "loadedContextTokens": 262144
+}

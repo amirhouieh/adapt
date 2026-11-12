@@ -8,7 +8,7 @@ import ts from 'typescript'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { TextNeuron, createAiSdkLLM, type AdaptLLMPlugin } from '../../src'
 import { SQLiteNeuronStore } from '../../src/sqlite'
-import { createAdaptTextProcedureProvider, createConservativeByteTokenCounter, lineRevisionPrompts, type TextLearningConfig } from '../../src/learning/text-procedures'
+import { createAdaptTextProcedureProvider, createConservativeByteTokenCounter, lineRevisionPrompts, twoStepRecipeRef, type TextLearningConfig } from '../../src/learning/text-procedures'
 import type { TextProfileSnapshot } from '../../src/learning/text-state'
 import type { AdaptiveTextLearningRuntime } from '../../src/neurons/text'
 import { createBoundedDeviceScheduler } from '../../src/llm/local/scheduler'
@@ -111,7 +111,10 @@ function prepare(configPath?: string): string {
 async function worker(directory: string, modelId: string, arm: string, taskId: string): Promise<void> {
   const suite = JSON.parse(readFileSync(resolve(directory, 'suite.json'), 'utf8')) as Suite
   const settings = suite.settings
-  if (!suite.models.includes(modelId) || !['v1', 'v2', 'v2d1'].includes(arm) || (arm === 'v2d1' && !suite.decisionModel)) throw new Error('unconfigured model or arm')
+  if (!suite.models.includes(modelId) || !['v1', 'v2', 'v2d1', 'v2twostep'].includes(arm) || (arm === 'v2d1' && !suite.decisionModel)) throw new Error('unconfigured model or arm')
+  // v2twostep: production procedure adapt.text-procedure.two-step@1 through the real coordinator and SQLite store.
+  // Plain text, so no requestBodyExtras (thinking stays at the model default) and memory bound only by the output budget.
+  const twoStep = arm === 'v2twostep'
   for (const [path, expected] of Object.entries(suite.sourceHashes)) if (hash(path) !== expected) throw new Error(`source changed: ${path}`)
   const task = suite.tasks.find(candidate => candidate.id === taskId)!
   if (!task) throw new Error('unconfigured task')
@@ -123,7 +126,7 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
   let completionTokens = 0
   let providerFailure: Error | undefined
   const wireFetch: typeof fetch = async (input, init) => {
-    const extras = suite.requestBodyExtras
+    const extras = twoStep ? undefined : suite.requestBodyExtras
     const request = extras && typeof init?.body === 'string' ? new Request(input, { ...init, body: JSON.stringify({ ...JSON.parse(init.body), ...extras }) }) : new Request(input, init)
     const call = resolve(job, 'wire', String(++wireCalls).padStart(5, '0'))
     mkdirSync(call, { recursive: true })
@@ -185,16 +188,20 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
   const template = JSON.parse(readFileSync(resolve(root, 'evals/config/adaptive-text-learning/development-b-line-revision-v2-qwen.json'), 'utf8'))
   const config = structuredClone(template.arms[0].profile.configuration) as TextLearningConfig
   const strategy = task.coffee ? 'continuous' : 'cumulative'
-  const configuration: TextLearningConfig = { ...config, model: { id: modelId, version: '1' }, activeProcedure: procedure,
+  const lineConfiguration: TextLearningConfig = { ...config, model: { id: modelId, version: '1' }, activeProcedure: procedure,
     lens: { purpose: task.instructions, developerInstructions: [], instructionPrecedence: ['developer instructions', 'incoming data'], incomingTextRole: 'data-only' },
     batching: { ...config.batching, maxItems: 8, maxInputCharacters: 8000, maxInputTokens: 8000, maxDelayMs: 3600000 },
     generation: { ...config.generation, loadedContextTokens: suite.loadedContextTokens ?? 8192, reservedOutputTokens: settings.maxOutputTokens, maxProviderCalls: 48, maxTokenClaims: 240000 },
     lineRevision: { ...config.lineRevision!, strategy } }
+  const { lineRevision: _unused, ...withoutLineRevision } = lineConfiguration
+  const configuration: TextLearningConfig = twoStep ? { ...withoutLineRevision, activeProcedure: twoStepRecipeRef, allowedProcedures: [twoStepRecipeRef],
+    memory: { ...config.memory, maxCharacters: 4 * settings.maxOutputTokens, maxNarrativeTokens: settings.maxOutputTokens },
+    retries: { maxLogicalAttempts: 3, initialDelayMs: 1000, maxDelayMs: 4000, terminalAfterMs: 3600000 } } : lineConfiguration
   const ref = { id: `original-v1-${taskId}`, version: '1' }
   const neuronId = `${taskId}-${arm}`
   const initialProfile: TextProfileSnapshot<TextLearningConfig> = { ref, revision: 1, configuration, bindings: {
     neuron: { id: neuronId, incarnation: 'original-v1-comparison', ownership_revision: 1 }, profile: ref, profile_revision: 1,
-    procedure, model: configuration.model, registry_lineage: 'original-v1-comparison', referenced_definition_digest: hash(resolve(root, 'src/learning/text-procedures/line-revision.ts')), allowed_catalogue_digest: 'fixed-line-revision-v2'
+    procedure: configuration.activeProcedure, model: configuration.model, registry_lineage: 'original-v1-comparison', referenced_definition_digest: hash(resolve(root, twoStep ? 'src/learning/text-procedures/two-step.ts' : 'src/learning/text-procedures/line-revision.ts')), allowed_catalogue_digest: twoStep ? 'fixed-two-step-v1' : 'fixed-line-revision-v2'
   }, createdAt: suite.createdAt }
   const tokens = createConservativeByteTokenCounter({ requestTemplateOverheadTokens: 64, textTemplateOverheadTokens: 0 })
   const runtime: AdaptiveTextLearningRuntime = { models: [{ ref: configuration.model, tokens, provider: createAdaptTextProcedureProvider({ llm, model, settings, scheduler: createBoundedDeviceScheduler({ maxConcurrent: 1, maxQueued: 4 }), priority: 'background' }) }],
@@ -231,6 +238,9 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
       phase = `learn:${cursor + 1}-${end}`
       const result = await neuron.learn(arm === 'v1' ? items.map(item => item.text) : items.map(item => ({ deliveryId: item.id, eventId: item.id, text: item.text, observedAt: new Date(item.timestamp).toISOString() })), { forceSynthesize: true })
       appendFileSync(resolve(job, 'deliveries.jsonl'), JSON.stringify({ phase, result }, replacer) + '\n')
+      // A deferred two-step run (cut-off answer) is retried by the coordinator's own timer; wait for the queue to drain.
+      for (let waited = 0; twoStep && (await neuron.getLearningState()).pendingDeliveryIds.length > 0 && waited < 900; waited += 1) await new Promise(done => setTimeout(done, 1000))
+      if (twoStep) appendFileSync(resolve(job, 'deliveries.jsonl'), JSON.stringify({ phase, drained: (await neuron.getLearningState()).pendingDeliveryIds }, replacer) + '\n')
       if (providerFailure) throw providerFailure
       if (result.status === 'observe:error' || result.status === 'synthesize:error') failures.push({ phase, result })
       cursor = end
@@ -246,7 +256,7 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
           json(resolve(job, 'coffee-scope-update.json'), await neuron.update({ instructions: task.coffee.narrowedInstructions }))
           if (arm === 'v1') json(resolve(job, 'coffee-threshold-update.json'), await neuron.update({ understand: { thresholds: { minImportance: 0.7 } } }))
           else json(resolve(job, 'coffee-threshold-update.json'), { unsupported: 'Adaptive mode has no legacy importance threshold; relevance is a YES/NO model operation. Original scope and governance changes are still exercised.' })
-          json(resolve(job, 'coffee-governance-update.json'), await neuron.update({ governance: { strategy: 'cumulative' } }))
+          json(resolve(job, 'coffee-governance-update.json'), twoStep ? { unsupported: 'Two-step has no compaction strategy; governance.strategy maps only onto line revision. The scope change still runs.' } : await neuron.update({ governance: { strategy: 'cumulative' } }))
           await queries(task.coffee.after, 'coffee-after')
         }
         if (cursor === task.inputs.length) await queries(task.coffee?.final ?? task.questions, 'final')
@@ -265,4 +275,4 @@ const [mode, directory, modelId, arm, task] = process.argv.slice(2)
 if (mode === '--prepare') prepare(directory)
 else if (mode === '--worker' && directory && modelId && arm && task) {
   worker(resolve(directory), modelId, arm, task).catch(error => { const job = resolve(directory, modelId.split('/').at(-1)!, arm, task); mkdirSync(job, { recursive: true }); json(resolve(job, 'fatal.json'), error); console.error(error); process.exitCode = 1 })
-} else throw new Error('Use --prepare or --worker <suite-directory> <model> <v1|v2> <task>')
+} else throw new Error('Use --prepare or --worker <suite-directory> <model> <v1|v2|v2d1|v2twostep> <task>')

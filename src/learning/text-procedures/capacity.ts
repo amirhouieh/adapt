@@ -25,6 +25,7 @@ import {
 	textProcedureRecipeRefs,
 	textProcedureVersion1DirectRecipeRef,
 } from './recipes'
+import { isTwoStepProcedure, twoStepRequests } from './two-step'
 
 export interface TextProcedureCapacityInput {
 	readonly configuration: TextLearningConfig
@@ -109,6 +110,9 @@ export function fitTextProcedureRequest(
 	}
 	if (isFieldRevisionProcedure(value.configuration.activeProcedure)) {
 		return fitFieldRevision(value, tokens)
+	}
+	if (isTwoStepProcedure(value.configuration.activeProcedure)) {
+		return fitTwoStep(value, tokens)
 	}
 	const kinds = procedureKinds(value.configuration)
 	const base: ModelOperationInput = {
@@ -308,5 +312,39 @@ function fitFieldRevision(
 				return { status: 'memory-capacity', reason: 'a field revision request exceeds the loaded context' }
 		}
 	}
+	return { status: 'fits' }
+}
+
+/**
+ * Two-step sends the batch to the extract step and the whole understanding
+ * plus that extract to the update step. The extract is at most one response
+ * long, so the update request reserves one response for it. There is no
+ * memory character bound here: only whether both requests fit the context.
+ */
+function fitTwoStep(
+	value: TextProcedureCapacityInput,
+	tokens: ProcedurePorts['tokens'],
+): TextProcedureCapacity {
+	const generation = value.configuration.generation
+	const base: ModelOperationInput = {
+		lens: value.configuration.lens,
+		memory: value.memory,
+		inputs: value.inputs,
+		notes: [],
+		limits: {
+			loadedContextTokens: generation.loadedContextTokens,
+			reservedOutputTokens: generation.reservedOutputTokens,
+			maxNarrativeTokens: value.configuration.memory.maxNarrativeTokens,
+			maxMemoryCharacters: value.configuration.memory.maxCharacters,
+			maxNoteCharacters: generation.maxNoteCharacters,
+			allowExplicitClear: value.configuration.memory.allowExplicitClear,
+		},
+	}
+	const requests = twoStepRequests(base, '')
+	const extract = tokens.countRequest(requests.extract).tokens
+	const update =
+		tokens.countRequest(requests.update).tokens + generation.reservedOutputTokens
+	if (Math.max(extract, update) + generation.reservedOutputTokens > generation.loadedContextTokens)
+		return { status: 'memory-capacity', reason: 'a two-step request exceeds the loaded context' }
 	return { status: 'fits' }
 }

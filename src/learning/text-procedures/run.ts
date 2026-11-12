@@ -31,6 +31,7 @@ import {
 	validateLineRevisionConfig,
 } from './line-revision'
 import { registerTextProcedureRecipes } from './recipes'
+import { registerTwoStepOperation, twoStepRecipe } from './two-step'
 import {
 	modelOperationInputValueSchema,
 	optionalProseOutcomeValueSchema,
@@ -234,9 +235,11 @@ export function registerAdaptiveTextProcedures(
 	registerTextProcedureOperations(registry)
 	registerLineRevisionOperation(registry)
 	registerFieldRevisionOperation(registry)
+	registerTwoStepOperation(registry)
 	registerTextProcedureRecipes(registry)
 	for (const recipe of lineRevisionRecipes()) registry.registerRecipe(recipe)
 	registry.registerRecipe(fieldRevisionRecipe())
+	registry.registerRecipe(twoStepRecipe())
 }
 
 export async function runTextProcedure(
