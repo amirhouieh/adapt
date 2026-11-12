@@ -74,6 +74,7 @@ async function runForPreset(preset: Preset) {
 					description: 'Tracks technical decisions and tradeoffs.',
 					instructions:
 						'Track engineering decisions, runtime tradeoffs, and rationale for technical changes.',
+					focus: null,
 					skipObservation: true,
 					observationSchema: { type: 'string' },
 					understandingSchema: { type: 'string' },

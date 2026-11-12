@@ -105,6 +105,13 @@ export type LearnOutput =
 			}
 	  }
 	| { status: 'synthesize:error'; error: unknown }
+	| ManagedLearnOutput
+
+/** Typed extension point for neuron-owned learning lifecycles. */
+export interface ManagedLearnOutput {
+	readonly status: 'managed'
+	readonly mode: string
+}
 
 /**
  * Options for learn() call
@@ -112,6 +119,17 @@ export type LearnOutput =
 export interface LearnOptions {
 	forceSynthesize?: boolean
 }
+
+const preparedUnderstandModel: unique symbol = Symbol('preparedUnderstandModel')
+
+/** In-process phase hand-off. This is not a durable checkpoint. */
+export type LearnPreparation =
+	| { readonly kind: 'complete'; readonly output: LearnOutput }
+	| {
+			readonly kind: 'synthesize'
+			readonly failureEvent: 'emit' | 'skip'
+			readonly [preparedUnderstandModel]: LanguageModel
+	  }
 
 /**
  * Callbacks for learning observability
@@ -646,6 +664,14 @@ export abstract class BaseNeuron<
 	// ── Learn (pipeline: observe → store → understand) ────────────────────
 
 	async learn(batch: unknown[], options?: LearnOptions): Promise<LearnOutput> {
+		const preparation = await this.prepareLearning(batch, options)
+		return this.completeLearning(preparation)
+	}
+
+	async prepareLearning(
+		batch: unknown[],
+		options?: LearnOptions,
+	): Promise<LearnPreparation> {
 		await this.ensureInit()
 
 		try {
@@ -659,7 +685,11 @@ export abstract class BaseNeuron<
 					metadata_status: 'pending',
 				})
 				if (pendingCount > 0) {
-					return this.understandFromStore(this.state.models.understand)
+					return {
+						kind: 'synthesize',
+						failureEvent: 'skip',
+						[preparedUnderstandModel]: this.state.models.understand,
+					}
 				}
 			}
 
@@ -708,7 +738,7 @@ export abstract class BaseNeuron<
 						error: observeResult.error,
 					}
 					await this.handleLearnResult(result)
-					return result
+					return { kind: 'complete', output: result }
 				}
 
 				if (observeResult.status === 'dismissed') {
@@ -719,7 +749,7 @@ export abstract class BaseNeuron<
 						usage: observeResult.usage,
 					}
 					await this.handleLearnResult(result)
-					return result
+					return { kind: 'complete', output: result }
 				}
 
 				// Filter by importance threshold
@@ -735,7 +765,7 @@ export abstract class BaseNeuron<
 						usage: observeResult.usage,
 					}
 					await this.handleLearnResult(result)
-					return result
+					return { kind: 'complete', output: result }
 				}
 
 				observations = observeResult.output
@@ -778,14 +808,34 @@ export abstract class BaseNeuron<
 					usage: observeUsage,
 				}
 				await this.handleLearnResult(result, bufferState)
-				return result
+				return { kind: 'complete', output: result }
 			}
 
 			// Phase 2: Understand
-			const understandResult = await this.understandFromStore(
-				this.state.models.understand,
+			return {
+				kind: 'synthesize',
+				failureEvent: 'emit',
+				[preparedUnderstandModel]: this.state.models.understand,
+			}
+		} catch (err) {
+			const error = err instanceof Error ? err : new Error(String(err))
+			this.emit('neuron:learn:failed', {
+				neuronId: this.id,
+				error: error.message,
+			})
+			throw error
+		}
+	}
+
+	async completeLearning(preparation: LearnPreparation): Promise<LearnOutput> {
+		if (preparation.kind === 'complete') return preparation.output
+		if (preparation.failureEvent === 'skip') {
+			return this.understandFromStore(preparation[preparedUnderstandModel])
+		}
+		try {
+			return await this.understandFromStore(
+				preparation[preparedUnderstandModel],
 			)
-			return understandResult
 		} catch (err) {
 			const error = err instanceof Error ? err : new Error(String(err))
 			this.emit('neuron:learn:failed', {

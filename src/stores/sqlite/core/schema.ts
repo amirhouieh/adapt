@@ -41,6 +41,20 @@ export function ensureSqliteCollectionSchema<T extends { id: string }>(
 			)
 		`)
 
+	const existingColumns = new Set(
+		db
+			.prepare<{ name: string }>(`PRAGMA table_info(${spec.table})`)
+			.all()
+			.map((column) => column.name),
+	)
+	for (const field of spec.fields) {
+		if (!existingColumns.has(field.name)) {
+			db.exec(
+				`ALTER TABLE ${spec.table} ADD COLUMN ${createColumnDefinition(field)}`,
+			)
+		}
+	}
+
 	for (const column of spec.indexes ?? []) {
 		db.exec(
 			`CREATE INDEX IF NOT EXISTS idx_${spec.table}_${column} ON ${spec.table}(${column})`,

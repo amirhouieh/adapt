@@ -1,0 +1,45 @@
+{
+  "datasetPath": "evals/datasets/adaptive-text-state.json",
+  "artifactRoot": "evals/artifacts",
+  "runId": "adaptive-text-state-2026-10-10-r3",
+  "databaseFile": "adaptive-text-state.sqlite",
+  "time": "2026-10-10T08:00:10.000Z",
+  "idStart": 0,
+  "idPrefixes": {
+    "work": "work",
+    "attempt": "attempt",
+    "run": "run",
+    "candidate": "candidate",
+    "history": "history",
+    "change": "change",
+    "supersede": "supersede",
+    "profile": "profile",
+    "activation": "activation"
+  },
+  "configuration": {
+    "batching": {
+      "maxItems": 4,
+      "maxInputCharacters": 1000,
+      "maxInputTokens": 1000,
+      "maxDelayMs": 1000,
+      "acceptCallerUrgency": true
+    },
+    "input": { "maxItemCharacters": 500 },
+    "memory": { "maxCharacters": 2000, "allowExplicitClear": true },
+    "retries": {
+      "maxLogicalAttempts": 3,
+      "initialDelayMs": 100,
+      "maxDelayMs": 1000,
+      "terminalAfterMs": 60000
+    },
+    "history": { "maxEntries": 8, "maxCharacters": 8000 },
+    "idempotence": { "processedIdHorizonMs": 60000, "maxProcessedIds": 16 }
+  },
+  "policy": {
+    "headStateId": "adaptive-text-head",
+    "narrativeMemoryId": "current",
+    "stateKind": "adaptive-text-state-eval",
+    "maxRetainedProfiles": 8,
+    "maxFlushRuns": 8
+  }
+}

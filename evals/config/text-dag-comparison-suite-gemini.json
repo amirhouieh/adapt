@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "baseConfig": "/Users/amir/projects/adapt/adapt-memory-v2/evals/config/text-dag-comparison-gemini.json",
+  "datasets": [
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-001.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-002.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-003.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-004.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-005.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-006.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-007.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-008.raw.json"
+  ],
+  "outputRoot": "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite-gemini"
+}

@@ -1,0 +1,170 @@
+{
+  "provenance": "Synthetic text-free mechanical signal-state fixture authored for Adapt v2. It contains only supplied technical identities and derived signal summaries; no user input or model output.",
+  "times": {
+    "created": "2026-10-01T08:00:00.000Z",
+    "firstLeaseExpiry": "2026-10-01T08:01:00.000Z",
+    "afterFirstLeaseExpiry": "2026-10-01T08:01:01.000Z",
+    "secondLeaseExpiry": "2026-10-01T08:02:00.000Z",
+    "accepted": "2026-10-01T08:00:10.000Z",
+    "deliveryRetrySettled": "2026-10-01T08:01:02.000Z",
+    "deliveryRetry": "2026-10-01T08:01:10.000Z",
+    "deliveryReclaim": "2026-10-01T08:01:11.000Z",
+    "deliveryFinalExpiry": "2026-10-01T08:02:11.000Z",
+    "delivered": "2026-10-01T08:01:12.000Z",
+    "assessmentRetry": "2026-10-01T08:03:00.000Z",
+    "assessmentReclaim": "2026-10-01T08:03:01.000Z",
+    "assessmentFinalExpiry": "2026-10-01T08:04:01.000Z",
+    "assessmentSettled": "2026-10-01T08:03:02.000Z",
+    "expired": "2026-10-01T09:00:00.000Z",
+    "afterExpiredDelivery": "2026-10-01T09:00:01.000Z"
+  },
+  "workers": {
+    "assessment": "signal-eval-assessor",
+    "assessmentLease1": "signal-eval-assessment-lease-1",
+    "assessmentLease2": "signal-eval-assessment-lease-2",
+    "assessmentLease3": "signal-eval-assessment-lease-3",
+    "delivery": "signal-eval-delivery-worker",
+    "deliveryLease1": "signal-eval-delivery-lease-1",
+    "deliveryLease2": "signal-eval-delivery-lease-2",
+    "deliveryLease3": "signal-eval-delivery-lease-3",
+    "claimLimit": 1,
+    "assessmentRetryError": "supplied transient assessment failure",
+    "deliveryRetryError": "supplied transient delivery failure"
+  },
+  "primary": {
+    "assessment": {
+      "id": "signal-eval-assessment-primary",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-project-risk",
+      "scopedChanges": [
+        { "lensId": "signal-eval-project-a", "changeId": "signal-eval-change-a" },
+        { "lensId": "signal-eval-project-b", "changeId": "signal-eval-change-b" }
+      ],
+      "availableAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z"
+    },
+    "conflictingChanges": [
+      { "lensId": "signal-eval-project-other", "changeId": "signal-eval-change-other" }
+    ],
+    "signalId": "signal-eval-signal-primary",
+    "deliveryId": "signal-eval-delivery-primary",
+    "proposal": {
+      "meaning": "Two current project memories share a newly changed dependency.",
+      "materialChange": "The shared dependency can affect both current plans.",
+      "affectedLensIds": ["signal-eval-project-a", "signal-eval-project-b"],
+      "affectedMemories": [
+        { "lensId": "signal-eval-project-a", "memoryId": "signal-eval-memory-a" },
+        { "lensId": "signal-eval-project-b", "memoryId": "signal-eval-memory-b" }
+      ],
+      "scopedChanges": [
+        { "lensId": "signal-eval-project-a", "changeId": "signal-eval-change-a" },
+        { "lensId": "signal-eval-project-b", "changeId": "signal-eval-change-b" }
+      ],
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-project-risk"
+    }
+  },
+  "exactReplay": {
+    "assessmentId": "signal-eval-assessment-exact-replay",
+    "unusedSignalId": "signal-eval-signal-exact-unused",
+    "unusedDeliveryId": "signal-eval-delivery-exact-unused"
+  },
+  "cooldown": {
+    "assessment": {
+      "id": "signal-eval-assessment-cooldown",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-project-risk",
+      "scopedChanges": [
+        { "lensId": "signal-eval-project-a", "changeId": "signal-eval-change-new" }
+      ],
+      "availableAt": "2026-10-01T08:00:10.000Z",
+      "createdAt": "2026-10-01T08:00:10.000Z"
+    },
+    "signalId": "signal-eval-signal-cooldown-unused",
+    "deliveryId": "signal-eval-delivery-cooldown-unused",
+    "proposal": {
+      "meaning": "A later change affects the same declared project-risk scope.",
+      "materialChange": "The scope is already within its declared cooldown.",
+      "affectedLensIds": ["signal-eval-project-a"],
+      "affectedMemories": [
+        { "lensId": "signal-eval-project-a", "memoryId": "signal-eval-memory-a" }
+      ],
+      "scopedChanges": [
+        { "lensId": "signal-eval-project-a", "changeId": "signal-eval-change-new" }
+      ],
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-project-risk"
+    }
+  },
+  "retry": {
+    "assessment": {
+      "id": "signal-eval-assessment-retry",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-independent-scope",
+      "scopedChanges": [
+        { "lensId": "signal-eval-project-c", "changeId": "signal-eval-change-c" }
+      ],
+      "availableAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z"
+    }
+  },
+  "capacity": {
+    "first": {
+      "id": "signal-eval-capacity-first",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-capacity-scope",
+      "scopedChanges": [
+        { "lensId": "signal-eval-capacity-lens", "changeId": "signal-eval-capacity-change-1" }
+      ],
+      "availableAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z"
+    },
+    "second": {
+      "id": "signal-eval-capacity-second",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-capacity-scope",
+      "scopedChanges": [
+        { "lensId": "signal-eval-capacity-lens", "changeId": "signal-eval-capacity-change-2" }
+      ],
+      "availableAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z"
+    }
+  },
+  "retention": {
+    "acceptedAssessment": {
+      "id": "signal-eval-retention-accepted",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-retention-scope",
+      "scopedChanges": [
+        { "lensId": "signal-eval-retention-lens", "changeId": "signal-eval-retention-change" }
+      ],
+      "availableAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z"
+    },
+    "pendingAssessment": {
+      "id": "signal-eval-retention-pending",
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-retention-pending-scope",
+      "scopedChanges": [
+        { "lensId": "signal-eval-retention-lens", "changeId": "signal-eval-retention-pending-change" }
+      ],
+      "availableAt": "2026-10-01T08:00:00.000Z",
+      "createdAt": "2026-10-01T08:00:00.000Z"
+    },
+    "signalId": "signal-eval-retention-signal",
+    "deliveryId": "signal-eval-retention-delivery",
+    "proposal": {
+      "meaning": "A retained derived signal remains pending delivery.",
+      "materialChange": "Undelivered accepted signal metadata remains reachable.",
+      "affectedLensIds": ["signal-eval-retention-lens"],
+      "affectedMemories": [
+        { "lensId": "signal-eval-retention-lens", "memoryId": "signal-eval-retention-memory" }
+      ],
+      "scopedChanges": [
+        { "lensId": "signal-eval-retention-lens", "changeId": "signal-eval-retention-change" }
+      ],
+      "policy": { "id": "signal-eval-policy", "version": "1" },
+      "cooldownScopeId": "signal-eval-retention-scope"
+    }
+  }
+}

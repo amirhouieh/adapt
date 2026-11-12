@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "baseConfig": "/Users/amir/projects/adapt/adapt-memory-v2/evals/config/text-v1-direct-local-qwen.json",
+  "datasets": [
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-001.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-002.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-003.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-004.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-005.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-006.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-007.raw.json",
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-008.raw.json"
+  ],
+  "outputRoot": "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-v1-execution-direct-local-qwen",
+  "arms": ["direct"],
+  "dag": {
+    "revisions": {
+      "memory": 0,
+      "configuration": 0,
+      "registry": "text-v1-execution-dag-comparison-1"
+    },
+    "planningLimits": {
+      "maxNodes": 2,
+      "maxCollectionItems": 1,
+      "maxOperations": 2
+    },
+    "operationBudget": 2
+  },
+  "recovery": {
+    "scenarioIndex": 1,
+    "interruptDeliveryIndex": 2,
+    "markerTimeoutMs": 180000,
+    "terminationTimeoutMs": 5000,
+    "markerPollIntervalMs": 25
+  }
+}

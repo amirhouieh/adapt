@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 1,
+  "label": "UNJUDGED",
+  "baseline": {
+    "root": "/Users/amir/projects/adapt/adapt-memory-v1-baseline",
+    "revision": "e2150ed3970d41125cb36d5c46f65e981ad2f088"
+  },
+  "provider": {
+    "name": "lm-studio",
+    "baseUrl": "http://localhost:1234/v1",
+    "modelId": "qwen/qwen3.5-2b",
+    "supportsStructuredOutputs": true
+  },
+  "settings": {
+    "temperature": 0,
+    "maxOutputTokens": 4096,
+    "maxRetries": 0,
+    "timeoutMs": 180000
+  },
+  "fixtureManifest": {
+    "path": "evals/config/adaptive-text-learning/fixture-manifest.json",
+    "sha256": "36d75b0700b2c3df265d408e105fb8aece336c2cca0808f07924d370e8476847"
+  },
+  "streams": [
+    {
+      "id": "developer-practices",
+      "path": "evals/datasets/adaptive-text-learning/stream-developer-practices.json",
+      "sha256": "bf3ceb891ddacbe9db63f1fa5664154d091d165008a8d4c0958c6e99fcf54629",
+      "reviewerKeyPath": "evals/datasets/adaptive-text-learning/reviewer-key-developer-practices.json",
+      "reviewerKeySha256": "99ba1def43dc37e3adc773d6bc6f73936e33f08950a31eb4db9fbe09a1815a50",
+      "visibility": "development"
+    },
+    {
+      "id": "communication-scheduling",
+      "path": "evals/datasets/adaptive-text-learning/stream-communication-scheduling.json",
+      "sha256": "89a0b6f8a8319d4f5b90be82b62d7100a5ccee70448fb71ae529f044ad08dbc3",
+      "reviewerKeyPath": "evals/datasets/adaptive-text-learning/reviewer-key-communication-scheduling.json",
+      "reviewerKeySha256": "d8c260bed53d87383169432cdd12cda45c57259087bf258e8c792c5ddfc2c047",
+      "visibility": "development"
+    },
+    {
+      "id": "project-commitments",
+      "path": "evals/datasets/adaptive-text-learning/stream-project-commitments.json",
+      "sha256": "3760fe5e219620b740c943af625b6a885ae6e9363d151ba88d4b8d5970ec426d",
+      "reviewerKeyPath": "evals/datasets/adaptive-text-learning/reviewer-key-project-commitments.json",
+      "reviewerKeySha256": "7ad54c8bb70261cbd6f04156d396ec2e1d7482cc9962f0fd9357cda9c2133725",
+      "visibility": "development"
+    },
+    {
+      "id": "heldout-coastal-station",
+      "path": "evals/datasets/adaptive-text-learning/stream-heldout-coastal-station.json",
+      "sha256": "3862d71eb2b17198d7ce835d0a48c69c2b32d7c5009b0d4092b8b5da2febb581",
+      "reviewerKeyPath": "evals/datasets/adaptive-text-learning/reviewer-key-heldout-coastal-station.json",
+      "reviewerKeySha256": "b88fa815b695c4f2edafbfb5a7940591b1f1a6d442c3cca9894fff49bfd5e101",
+      "visibility": "sealed-heldout"
+    }
+  ],
+  "arms": [
+    {
+      "id": "B-fixed-direct",
+      "kind": "current",
+      "profile": {
+        "refId": "adaptive-longitudinal-fixed-direct-profile",
+        "refVersion": "3",
+        "revision": 3,
+        "configuration": {
+          "model": {
+            "id": "qwen/qwen3.5-2b",
+            "version": "1"
+          },
+          "allowedProcedures": [
+            {
+              "id": "adapt.text-procedure.direct-revision",
+              "version": "1"
+            }
+          ],
+          "selection": {
+            "mode": "fixed",
+            "selector": {
+              "id": "adapt.text-procedure.select",
+              "version": "2"
+            },
+            "minCommittedRuns": 4,
+            "minElapsedMs": 0,
+            "maxCatalogueEntries": 4,
+            "autoActivatePreEvaluated": false
+          },
+          "batching": {
+            "maxItems": 8,
+            "maxInputCharacters": 3000,
+            "maxInputTokens": 3000,
+            "maxDelayMs": 1000,
+            "acceptCallerUrgency": true
+          },
+          "input": {
+            "maxItemCharacters": 2000,
+            "maxRoutingSpanCharacters": 2000
+          },
+          "memory": {
+            "maxCharacters": 4000,
+            "maxNarrativeTokens": 4096,
+            "splitPressureCharacters": 3500,
+            "allowExplicitClear": true,
+            "standaloneCapacity": "reject"
+          },
+          "generation": {
+            "loadedContextTokens": 16384,
+            "reservedOutputTokens": 4096,
+            "maxNoteCharacters": 512,
+            "maxProviderCalls": 3,
+            "maxTokenClaims": 49152,
+            "maxBudgetClaims": 20
+          },
+          "planning": {
+            "maxNodes": 4,
+            "maxCollectionItems": 8,
+            "maxOperations": 4
+          },
+          "retries": {
+            "maxLogicalAttempts": 1,
+            "initialDelayMs": 1000,
+            "maxDelayMs": 1000,
+            "terminalAfterMs": 180000
+          },
+          "history": {
+            "maxEntries": 64,
+            "maxCharacters": 8000
+          },
+          "idempotence": {
+            "processedIdHorizonMs": 2592000000,
+            "maxProcessedIds": 512
+          }
+        },
+        "createdAt": "2026-10-10T00:00:00.000Z",
+        "bindings": {
+          "incarnation": "adaptive-longitudinal-v2",
+          "ownershipRevision": 1,
+          "profileRevision": 3,
+          "registryLineage": "adaptive-text-procedures-v1-restored-v2-retained",
+          "referencedDefinitionDigest": "92d80e498563d7fee05819e06215ad7a6791e1ff8ac626bfff4fba07750527ac",
+          "allowedCatalogueDigest": "8c8e6c8bf6d74f2517f6d255ca636e35180f762f590efbbd30d5f2d46fed3662"
+        }
+      },
+      "procedure": {
+        "default": {
+          "id": "adapt.text-procedure.direct-revision",
+          "version": "1"
+        },
+        "byStream": []
+      },
+      "catalogue": []
+    }
+  ],
+  "selection": {
+    "streamIds": [
+      "developer-practices"
+    ],
+    "armIds": [
+      "B-fixed-direct"
+    ],
+    "repetitions": [
+      1
+    ]
+  },
+  "queries": [
+    "What is the current useful understanding within this memory's purpose? Preserve uncertainty, scope, exceptions, and supported patterns."
+  ],
+  "paths": {
+    "outputRoot": "evals/.data/adaptive-text-longitudinal-fixed-direct-qwen",
+    "databaseFileName": "neuron.sqlite"
+  },
+  "ids": {
+    "neuronPrefix": "adaptive-longitudinal",
+    "runtimePrefix": "adaptive-longitudinal-runtime"
+  },
+  "adaptiveRuntime": {
+    "tokenCounter": {
+      "requestTemplateOverheadTokens": 64,
+      "textTemplateOverheadTokens": 0
+    },
+    "deviceScheduler": {
+      "maxConcurrent": 1,
+      "maxQueued": 4,
+      "priority": "background"
+    },
+    "statePolicy": {
+      "maxRetainedProfiles": 8,
+      "maxFlushRuns": 64,
+      "headStateId": "adaptive-text-profile-head",
+      "narrativeMemoryId": "current",
+      "stateKind": "adaptive-text-learning",
+      "selectionStateId": "adaptive-text-selection"
+    },
+    "selectionLimits": {
+      "maxContextCharacters": 3500,
+      "maxLearnedChanges": 16,
+      "maxPendingInputs": 16,
+      "maxFeedbackEntries": 8
+    }
+  },
+  "dueWakeup": {
+    "enabled": true,
+    "afterInput": 1,
+    "waitMs": 1200
+  },
+  "recovery": {
+    "enabled": false,
+    "streamId": "developer-practices",
+    "armId": "B-fixed-direct",
+    "repetition": 1,
+    "afterInput": 90
+  },
+  "storeCollections": {
+    "v1": [
+      "observations",
+      "understanding",
+      "evolution",
+      "state"
+    ],
+    "current": [
+      "observations",
+      "understanding",
+      "evolution",
+      "state",
+      "learningHistory",
+      "memoryChanges",
+      "pendingWork",
+      "pendingInputs",
+      "processedInputs",
+      "outbox",
+      "learningAttempts",
+      "learningRevisions"
+    ]
+  },
+  "runtimeCommands": [
+    {
+      "id": "lms-ps",
+      "executable": "/Users/amir/.lmstudio/bin/lms",
+      "arguments": [
+        "ps",
+        "--json"
+      ]
+    },
+    {
+      "id": "lms-ls",
+      "executable": "/Users/amir/.lmstudio/bin/lms",
+      "arguments": [
+        "ls",
+        "--json"
+      ]
+    },
+    {
+      "id": "hardware",
+      "executable": "sysctl",
+      "arguments": [
+        "hw.memsize",
+        "hw.model"
+      ]
+    },
+    {
+      "id": "memory-pressure",
+      "executable": "memory_pressure",
+      "arguments": []
+    }
+  ],
+  "sourceFiles": [
+    {
+      "id": "adaptive-runtime",
+      "path": "src/neurons/text/adaptive-runtime.ts"
+    },
+    {
+      "id": "baseline-base-neuron",
+      "path": "/Users/amir/projects/adapt/adapt-memory-v1-baseline/src/neurons/base/class.ts"
+    },
+    {
+      "id": "baseline-text-neuron",
+      "path": "/Users/amir/projects/adapt/adapt-memory-v1-baseline/src/neurons/text/class.ts"
+    },
+    {
+      "id": "llm-plugin",
+      "path": "src/llm/index.ts"
+    },
+    {
+      "id": "package-lock",
+      "path": "package-lock.json"
+    },
+    {
+      "id": "procedure-capacity",
+      "path": "src/learning/text-procedures/capacity.ts"
+    },
+    {
+      "id": "procedure-contracts",
+      "path": "src/learning/text-procedures/contracts.ts"
+    },
+    {
+      "id": "procedure-operations",
+      "path": "src/learning/text-procedures/operations.ts"
+    },
+    {
+      "id": "procedure-provider",
+      "path": "src/learning/text-procedures/provider.ts"
+    },
+    {
+      "id": "procedure-recipes",
+      "path": "src/learning/text-procedures/recipes.ts"
+    },
+    {
+      "id": "procedure-run",
+      "path": "src/learning/text-procedures/run.ts"
+    },
+    {
+      "id": "procedure-schemas",
+      "path": "src/learning/text-procedures/schemas.ts"
+    },
+    {
+      "id": "procedure-selection",
+      "path": "src/learning/text-procedures/selection.ts"
+    },
+    {
+      "id": "runner",
+      "path": "evals/scripts/adaptive-text-longitudinal-eval.ts"
+    },
+    {
+      "id": "state-coordinator",
+      "path": "src/learning/text-state/coordinator.ts"
+    },
+    {
+      "id": "state-store",
+      "path": "src/learning/text-state/store.ts"
+    },
+    {
+      "id": "store-node",
+      "path": "src/stores/sqlite/node/neuron.ts"
+    },
+    {
+      "id": "text-neuron",
+      "path": "src/neurons/text/class.ts"
+    },
+    {
+      "id": "text-types",
+      "path": "src/neurons/text/types.ts"
+    }
+  ],
+  "profileLineage": {
+    "path": "evals/config/adaptive-text-learning/profile3-lineage.json",
+    "sha256": "892587e08023f4cfb73ffedf7bf4f3b9b047f4903246a10294df67a5548e49ac"
+  }
+}

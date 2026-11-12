@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "provider": {
+    "name": "lm-studio",
+    "baseUrl": "http://localhost:1234/v1",
+    "modelId": "liquid/lfm2.5-1.2b"
+  },
+  "settings": {
+    "temperature": 0,
+    "maxOutputTokens": 2048,
+    "maxRetries": 0,
+    "timeoutMs": 180000
+  },
+  "repetitions": 3,
+  "datasetPath": "evals/datasets/model-capability-ladder.json",
+  "outputRoot": "evals/.data/model-capability-ladder-lfm",
+  "ids": {
+    "recipeId": "adapt.learning.narrative",
+    "recipeVersion": "1",
+    "registryRevision": "model-capability-ladder-v1",
+    "memoryId": "model-capability-ladder-memory"
+  },
+  "revisions": {
+    "memory": 12,
+    "configuration": 4
+  },
+  "planning": {
+    "maxNodes": 10,
+    "maxCollectionItems": 4,
+    "maxOperations": 12
+  },
+  "execution": {
+    "maxClaims": 32
+  },
+  "observedAt": "2026-10-10T12:00:00.000Z"
+}

@@ -1,0 +1,244 @@
+{
+ "schemaVersion": 1,
+ "streamId": "clinical-dimensions",
+ "note": "Literal answers to the procedure's questions, written by hand. levels[dimension] is the highest level whose indicator question the note answers yes, read literally; lower questions are treated as yes too, which does not change the outcome because code uses the highest yes. A dimension is selected when it has a level. Written after earlier model runs on these streams were seen.",
+ "answers": {
+  "s01-a": {
+   "levels": {
+    "self_awareness": "emerging"
+   }
+  },
+  "s01-b": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "s01-c": {
+   "levels": {}
+  },
+  "s02-a": {
+   "levels": {}
+  },
+  "s02-b": {
+   "irrelevant": true
+  },
+  "s02-c": {
+   "levels": {
+    "somatic_processing": "emerging",
+    "self_awareness": "emerging"
+   }
+  },
+  "s03-a": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s03-b": {
+   "levels": {
+    "somatic_processing": "emerging",
+    "emotional_regulation": "emerging"
+   }
+  },
+  "s03-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s04-a": {
+   "levels": {
+    "agency": "developing"
+   }
+  },
+  "s04-b": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s04-c": {
+   "levels": {
+    "somatic_processing": "developing"
+   }
+  },
+  "s05-a": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "s05-b": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s05-c": {
+   "levels": {
+    "agency": "developing"
+   }
+  },
+  "s06-a": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s06-b": {
+   "levels": {
+    "relational_flexibility": "emerging"
+   }
+  },
+  "s06-c": {
+   "irrelevant": true
+  },
+  "s07-a": {
+   "levels": {
+    "relational_flexibility": "developing"
+   }
+  },
+  "s07-b": {
+   "levels": {
+    "somatic_processing": "developing"
+   }
+  },
+  "s07-c": {
+   "untrusted": true
+  },
+  "s08-a": {
+   "levels": {
+    "emotional_regulation": "established",
+    "self_awareness": "developing"
+   }
+  },
+  "s08-b": {
+   "levels": {
+    "somatic_processing": "integrated",
+    "self_awareness": "developing"
+   }
+  },
+  "s08-c": {
+   "levels": {
+    "agency": "developing"
+   }
+  },
+  "s09-a": {
+   "levels": {
+    "somatic_processing": "established",
+    "emotional_regulation": "established"
+   }
+  },
+  "s09-b": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s09-c": {
+   "irrelevant": true
+  },
+  "s10-a": {
+   "levels": {
+    "somatic_processing": "established",
+    "self_awareness": "developing"
+   }
+  },
+  "s10-b": {
+   "levels": {
+    "agency": "established",
+    "relational_flexibility": "developing"
+   }
+  },
+  "s10-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s11-a": {
+   "levels": {
+    "self_awareness": "established"
+   }
+  },
+  "s11-b": {
+   "levels": {
+    "emotional_regulation": "established",
+    "somatic_processing": "established"
+   }
+  },
+  "s11-c": {
+   "levels": {
+    "agency": "established"
+   }
+  },
+  "s12-a": {
+   "levels": {
+    "emotional_regulation": "developing"
+   }
+  },
+  "s12-b": {
+   "levels": {
+    "relational_flexibility": "established"
+   }
+  },
+  "s12-c": {
+   "irrelevant": true
+  },
+  "s13-a": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "s13-b": {
+   "levels": {
+    "somatic_processing": "established"
+   }
+  },
+  "s13-c": {
+   "levels": {
+    "agency": "established"
+   }
+  },
+  "s14-a": {
+   "levels": {
+    "relational_flexibility": "developing"
+   }
+  },
+  "s14-b": {
+   "levels": {
+    "self_awareness": "integrated"
+   }
+  },
+  "s14-c": {
+   "levels": {
+    "self_awareness": "developing",
+    "agency": "developing"
+   }
+  },
+  "s15-a": {
+   "levels": {
+    "emotional_regulation": "established",
+    "somatic_processing": "emerging"
+   }
+  },
+  "s15-b": {
+   "levels": {
+    "somatic_processing": "integrated",
+    "self_awareness": "integrated"
+   }
+  },
+  "s15-c": {
+   "irrelevant": true
+  },
+  "s16-a": {
+   "levels": {
+    "emotional_regulation": "established",
+    "self_awareness": "developing"
+   }
+  },
+  "s16-b": {
+   "levels": {
+    "relational_flexibility": "integrated",
+    "agency": "developing"
+   }
+  },
+  "s16-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  }
+ }
+}

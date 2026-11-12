@@ -1,0 +1,88 @@
+{
+	"source": "seren src/main/config/config.neuron-defaults.ts, copied read-only on 2026-10-12",
+	"neuron": {
+		"id": "clinical-dimensions",
+		"name": "Clinical Dimensions",
+		"type": "list",
+		"description": "Individual clinical dimension ratings — one item per dimension per observation, tracking emotional regulation, self-awareness, agency, relational flexibility, and somatic processing",
+		"instructions": "Track how this client's clinical capacities evolve across sessions. Each item is a single dimension rating — NOT a grouped session snapshot.\n\nThe five dimensions:\n1. **Emotional Regulation** — Can the client identify, tolerate, and modulate emotional states? Are they moving from shutdown/flooding toward flexible responding?\n2. **Self-Awareness** — Can the client observe their own patterns in real time? Are they moving from post-hoc analysis to in-the-moment recognition?\n3. **Agency & Assertion** — Can the client express needs, set boundaries, and act on preferences? Are they moving from suppression/compliance toward authentic expression?\n4. **Relational Flexibility** — Can the client see others as complex, shift perspective, and tolerate relational ambiguity? Are rigid perceptions loosening?\n5. **Somatic Processing** — Is the client aware of body-level signals? Are they moving from disconnection toward integration of physical experience with emotional understanding?\n\nCreate one item per dimension when you observe evidence of it — either as demonstrated capacity or as struggle/absence.\n\nRating scale:\n- **not_observed**: No evidence of this capacity in this session\n- **emerging**: First signs — tentative, inconsistent, often only with therapist scaffolding\n- **developing**: Growing capacity — demonstrated with effort, not yet reliable\n- **established**: Reliable — demonstrated naturally, generalizing across contexts\n- **integrated**: Fully owned — spontaneous, flexible, sustained under pressure\n\nGround every rating in specific session evidence. A rating without a concrete moment or quote backing it is not valid.",
+		"governance": {
+			"deduplication": "strict",
+			"maxItems": 100,
+			"pruning": "oldest"
+		},
+		"observationSchema": {
+			"type": "object",
+			"properties": {
+				"dimension": {
+					"type": "string",
+					"enum": [
+						"emotional_regulation",
+						"self_awareness",
+						"agency",
+						"relational_flexibility",
+						"somatic_processing"
+					],
+					"description": "Which clinical dimension this moment informs"
+				},
+				"signal_direction": {
+					"type": "string",
+					"enum": [
+						"capacity",
+						"struggle"
+					],
+					"description": "Whether the client demonstrated capacity or hit a wall"
+				},
+				"description": {
+					"type": "string",
+					"description": "What happened — the specific moment, behavior, or interaction observed"
+				},
+				"client_language": {
+					"type": "string",
+					"description": "Relevant client quote if available"
+				}
+			},
+			"required": [
+				"dimension",
+				"signal_direction",
+				"description"
+			]
+		},
+		"understandingSchema": {
+			"type": "object",
+			"properties": {
+				"dimension": {
+					"type": "string",
+					"enum": [
+						"emotional_regulation",
+						"self_awareness",
+						"agency",
+						"relational_flexibility",
+						"somatic_processing"
+					],
+					"description": "Which clinical dimension this rating is for"
+				},
+				"level": {
+					"type": "string",
+					"enum": [
+						"not_observed",
+						"emerging",
+						"developing",
+						"established",
+						"integrated"
+					],
+					"description": "Current capacity level based on accumulated evidence"
+				},
+				"evidence": {
+					"type": "string",
+					"description": "Brief justification grounded in specific session moments, behaviors, or quotes"
+				}
+			},
+			"required": [
+				"dimension",
+				"level",
+				"evidence"
+			]
+		}
+	}
+}

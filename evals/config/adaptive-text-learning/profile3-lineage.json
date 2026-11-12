@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "profile": {
+    "version": "3",
+    "revision": 3,
+    "registryLineage": "adaptive-text-procedures-v1-restored-v2-retained"
+  },
+  "allowedProcedures": [
+    {
+      "id": "adapt.text-procedure.direct-revision",
+      "version": "1"
+    }
+  ],
+  "allowedCatalogueDigest": "8c8e6c8bf6d74f2517f6d255ca636e35180f762f590efbbd30d5f2d46fed3662",
+  "referencedDefinitionFiles": [
+    {
+      "path": "src/learning/text-procedures/capacity.ts",
+      "sha256": "7aed8c9fd01dd064c340e87f2418ad20215b2c59ca9541b4509cf4b851e5be9f"
+    },
+    {
+      "path": "src/learning/text-procedures/contracts.ts",
+      "sha256": "035f22d729299c3f298940857702a5d262480679f3cf992fc32a28ab6ec82d08"
+    },
+    {
+      "path": "src/learning/text-procedures/operations.ts",
+      "sha256": "ad4e4b9863c19a526a3d2af388285f7110a1045256a016202382685cf2e8cc36"
+    },
+    {
+      "path": "src/learning/text-procedures/provider.ts",
+      "sha256": "5953a32c610de258a2c8b633140022c6f8ac0fb1c79f1afc85862ce0468dea8f"
+    },
+    {
+      "path": "src/learning/text-procedures/recipes.ts",
+      "sha256": "3cad6a9e8bca546683f33ecb001208f93eda5e2862e99cbe8fa57adbef70411a"
+    },
+    {
+      "path": "src/learning/text-procedures/run.ts",
+      "sha256": "d80b10e1dfe1ddb8cef186773cb47db93ad7decfdb35a7c8cbb13d5c93b4de5f"
+    },
+    {
+      "path": "src/learning/text-procedures/schemas.ts",
+      "sha256": "faa6ea9d99856f155f293c440eab68dcb42fbe108f338a286907a94093dd6c9e"
+    },
+    {
+      "path": "src/learning/text-procedures/selection.ts",
+      "sha256": "8545af694add9301dfc5e8eae0b96053a22991ccd8cea7bd0f128e7328b5bbf5"
+    }
+  ],
+  "referencedDefinitionDigest": "92d80e498563d7fee05819e06215ad7a6791e1ff8ac626bfff4fba07750527ac",
+  "digestMethod": "sha256 of JSON.stringify over the displayed exact ordered input",
+  "scope": "Source and configuration lineage only; this is not evaluation eligibility."
+}

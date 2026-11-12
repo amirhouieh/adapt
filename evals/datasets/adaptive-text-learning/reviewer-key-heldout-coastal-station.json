@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "streamId": "heldout-coastal-station",
+  "modelInput": false,
+  "checkpoints": [
+    {
+      "afterInput": 30,
+      "expectations": [
+        {
+          "id": "held-030-identity",
+          "dimension": "identity",
+          "critical": true,
+          "expected": [
+            "Tern Station Jordan Bell and Bay Clinic Jordan Bell remain distinct with separate roles and cards."
+          ],
+          "unacceptable": [
+            "Merging the two people."
+          ]
+        },
+        {
+          "id": "held-030-permit",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "South Marsh night permit is tentative pending ranger approval."
+          ],
+          "unacceptable": [
+            "Calling it approved."
+          ]
+        },
+        {
+          "id": "held-030-practice",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "North Cove sampling is within 45 minutes of low tide; boat radio check-ins occur at departure and return."
+          ],
+          "unacceptable": [
+            "Inventing another site or time."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 60,
+      "expectations": [
+        {
+          "id": "held-060-permit",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "South Marsh night surveys are approved from 22 May, replacing tentative 20 May."
+          ],
+          "unacceptable": [
+            "Keeping both dates or uncertainty."
+          ]
+        },
+        {
+          "id": "held-060-storm-scope",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Hourly radio checks apply only during named storms; normal departure/return checks remain."
+          ],
+          "unacceptable": [
+            "Hourly checks for every trip."
+          ]
+        },
+        {
+          "id": "held-060-algae",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Calm warm conditions are associated with two North Cove increases, with South Point as a counterexample; no universal cause."
+          ],
+          "unacceptable": [
+            "Claiming warmth always causes algae growth."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 90,
+      "expectations": [
+        {
+          "id": "held-090-scope",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "North Cove nutrient samples use low-tide window; bird counts use two hours after sunrise."
+          ],
+          "unacceptable": [
+            "Applying low-tide timing to bird counts."
+          ]
+        },
+        {
+          "id": "held-090-battery",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "25% replacement remains practice, but battery level alone does not prevent seal-related failures."
+          ],
+          "unacceptable": [
+            "Claiming the threshold prevents all failures."
+          ]
+        },
+        {
+          "id": "held-090-identity",
+          "dimension": "identity",
+          "critical": true,
+          "expected": [
+            "Both Jordan Bells remain distinct; Mara Voss owns temperature loggers."
+          ],
+          "unacceptable": [
+            "Transferring salinity ownership to Mara or merging Jordans."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 120,
+      "expectations": [
+        {
+          "id": "held-120-permit",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "South Marsh surveys pause 10–16 June and resume 17 June."
+          ],
+          "unacceptable": [
+            "Permanent cancellation.",
+            "Leaving pause tentative."
+          ]
+        },
+        {
+          "id": "held-120-algae",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Warm calm weather is not sufficient; runoff now appears relevant, still as association rather than proven cause."
+          ],
+          "unacceptable": [
+            "A simple temperature cause."
+          ]
+        },
+        {
+          "id": "held-120-radio",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Crews check battery before departure and still check in at departure and return."
+          ],
+          "unacceptable": [
+            "Replacing radio timing with battery check only."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 150,
+      "expectations": [
+        {
+          "id": "held-150-novelty",
+          "dimension": "novelty",
+          "critical": true,
+          "expected": [
+            "Old Quarry acoustic bat monitoring is confirmed to begin 3 July."
+          ],
+          "unacceptable": [
+            "Using tentative 1 July.",
+            "Ignoring the new subject."
+          ]
+        },
+        {
+          "id": "held-150-retention",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "Sampling scopes, people, battery caveat, radio practice, and permit status survive the long note."
+          ],
+          "unacceptable": [
+            "Replacing memory with only bat monitoring."
+          ]
+        },
+        {
+          "id": "held-150-pattern-fade",
+          "dimension": "pattern",
+          "critical": false,
+          "expected": [
+            "Sharp algae increases have not recurred for eight weeks after runoff controls, without claiming permanent prevention."
+          ],
+          "unacceptable": [
+            "Claiming causal proof or permanent elimination."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 180,
+      "expectations": [
+        {
+          "id": "held-180-current",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "South Marsh surveys continue; hourly radio checks are temporarily active during storm Lark; normal practices remain."
+          ],
+          "unacceptable": [
+            "Permanent hourly checks or cancelled surveys."
+          ]
+        },
+        {
+          "id": "held-180-bats",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Bat monitoring tracks seasonal activity, not population; a windy quiet night does not prove absence."
+          ],
+          "unacceptable": [
+            "Declaring zero bats or a census result."
+          ]
+        },
+        {
+          "id": "held-180-retention",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "Distinct sampling times and distinct Jordan Bells survive to the end."
+          ],
+          "unacceptable": [
+            "Merging identities or timing scopes."
+          ]
+        }
+      ]
+    }
+  ]
+}

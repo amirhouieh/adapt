@@ -1,0 +1,49 @@
+{
+  "chatCompletionsUrl": "http://127.0.0.1:1234/v1/chat/completions",
+  "providerId": "lm-studio",
+  "model": {
+    "plugin": "local",
+    "provider": "lm-studio",
+    "id": "liquid/lfm2.5-1.2b",
+    "options": { "temperature": 0, "maxOutputTokens": 384, "seed": 7 }
+  },
+  "scheduler": { "maxConcurrent": 1, "maxQueued": 8 },
+  "retry": {
+    "maxAttempts": 2,
+    "maxAttemptsCeiling": 2,
+    "initialDelayMs": 100,
+    "maxDelayMs": 500,
+    "backoff": "fixed"
+  },
+  "requestTimeoutMs": 60000,
+  "defaultMaxOutputTokens": 384,
+  "defaultPriority": "foreground",
+  "datasetPath": "evals/datasets/v2-attention.json",
+  "outputRoot": "evals/.data/v2/attention-routing",
+  "networkPolicy": {
+    "sandboxPolicy": "(version 1) (allow default) (deny network-outbound) (allow network-outbound (remote ip \"localhost:*\"))",
+    "allowedProbeUrl": "http://127.0.0.1:1234/v1/models",
+    "deniedProbeUrl": "http://1.1.1.1/",
+    "probeTimeoutMs": 3000
+  },
+  "policy": {
+    "maxPortions": 8,
+    "maxPortionCharacters": 4000,
+    "maxRequestContextCharacters": 12000,
+    "maxCandidateLenses": 4,
+    "maxDestinationsPerPortion": 3,
+    "maxProviderCalls": 8,
+    "maxUncoveredSpans": 4,
+    "maxDiscoveryActions": 4,
+    "maxRecheckActions": 4
+  },
+  "discoveryBuffer": {
+    "now": "2026-09-30T11:00:00.000Z",
+    "policy": {
+      "maxItems": 3,
+      "maxCharacters": 300,
+      "maxAgeMs": 14400000,
+      "overflowPolicy": "evict_oldest"
+    }
+  }
+}

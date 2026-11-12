@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "authoringSource": {
+    "path": "evals/datasets/adaptive-text-learning/authoring-source.json",
+    "sha256": "1e0d8ac72e3e8f3d2b17903279064cbdf8491425e1e6e34eea07cb820c5792aa"
+  },
+  "files": [
+    {
+      "path": "evals/datasets/adaptive-text-learning/stream-developer-practices.json",
+      "role": "input-stream",
+      "visibility": "development",
+      "inputCount": 180,
+      "sha256": "bf3ceb891ddacbe9db63f1fa5664154d091d165008a8d4c0958c6e99fcf54629"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/reviewer-key-developer-practices.json",
+      "role": "reviewer-key",
+      "visibility": "development",
+      "sha256": "99ba1def43dc37e3adc773d6bc6f73936e33f08950a31eb4db9fbe09a1815a50"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/stream-communication-scheduling.json",
+      "role": "input-stream",
+      "visibility": "development",
+      "inputCount": 180,
+      "sha256": "89a0b6f8a8319d4f5b90be82b62d7100a5ccee70448fb71ae529f044ad08dbc3"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/reviewer-key-communication-scheduling.json",
+      "role": "reviewer-key",
+      "visibility": "development",
+      "sha256": "d8c260bed53d87383169432cdd12cda45c57259087bf258e8c792c5ddfc2c047"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/stream-project-commitments.json",
+      "role": "input-stream",
+      "visibility": "development",
+      "inputCount": 180,
+      "sha256": "3760fe5e219620b740c943af625b6a885ae6e9363d151ba88d4b8d5970ec426d"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/reviewer-key-project-commitments.json",
+      "role": "reviewer-key",
+      "visibility": "development",
+      "sha256": "7ad54c8bb70261cbd6f04156d396ec2e1d7482cc9962f0fd9357cda9c2133725"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/stream-heldout-coastal-station.json",
+      "role": "input-stream",
+      "visibility": "sealed-heldout",
+      "inputCount": 180,
+      "sha256": "3862d71eb2b17198d7ce835d0a48c69c2b32d7c5009b0d4092b8b5da2febb581"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/reviewer-key-heldout-coastal-station.json",
+      "role": "reviewer-key",
+      "visibility": "sealed-heldout",
+      "sha256": "b88fa815b695c4f2edafbfb5a7940591b1f1a6d442c3cca9894fff49bfd5e101"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/module-cases.json",
+      "role": "module-inputs",
+      "visibility": "development",
+      "caseCount": 16,
+      "sha256": "10ffe46e04ab6c80507a8d9d70ce27935d8a99f49a4f6a34574ba49eff7505a4"
+    },
+    {
+      "path": "evals/datasets/adaptive-text-learning/reviewer-key-module-cases.json",
+      "role": "reviewer-key",
+      "visibility": "development",
+      "caseCount": 16,
+      "sha256": "f56ce743dc43328baeef80b7b3c0fb4fdd3380d7874dbbfa2120e9065b4eefc7"
+    }
+  ],
+  "notes": [
+    "Reviewer-key files are never model input.",
+    "Sealed held-out files remain unopened by prompt and implementation authors until root freezes prompts, source, catalogue, and frozen-rich assignments.",
+    "Fixture validity is mechanical evidence only and does not accept model semantics."
+  ]
+}

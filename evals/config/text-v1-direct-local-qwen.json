@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "label": "UNJUDGED",
+  "baseline": {
+    "root": "/Users/amir/projects/adapt/adapt-memory-v1-baseline",
+    "revision": "e2150ed3970d41125cb36d5c46f65e981ad2f088"
+  },
+  "provider": {
+    "name": "lmstudio",
+    "baseUrl": "http://127.0.0.1:1234/v1",
+    "modelId": "qwen/qwen3.5-2b"
+  },
+  "model": {},
+  "requests": {
+    "timeoutMs": 180000,
+    "maxRetries": 0,
+    "maxConcurrent": 1
+  },
+  "paths": {
+    "dataset": "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-001.raw.json",
+    "outputRoot": "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-v1-direct-local-qwen",
+    "v1DatabaseFileName": "v1-text-neuron.sqlite",
+    "v2DatabaseFileName": "v2-text-dag.sqlite"
+  },
+  "ids": {
+    "v1Neuron": "comparison-text-neuron",
+    "v2Memory": "comparison-text-memory",
+    "v2Recipe": "adapt.learning.text-fixed-dag",
+    "v2RecipeVersion": "1",
+    "v2RegistryRevision": "text-dag-comparison-1"
+  },
+  "bounds": {
+    "maxObservations": 4,
+    "maxObservationCharacters": 400,
+    "maxObservationTokens": 1600,
+    "maxMemoryCharacters": 2000,
+    "maxMemoryTokens": 2000,
+    "maxContextCharacters": 8000,
+    "maxNodes": 10,
+    "maxCollectionItems": 4,
+    "maxOperations": 12,
+    "maxClaims": 32,
+    "minImportance": 0
+  }
+}

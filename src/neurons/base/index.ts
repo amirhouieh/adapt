@@ -3,6 +3,8 @@ export type {
 	LearnCallbacks,
 	LearnOptions,
 	LearnOutput,
+	LearnPreparation,
+	ManagedLearnOutput,
 	UnderstandCallResult,
 } from './class'
 export { BaseNeuron } from './class'

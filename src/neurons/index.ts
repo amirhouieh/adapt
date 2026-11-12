@@ -19,6 +19,8 @@ export type {
 	LearnCallbacks,
 	LearnOptions,
 	LearnOutput,
+	LearnPreparation,
+	ManagedLearnOutput,
 	ModelSlots,
 	SharedNeuronEventMap,
 	StateTransform,
@@ -49,6 +51,15 @@ export {
 	neuronConfigSchema,
 } from './schema.config'
 export type {
+	AdaptiveTextFlushOutput,
+	AdaptiveTextLearningConfig,
+	AdaptiveTextLearningRuntime,
+	AdaptiveTextLearningState,
+	AdaptiveTextLearnOutput,
+	AdaptiveTextModelProfile,
+	AdaptiveTextProcedureEvaluation,
+	AdaptiveTextSelectionCatalogueEntry,
+	AdaptiveTextSelectionRuntime,
 	ResolvedGovernanceConfig,
 	ResolvedTextNeuronConfig,
 	TextGovernanceConfig,
@@ -58,7 +69,7 @@ export type {
 	TextNeuronUpdateResult,
 } from './text'
 // TextNeuron
-export { TextNeuron } from './text'
+export { protectedDeveloperInstructions, TextNeuron } from './text'
 // Descriptors
 export { textNeuronDescriptor } from './text/descriptor'
 export type {

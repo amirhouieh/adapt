@@ -11,8 +11,8 @@ export interface SQLiteStatement<Row = Record<string, unknown>> {
 export interface SQLiteDatabase {
 	exec(sql: string): void
 	prepare<Row = Record<string, unknown>>(sql: string): SQLiteStatement<Row>
-	transaction<TArgs extends unknown[]>(
-		fn: (...args: TArgs) => void,
-	): (...args: TArgs) => void
+	transaction<TArgs extends unknown[], TResult>(
+		fn: (...args: TArgs) => TResult,
+	): (...args: TArgs) => TResult
 	close(): void
 }

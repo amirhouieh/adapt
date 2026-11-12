@@ -1,0 +1,133 @@
+{
+  "artifactDirectory": "evals/artifacts/migration-v006",
+  "runId": "module11-migration-2026-10-01",
+  "legacySqliteModulePath": "/Users/amir/projects/adapt/adapt-memory-v1-baseline/src/sqlite.ts",
+  "databaseFiles": {
+    "sourceBrain": "source-v006-brain.db",
+    "targetBrain": "target-v2-brain.db",
+    "sourceNeuron": "source-v006-neuron.db",
+    "targetNeuron": "target-v2-neuron.db"
+  },
+  "datasetPath": "evals/datasets/migration-v006.json",
+  "declaredVersion": "0.0.6",
+  "storeKind": "sqlite-node",
+  "sourceIds": {
+    "brain": "legacy-brain-source-eval",
+    "neuron": "legacy-neuron-source-eval"
+  },
+  "targetIds": {
+    "brain": "v2-brain-target-eval",
+    "neuron": "v2-neuron-target-eval"
+  },
+  "brainMigration": {
+    "migrationId": "migration-v006-brain-eval",
+    "journalStateId": "adapt.v2.migration.brain.eval",
+    "targetRegistryRevisionId": "registry-v006-migrated-eval",
+    "targetRegistryRevision": 1,
+    "targetPhysicalStoreIds": {
+      "projects": "projects-v2-physical",
+      "query-gaps": "query-gaps"
+    }
+  },
+  "neuronMigration": {
+    "migrationId": "migration-v006-neuron-eval",
+    "journalStateId": "adapt.v2.migration.neuron.eval",
+    "lensId": "standalone-notes",
+    "lensType": "text",
+    "targetPhysicalStoreIds": {
+      "standalone-notes": "standalone-notes-v2-physical"
+    }
+  },
+  "revisions": {
+    "initialMemoryRevision": 7,
+    "initialConfigRevision": 3
+  },
+  "bounds": {
+    "maxLenses": 8,
+    "maxBrainRecords": 64,
+    "maxBrainChars": 120000,
+    "maxRecordsPerLens": 64,
+    "maxSnapshotChars": 60000,
+    "maxDismissedBatches": 8
+  },
+  "timestamps": {
+    "inspectedAt": "2026-10-01T12:00:00.000Z",
+    "retriedAt": "2026-10-01T12:05:00.000Z"
+  },
+  "failure": {
+    "brainStage": "after-target-write",
+    "brainLensId": "projects",
+    "brainMessage": "injected v0.0.6 Brain migration interruption",
+    "neuronStage": "after-journal",
+    "neuronMessage": "injected v0.0.6 standalone migration interruption"
+  },
+  "runtime": {
+    "allowedModels": [
+      { "plugin": "local-runtime", "provider": "fixture", "id": "migration-model" }
+    ],
+    "allowedSchemas": {
+      "text": {
+        "observation": { "type": "string" },
+        "understanding": { "type": "string" }
+      },
+      "list": {
+        "observation": { "type": "object" },
+        "understanding": { "type": "object" }
+      }
+    },
+    "allowedRecipes": [
+      { "id": "adapt.learning.text", "version": "1", "memoryType": "text" },
+      { "id": "adapt.learning.list", "version": "1", "memoryType": "list" }
+    ],
+    "lenses": {
+      "projects": {
+        "id": "projects",
+        "name": "Projects",
+        "description": "Migrated project knowledge.",
+        "type": "text",
+        "memory_schema": { "id": "adapt.memory.text", "version": "1" },
+        "recipe": { "id": "adapt.learning.text", "version": "1" },
+        "recipe_composition": [],
+        "dependencies": [],
+        "settings": {},
+        "developer_constraints": {
+          "instructions": ["Retain durable project decisions."],
+          "local_only": true,
+          "provider_permissions": ["local-runtime"]
+        }
+      },
+      "query-gaps": {
+        "id": "query-gaps",
+        "name": "Query gaps",
+        "description": "Migrated unresolved query gaps.",
+        "type": "list",
+        "memory_schema": { "id": "adapt.memory.list", "version": "1" },
+        "recipe": { "id": "adapt.learning.list", "version": "1" },
+        "recipe_composition": [],
+        "dependencies": [],
+        "settings": {},
+        "developer_constraints": {
+          "instructions": ["Retain unresolved query gaps."],
+          "local_only": true,
+          "provider_permissions": ["local-runtime"]
+        }
+      },
+      "standalone-notes": {
+        "id": "standalone-notes",
+        "name": "Standalone notes",
+        "description": "Migrated standalone text knowledge.",
+        "type": "text",
+        "memory_schema": { "id": "adapt.memory.text", "version": "1" },
+        "recipe": { "id": "adapt.learning.text", "version": "1" },
+        "recipe_composition": [],
+        "dependencies": [],
+        "settings": {},
+        "developer_constraints": {
+          "instructions": ["Retain durable standalone notes."],
+          "local_only": true,
+          "provider_permissions": ["local-runtime"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "label": "UNJUDGED",
+  "baseline": {
+    "root": "/Users/amir/projects/adapt/adapt-memory-v1-baseline",
+    "revision": "e2150ed3970d41125cb36d5c46f65e981ad2f088"
+  },
+  "provider": {
+    "name": "google",
+    "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "modelId": "gemini-3.8-flash",
+    "apiKeyEnv": "GOOGLE_GEMINI_API_KEY"
+  },
+  "model": {
+    "temperature": 0,
+    "maxOutputTokens": 4096
+  },
+  "requests": {
+    "timeoutMs": 60000,
+    "maxRetries": 1,
+    "maxConcurrent": 1
+  },
+  "paths": {
+    "dataset": "/Users/amir/projects/adapt/adapt-memory-v2/evals/datasets/text-dag-comparison.json",
+    "outputRoot": "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-gemini",
+    "v1DatabaseFileName": "v1-text-neuron.sqlite",
+    "v2DatabaseFileName": "v2-text-dag.sqlite"
+  },
+  "ids": {
+    "v1Neuron": "comparison-text-neuron",
+    "v2Memory": "comparison-text-memory",
+    "v2Recipe": "adapt.learning.text-fixed-dag",
+    "v2RecipeVersion": "1",
+    "v2RegistryRevision": "text-dag-comparison-1"
+  },
+  "bounds": {
+    "maxObservations": 4,
+    "maxObservationCharacters": 400,
+    "maxObservationTokens": 1600,
+    "maxMemoryCharacters": 2000,
+    "maxMemoryTokens": 2000,
+    "maxContextCharacters": 8000,
+    "maxNodes": 10,
+    "maxCollectionItems": 4,
+    "maxOperations": 12,
+    "maxClaims": 32,
+    "minImportance": 0
+  }
+}

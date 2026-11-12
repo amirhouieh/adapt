@@ -1,0 +1,302 @@
+{
+  "initialSourceSnapshot": {
+    "observations": [
+      {
+        "id": "derived-observation-1",
+        "data": "Approval decisions require an auditable outcome.",
+        "metadata_importance": 1,
+        "metadata_tokens": 7,
+        "metadata_status": "processed",
+        "metadata_created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "understanding": [
+      {
+        "id": "eval-memory-1",
+        "data": "The user wants approval decisions recorded with their outcome.",
+        "metadata_confidence": null,
+        "metadata_confidence_provenance": "unknown",
+        "metadata_created_at": "2026-09-30T12:00:00.000Z",
+        "metadata_updated_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "evolution": [],
+    "state": [],
+    "learningHistory": [
+      {
+        "id": "eval-history-1",
+        "attempt_id": "eval-attempt-1",
+        "outcome": "change",
+        "previous_memory_revision": 0,
+        "memory_revision": 1,
+        "config_revision": 0,
+        "input_ids": [
+          "eval-input-1"
+        ],
+        "change_ids": [
+          "eval-change-1"
+        ],
+        "explanation": "Created durable learned understanding.",
+        "created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "memoryChanges": [
+      {
+        "id": "eval-change-1",
+        "attempt_id": "eval-attempt-1",
+        "memory_revision": 1,
+        "kind": "narrative-revision",
+        "affected_memory_ids": [
+          "eval-memory-1"
+        ],
+        "summary": "Created learned approval preference.",
+        "created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "pendingWork": [
+      {
+        "id": "eval-work-2",
+        "attempt_id": "eval-attempt-2",
+        "input_ids": [
+          "eval-input-2"
+        ],
+        "inputs": [
+          {
+            "id": "eval-input-2",
+            "text": "The reviewer threshold is still unresolved."
+          }
+        ],
+        "status": "pending",
+        "retry_count": 0,
+        "available_at": "2026-09-30T12:01:00.000Z",
+        "created_at": "2026-09-30T12:01:00.000Z",
+        "updated_at": "2026-09-30T12:01:00.000Z"
+      }
+    ],
+    "pendingInputs": [
+      {
+        "id": "eval-input-2",
+        "pending_work_id": "eval-work-2",
+        "attempt_id": "eval-attempt-2",
+        "created_at": "2026-09-30T12:01:00.000Z"
+      }
+    ],
+    "processedInputs": [
+      {
+        "id": "eval-input-1",
+        "attempt_id": "eval-attempt-1",
+        "outcome": "change",
+        "memory_revision": 1,
+        "processed_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "outbox": [
+      {
+        "id": "eval-outbox-1",
+        "kind": "memory-change",
+        "deduplication_key": "eval-change-1",
+        "change_ids": [
+          "eval-change-1"
+        ],
+        "status": "pending",
+        "attempts": 0,
+        "available_at": "2026-09-30T12:00:00.000Z",
+        "created_at": "2026-09-30T12:00:00.000Z",
+        "updated_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "learningAttempts": [
+      {
+        "id": "eval-attempt-1",
+        "pending_work_id": "eval-work-1",
+        "input_ids": [
+          "eval-input-1"
+        ],
+        "status": "committed",
+        "memory_revision": 1,
+        "config_revision": 0,
+        "history_id": "eval-history-1",
+        "intent_digest": "supplied-compact-attempt-digest",
+        "created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "learningRevisions": [
+      {
+        "id": "current",
+        "memory_revision": 1,
+        "config_revision": 0,
+        "updated_at": "2026-09-30T12:00:00.000Z"
+      }
+    ]
+  },
+  "targetSnapshot": {
+    "observations": [
+      {
+        "id": "derived-observation-1",
+        "data": "Approval decisions require an auditable outcome.",
+        "metadata_importance": 1,
+        "metadata_tokens": 7,
+        "metadata_status": "processed",
+        "metadata_created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "understanding": [
+      {
+        "id": "eval-memory-1",
+        "data": "The user wants approval decisions recorded with their outcome.",
+        "metadata_confidence": null,
+        "metadata_confidence_provenance": "unknown",
+        "metadata_created_at": "2026-09-30T12:00:00.000Z",
+        "metadata_updated_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "evolution": [],
+    "state": [],
+    "learningHistory": [
+      {
+        "id": "eval-history-1",
+        "attempt_id": "eval-attempt-1",
+        "outcome": "change",
+        "previous_memory_revision": 0,
+        "memory_revision": 1,
+        "config_revision": 0,
+        "input_ids": [
+          "eval-input-1"
+        ],
+        "change_ids": [
+          "eval-change-1"
+        ],
+        "explanation": "Created durable learned understanding.",
+        "created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "memoryChanges": [
+      {
+        "id": "eval-change-1",
+        "attempt_id": "eval-attempt-1",
+        "memory_revision": 1,
+        "kind": "narrative-revision",
+        "affected_memory_ids": [
+          "eval-memory-1"
+        ],
+        "summary": "Created learned approval preference.",
+        "created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "pendingWork": [
+      {
+        "id": "eval-work-2",
+        "attempt_id": "eval-attempt-2",
+        "input_ids": [
+          "eval-input-2"
+        ],
+        "inputs": [
+          {
+            "id": "eval-input-2",
+            "text": "The reviewer threshold is still unresolved."
+          }
+        ],
+        "status": "pending",
+        "retry_count": 0,
+        "available_at": "2026-09-30T12:01:00.000Z",
+        "created_at": "2026-09-30T12:01:00.000Z",
+        "updated_at": "2026-09-30T12:01:00.000Z"
+      },
+      {
+        "id": "run-control-work-admitted",
+        "attempt_id": "run-control-attempt-admitted",
+        "input_ids": [
+          "run-control-input-admitted"
+        ],
+        "inputs": [
+          {
+            "id": "run-control-input-admitted",
+            "text": "The approval owner remains unresolved."
+          }
+        ],
+        "status": "pending",
+        "retry_count": 0,
+        "available_at": "2026-09-30T12:00:30.000Z",
+        "created_at": "2026-09-30T12:00:30.000Z",
+        "updated_at": "2026-09-30T12:00:30.000Z"
+      }
+    ],
+    "pendingInputs": [
+      {
+        "id": "eval-input-2",
+        "pending_work_id": "eval-work-2",
+        "attempt_id": "eval-attempt-2",
+        "created_at": "2026-09-30T12:01:00.000Z"
+      },
+      {
+        "id": "run-control-input-admitted",
+        "pending_work_id": "run-control-work-admitted",
+        "attempt_id": "run-control-attempt-admitted",
+        "created_at": "2026-09-30T12:00:30.000Z"
+      }
+    ],
+    "processedInputs": [
+      {
+        "id": "eval-input-1",
+        "attempt_id": "eval-attempt-1",
+        "outcome": "change",
+        "memory_revision": 1,
+        "processed_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "outbox": [
+      {
+        "id": "eval-outbox-1",
+        "kind": "memory-change",
+        "deduplication_key": "eval-change-1",
+        "change_ids": [
+          "eval-change-1"
+        ],
+        "status": "pending",
+        "attempts": 0,
+        "available_at": "2026-09-30T12:00:00.000Z",
+        "created_at": "2026-09-30T12:00:00.000Z",
+        "updated_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "learningAttempts": [
+      {
+        "id": "eval-attempt-1",
+        "pending_work_id": "eval-work-1",
+        "input_ids": [
+          "eval-input-1"
+        ],
+        "status": "committed",
+        "memory_revision": 1,
+        "config_revision": 0,
+        "history_id": "eval-history-1",
+        "intent_digest": "supplied-compact-attempt-digest",
+        "created_at": "2026-09-30T12:00:00.000Z"
+      }
+    ],
+    "learningRevisions": [
+      {
+        "id": "current",
+        "memory_revision": 1,
+        "config_revision": 1,
+        "updated_at": "2026-09-30T12:01:00.000Z"
+      }
+    ]
+  },
+  "mapping": {
+    "id": "eval-mapping-1",
+    "activation_id": "eval-activation-1",
+    "source_lens_id": "eval-journal",
+    "source_memory_id": "eval-memory-1",
+    "target_lens_id": "eval-journal",
+    "target_memory_id": "eval-memory-1",
+    "disposition": "transferred",
+    "history": [
+      {
+        "source_history_id": "eval-history-1",
+        "target_history_id": "eval-history-1"
+      }
+    ],
+    "created_at": "2026-09-30T12:01:00.000Z"
+  }
+}

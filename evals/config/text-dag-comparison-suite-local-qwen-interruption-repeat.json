@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "baseConfig": "/Users/amir/projects/adapt/adapt-memory-v2/evals/config/text-dag-comparison-local-qwen.json",
+  "datasets": [
+    "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/frozen-inputs/dataset-001.raw.json"
+  ],
+  "outputRoot": "/Users/amir/projects/adapt/adapt-memory-v2/evals/.data/text-dag-comparison-suite-local-qwen-interruption-repeat"
+}

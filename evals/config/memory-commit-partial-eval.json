@@ -1,0 +1,91 @@
+{
+  "adapter": "sqlite-node",
+  "artifactDirectory": "evals/artifacts/memory-commit",
+  "runId": "module4-partial-2026-09-30",
+  "databaseFileName": "memory-commit.db",
+  "memoryId": "current",
+  "sourceId": "user-conversation-2026-09-30",
+  "createdAt": "2026-09-30T09:00:00.000Z",
+  "committedAt": "2026-09-30T09:01:00.000Z",
+  "claimNow": "2026-09-30T09:02:00.000Z",
+  "leaseExpiresAt": "2026-09-30T09:03:00.000Z",
+  "consumerId": "eval-delivery-worker",
+  "leaseToken": "eval-lease-1",
+  "claimLimit": 10,
+  "failureStage": "after-memory",
+  "failureMessage": "eval injected interruption after memory write",
+  "success": {
+    "ids": {
+      "work": "work-success",
+      "attempt": "attempt-success",
+      "input": "input-message-7",
+      "support": "support-success",
+      "history": "history-success",
+      "change": "change-success",
+      "outbox": "outbox-success",
+      "deduplicationKey": "memory-change-success"
+    },
+    "suppliedText": "I prefer simple systems, but financial records should use explicit audit trails even when that adds complexity.",
+    "memoryText": "Prefers simple systems, with explicit audit trails accepted for financial records.",
+    "memoryRevision": 0,
+    "observationTokens": 29,
+    "observationImportance": 1,
+    "sourceVersion": "message-7",
+    "independenceKey": "user-conversation-2026-09-30"
+  },
+  "failure": {
+    "ids": {
+      "work": "work-failure",
+      "attempt": "attempt-failure",
+      "input": "input-message-8",
+      "support": "support-failure",
+      "history": "history-failure",
+      "change": "change-failure",
+      "outbox": "outbox-failure",
+      "deduplicationKey": "memory-change-failure"
+    },
+    "suppliedText": "The same audit requirement also applies to payroll records.",
+    "memoryText": "Prefers simple systems, with explicit audit trails accepted for financial and payroll records.",
+    "memoryRevision": 1,
+    "observationTokens": 13,
+    "observationImportance": 1,
+    "sourceVersion": "message-8",
+    "independenceKey": "user-conversation-2026-09-30"
+  },
+  "partial": {
+    "consumed": {
+      "ids": {
+        "work": "work-partial-parent",
+        "attempt": "attempt-partial-parent",
+        "input": "input-message-9-useful",
+        "support": "support-partial-useful",
+        "history": "history-partial-useful",
+        "change": "change-partial-useful",
+        "outbox": "outbox-partial-useful",
+        "deduplicationKey": "memory-change-partial-useful"
+      },
+      "suppliedText": "Payroll audit trails must retain who approved each change.",
+      "memoryText": "Prefers simple systems, with explicit approval audit trails for financial and payroll records.",
+      "memoryRevision": 2,
+      "observationTokens": 13,
+      "observationImportance": 1,
+      "sourceVersion": "message-9",
+      "independenceKey": "user-conversation-2026-09-30"
+    },
+    "originalPayload": {
+      "suppliedTexts": [
+        "Payroll audit trails must retain who approved each change.",
+        "It might also need a review window, but the duration is unclear."
+      ]
+    },
+    "residual": {
+      "workId": "work-partial-residual",
+      "attemptId": "attempt-partial-residual",
+      "inputId": "input-message-10-ambiguous",
+      "historyId": "history-partial-residual",
+      "suppliedText": "It might also need a review window, but the duration is unclear.",
+      "observationTokens": 14,
+      "observationImportance": 0.7
+    }
+  }
+}

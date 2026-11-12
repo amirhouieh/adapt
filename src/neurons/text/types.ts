@@ -9,6 +9,7 @@ import type {
 	UnderstandThresholds,
 } from '../base/types'
 import type { NeuronOrigin, Significance } from '../types'
+import type { AdaptiveTextLearningConfig } from './adaptive-runtime'
 import type { Strategy } from './strategies'
 import type { UnderstandIdentity } from './understand'
 
@@ -111,6 +112,8 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	understandingSchema?: Record<string, unknown>
 	/** Subscribe before initialization starts, so init events can be observed. */
 	onEvent?: UnifiedHandler<EventsFromMap<SharedNeuronEventMap>>
+	/** Opt into the persisted adaptive text-learning lifecycle. Omit for v1 behavior. */
+	learning?: AdaptiveTextLearningConfig
 }
 
 // ── Resolved Config ─────────────────────────────────────────────────────────

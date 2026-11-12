@@ -1,0 +1,68 @@
+{
+  "datasetPath": "evals/datasets/signal-store.json",
+  "artifactRoot": "evals/.data/v2/signal-store",
+  "runId": "module-signals-store-2026-10-01",
+  "adapters": {
+    "memory": {
+      "kind": "memory",
+      "persistent": false
+    },
+    "node": {
+      "kind": "node-sqlite",
+      "persistent": true,
+      "databaseFile": "signals-node.db"
+    },
+    "bun": {
+      "kind": "bun-sqlite",
+      "persistent": true,
+      "databaseFile": "signals-bun.db"
+    }
+  },
+  "policies": {
+    "main": {
+      "stateRecordId": "signal-eval-main",
+      "maxPendingAssessments": 12,
+      "maxReceipts": 20,
+      "maxAcceptedSignals": 12,
+      "maxDedupRecords": 12,
+      "maxCooldownRecords": 12,
+      "maxDeliveries": 12,
+      "maxSerializedCharacters": 100000,
+      "exactDedupRetentionMs": 120000,
+      "cooldownMs": 60000,
+      "receiptRetentionMs": 120000,
+      "acceptedRetentionMs": 120000,
+      "deliveredRetentionMs": 30000
+    },
+    "capacity": {
+      "stateRecordId": "signal-eval-capacity",
+      "maxPendingAssessments": 1,
+      "maxReceipts": 2,
+      "maxAcceptedSignals": 1,
+      "maxDedupRecords": 1,
+      "maxCooldownRecords": 1,
+      "maxDeliveries": 1,
+      "maxSerializedCharacters": 100000,
+      "exactDedupRetentionMs": 120000,
+      "cooldownMs": 60000,
+      "receiptRetentionMs": 120000,
+      "acceptedRetentionMs": 120000,
+      "deliveredRetentionMs": 30000
+    },
+    "retention": {
+      "stateRecordId": "signal-eval-retention",
+      "maxPendingAssessments": 4,
+      "maxReceipts": 4,
+      "maxAcceptedSignals": 4,
+      "maxDedupRecords": 4,
+      "maxCooldownRecords": 4,
+      "maxDeliveries": 4,
+      "maxSerializedCharacters": 100000,
+      "exactDedupRetentionMs": 0,
+      "cooldownMs": 0,
+      "receiptRetentionMs": 0,
+      "acceptedRetentionMs": 0,
+      "deliveredRetentionMs": 0
+    }
+  }
+}

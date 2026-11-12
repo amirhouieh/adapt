@@ -1,0 +1,381 @@
+{
+  "provenance": "Synthetic text-only mechanical graph-store fixture authored for the corrected Adapt v2 foundation. It contains no production user data and no model-generated facts.",
+  "lensId": "adapt-foundation-2026-09-30-2200",
+  "schema": {
+    "lensId": "adapt-foundation-2026-09-30-2200",
+    "entityTypes": ["project", "team"],
+    "relations": [
+      {
+        "id": "depends_on",
+        "description": "A project currently depends on a team.",
+        "extractionInstructions": "Extract explicit current project dependencies.",
+        "sourceEntityTypes": ["project"],
+        "targetEntityTypes": ["team"],
+        "directed": true,
+        "allowSelf": false
+      }
+    ],
+    "identity": {
+      "exactNormalizedLabel": "decision",
+      "allowModelDeclaredNew": true
+    }
+  },
+  "initializedAt": "2026-09-30T20:00:00.000Z",
+  "partial": {
+    "work": {
+      "id": "foundation-work-1",
+      "attempt_id": "foundation-attempt-1",
+      "input_ids": ["foundation-input-1", "foundation-input-2"],
+      "inputs": [
+        {
+          "id": "foundation-input-1",
+          "text": "Project Atlas depends on Team Y."
+        },
+        {
+          "id": "foundation-input-2",
+          "text": "Correction: Project Atlas depends on Team Z, not Team Y."
+        }
+      ],
+      "status": "pending",
+      "retry_count": 0,
+      "available_at": "2026-09-30T20:00:00.000Z",
+      "created_at": "2026-09-30T20:00:00.000Z",
+      "updated_at": "2026-09-30T20:00:00.000Z"
+    },
+    "commit": {
+      "logicalAttemptId": "foundation-attempt-1",
+      "pendingWorkId": "foundation-work-1",
+      "expectedMemoryRevision": 0,
+      "expectedConfigRevision": 0,
+      "result": {
+        "outcome": "change",
+        "patch": {
+          "expectedRevision": 0,
+          "entityUpserts": [
+            { "id": "foundation-project-atlas", "type": "project", "label": "Atlas", "aliases": [] },
+            { "id": "foundation-team-y", "type": "team", "label": "Team Y", "aliases": [] }
+          ],
+          "edgeChanges": [
+            {
+              "kind": "add",
+              "edge": {
+                "id": "foundation-atlas-team-y",
+                "relation": "depends_on",
+                "sourceEntityId": "foundation-project-atlas",
+                "targetEntityId": "foundation-team-y"
+              }
+            }
+          ],
+          "pending": [],
+          "pendingInputIds": ["foundation-input-2"]
+        },
+        "expectedMemoryRevision": 0,
+        "expectedConfigurationRevision": 0,
+        "consumedInputIds": ["foundation-input-1"],
+        "pendingInputIds": ["foundation-input-2"]
+      },
+      "remainingWork": {
+        "id": "foundation-work-2",
+        "attempt_id": "foundation-attempt-2",
+        "input_ids": ["foundation-input-2"],
+        "status": "pending",
+        "retry_count": 0,
+        "available_at": "2026-09-30T20:00:01.000Z",
+        "created_at": "2026-09-30T20:00:01.000Z",
+        "updated_at": "2026-09-30T20:00:01.000Z"
+      },
+      "history": {
+        "id": "foundation-history-1",
+        "attempt_id": "foundation-attempt-1",
+        "outcome": "change",
+        "previous_memory_revision": 0,
+        "memory_revision": 1,
+        "config_revision": 0,
+        "input_ids": ["foundation-input-1"],
+        "change_ids": ["foundation-change-1"],
+        "created_at": "2026-09-30T20:00:01.000Z"
+      },
+      "changes": [
+        {
+          "id": "foundation-change-1",
+          "attempt_id": "foundation-attempt-1",
+          "memory_revision": 1,
+          "kind": "graph-update",
+          "affected_memory_ids": ["foundation-project-atlas", "foundation-team-y", "foundation-atlas-team-y"],
+          "summary": "Learned the current Atlas to Team Y dependency.",
+          "created_at": "2026-09-30T20:00:01.000Z"
+        }
+      ],
+      "outbox": [
+        {
+          "id": "foundation-outbox-1",
+          "kind": "graph-memory-changed",
+          "deduplication_key": "foundation-change-1",
+          "change_ids": ["foundation-change-1"],
+          "status": "pending",
+          "attempts": 0,
+          "available_at": "2026-09-30T20:00:01.000Z",
+          "created_at": "2026-09-30T20:00:01.000Z",
+          "updated_at": "2026-09-30T20:00:01.000Z"
+        }
+      ],
+      "committedAt": "2026-09-30T20:00:01.000Z"
+    }
+  },
+  "correction": {
+    "commit": {
+      "logicalAttemptId": "foundation-attempt-2",
+      "pendingWorkId": "foundation-work-2",
+      "expectedMemoryRevision": 1,
+      "expectedConfigRevision": 0,
+      "result": {
+        "outcome": "change",
+        "patch": {
+          "expectedRevision": 1,
+          "entityUpserts": [
+            { "id": "foundation-team-z", "type": "team", "label": "Team Z", "aliases": [] }
+          ],
+          "edgeChanges": [
+            {
+              "kind": "remove",
+              "edgeId": "foundation-atlas-team-y",
+              "previous": {
+                "id": "foundation-atlas-team-y",
+                "relation": "depends_on",
+                "sourceEntityId": "foundation-project-atlas",
+                "targetEntityId": "foundation-team-y"
+              },
+              "history": {
+                "changeId": "foundation-edge-history-1",
+                "kind": "replaced",
+                "previous": {
+                  "id": "foundation-atlas-team-y",
+                  "relation": "depends_on",
+                  "sourceEntityId": "foundation-project-atlas",
+                  "targetEntityId": "foundation-team-y"
+                },
+                "replacementEdgeId": "foundation-atlas-team-z",
+                "changedAt": "2026-09-30T20:00:02.000Z"
+              }
+            },
+            {
+              "kind": "add",
+              "edge": {
+                "id": "foundation-atlas-team-z",
+                "relation": "depends_on",
+                "sourceEntityId": "foundation-project-atlas",
+                "targetEntityId": "foundation-team-z"
+              }
+            }
+          ],
+          "pending": [],
+          "pendingInputIds": []
+        },
+        "expectedMemoryRevision": 1,
+        "expectedConfigurationRevision": 0,
+        "consumedInputIds": ["foundation-input-2"],
+        "pendingInputIds": []
+      },
+      "history": {
+        "id": "foundation-history-2",
+        "attempt_id": "foundation-attempt-2",
+        "outcome": "change",
+        "previous_memory_revision": 1,
+        "memory_revision": 2,
+        "config_revision": 0,
+        "input_ids": ["foundation-input-2"],
+        "change_ids": ["foundation-change-2"],
+        "created_at": "2026-09-30T20:00:02.000Z"
+      },
+      "changes": [
+        {
+          "id": "foundation-change-2",
+          "attempt_id": "foundation-attempt-2",
+          "memory_revision": 2,
+          "kind": "graph-correction",
+          "affected_memory_ids": ["foundation-atlas-team-y", "foundation-team-z", "foundation-atlas-team-z"],
+          "summary": "Replaced the learned Team Y dependency with Team Z.",
+          "created_at": "2026-09-30T20:00:02.000Z"
+        }
+      ],
+      "outbox": [
+        {
+          "id": "foundation-outbox-2",
+          "kind": "graph-memory-changed",
+          "deduplication_key": "foundation-change-2",
+          "change_ids": ["foundation-change-2"],
+          "status": "pending",
+          "attempts": 0,
+          "available_at": "2026-09-30T20:00:02.000Z",
+          "created_at": "2026-09-30T20:00:02.000Z",
+          "updated_at": "2026-09-30T20:00:02.000Z"
+        }
+      ],
+      "committedAt": "2026-09-30T20:00:02.000Z"
+    }
+  },
+  "rollbackRetry": {
+    "work": {
+      "id": "foundation-work-3",
+      "attempt_id": "foundation-attempt-3",
+      "input_ids": ["foundation-input-3"],
+      "inputs": [
+        {
+          "id": "foundation-input-3",
+          "text": "Project Delta depends on Team Q."
+        }
+      ],
+      "status": "pending",
+      "retry_count": 0,
+      "available_at": "2026-09-30T20:00:03.000Z",
+      "created_at": "2026-09-30T20:00:03.000Z",
+      "updated_at": "2026-09-30T20:00:03.000Z"
+    },
+    "commit": {
+      "logicalAttemptId": "foundation-attempt-3",
+      "pendingWorkId": "foundation-work-3",
+      "expectedMemoryRevision": 2,
+      "expectedConfigRevision": 0,
+      "result": {
+        "outcome": "change",
+        "patch": {
+          "expectedRevision": 2,
+          "entityUpserts": [
+            { "id": "foundation-project-delta", "type": "project", "label": "Delta", "aliases": [] },
+            { "id": "foundation-team-q", "type": "team", "label": "Team Q", "aliases": [] }
+          ],
+          "edgeChanges": [
+            {
+              "kind": "add",
+              "edge": {
+                "id": "foundation-delta-team-q",
+                "relation": "depends_on",
+                "sourceEntityId": "foundation-project-delta",
+                "targetEntityId": "foundation-team-q"
+              }
+            }
+          ],
+          "pending": [],
+          "pendingInputIds": []
+        },
+        "expectedMemoryRevision": 2,
+        "expectedConfigurationRevision": 0,
+        "consumedInputIds": ["foundation-input-3"],
+        "pendingInputIds": []
+      },
+      "history": {
+        "id": "foundation-history-3",
+        "attempt_id": "foundation-attempt-3",
+        "outcome": "change",
+        "previous_memory_revision": 2,
+        "memory_revision": 3,
+        "config_revision": 0,
+        "input_ids": ["foundation-input-3"],
+        "change_ids": ["foundation-change-3"],
+        "created_at": "2026-09-30T20:00:03.000Z"
+      },
+      "changes": [
+        {
+          "id": "foundation-change-3",
+          "attempt_id": "foundation-attempt-3",
+          "memory_revision": 3,
+          "kind": "graph-update",
+          "affected_memory_ids": ["foundation-project-delta", "foundation-team-q", "foundation-delta-team-q"],
+          "summary": "Learned the current Delta to Team Q dependency.",
+          "created_at": "2026-09-30T20:00:03.000Z"
+        }
+      ],
+      "outbox": [
+        {
+          "id": "foundation-outbox-3",
+          "kind": "graph-memory-changed",
+          "deduplication_key": "foundation-change-3",
+          "change_ids": ["foundation-change-3"],
+          "status": "pending",
+          "attempts": 0,
+          "available_at": "2026-09-30T20:00:03.000Z",
+          "created_at": "2026-09-30T20:00:03.000Z",
+          "updated_at": "2026-09-30T20:00:03.000Z"
+        }
+      ],
+      "committedAt": "2026-09-30T20:00:03.000Z"
+    },
+    "conflictingChangeSummary": "Conflicting retry changed the committed intent."
+  },
+  "reads": {
+    "mentions": [
+      { "id": "foundation-mention-atlas", "label": "Atlas", "entityType": "project" },
+      { "id": "foundation-mention-team-z", "label": "Team Z", "entityType": "team" }
+    ],
+    "inputIds": ["foundation-input-1", "foundation-input-2", "foundation-input-3"],
+    "startEntityIds": ["foundation-project-atlas"],
+    "relationIds": ["depends_on"],
+    "direction": "outgoing"
+  },
+  "outbox": {
+    "deliveredId": "foundation-outbox-1",
+    "retriedId": "foundation-outbox-2",
+    "additionalDeliveredId": "foundation-outbox-3"
+  },
+  "schemas": {
+    "metadataOnly": {
+      "lensId": "adapt-foundation-2026-09-30-2200",
+      "entityTypes": ["project", "team"],
+      "relations": [
+        {
+          "id": "depends_on",
+          "description": "Updated documentation for a project dependency on a team.",
+          "extractionInstructions": "Updated guidance for explicit current project dependencies.",
+          "sourceEntityTypes": ["project"],
+          "targetEntityTypes": ["team"],
+          "directed": true,
+          "allowSelf": false
+        }
+      ],
+      "identity": {
+        "exactNormalizedLabel": "decision",
+        "allowModelDeclaredNew": true
+      }
+    },
+    "incompatible": {
+      "lensId": "adapt-foundation-2026-09-30-2200",
+      "entityTypes": ["project", "team"],
+      "relations": [
+        {
+          "id": "depends_on",
+          "description": "Updated documentation for a project dependency on a team.",
+          "extractionInstructions": "Updated guidance for explicit current project dependencies.",
+          "sourceEntityTypes": ["project"],
+          "targetEntityTypes": ["team"],
+          "directed": false,
+          "allowSelf": false
+        }
+      ],
+      "identity": {
+        "exactNormalizedLabel": "decision",
+        "allowModelDeclaredNew": true
+      }
+    },
+    "conflictingInitialization": {
+      "lensId": "adapt-foundation-2026-09-30-2200",
+      "entityTypes": ["project", "team", "service"],
+      "relations": [
+        {
+          "id": "depends_on",
+          "description": "A project currently depends on a team.",
+          "extractionInstructions": "Extract explicit current project dependencies.",
+          "sourceEntityTypes": ["project"],
+          "targetEntityTypes": ["team"],
+          "directed": true,
+          "allowSelf": false
+        }
+      ],
+      "identity": {
+        "exactNormalizedLabel": "decision",
+        "allowModelDeclaredNew": true
+      }
+    },
+    "metadataUpdatedAt": "2026-09-30T20:00:08.000Z",
+    "incompatibleUpdatedAt": "2026-09-30T20:00:09.000Z"
+  }
+}

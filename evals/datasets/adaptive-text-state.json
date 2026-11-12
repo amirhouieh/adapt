@@ -1,0 +1,46 @@
+{
+  "provenance": "Synthetic deterministic fixture for adaptive Text state persistence; contains no private data.",
+  "profile": {
+    "ref": { "id": "eval-profile", "version": "1" },
+    "revision": 1,
+    "createdAt": "2026-10-10T08:00:10.000Z",
+    "bindings": {
+      "neuron": {
+        "id": "eval-neuron",
+        "incarnation": "eval-incarnation",
+        "ownership_revision": 1
+      },
+      "profile": { "id": "eval-profile", "version": "1" },
+      "profile_revision": 1,
+      "procedure": { "id": "direct-revision", "version": "1" },
+      "model": { "id": "deterministic-fixture", "version": "1" },
+      "registry_lineage": "eval-registry-lineage",
+      "referenced_definition_digest": "eval-definition-digest",
+      "allowed_catalogue_digest": "eval-catalogue-digest"
+    }
+  },
+  "inputs": [
+    {
+      "deliveryId": "delivery-alpha-v1",
+      "eventId": "event-alpha",
+      "text": "The deployment review moved to Thursday morning.",
+      "observedAt": "2026-10-10T08:00:00.000Z"
+    },
+    {
+      "deliveryId": "delivery-beta-v1",
+      "eventId": "event-beta",
+      "text": "Routine status notes should remain concise.",
+      "observedAt": "2026-10-10T08:00:01.000Z"
+    }
+  ],
+  "candidate": {
+    "status": "change",
+    "narrative": "The deployment review is Thursday morning. Routine status notes should remain concise.",
+    "proposal": {
+      "fixture": "persisted complete narrative candidate"
+    },
+    "completion": {
+      "finishReason": "stop"
+    }
+  }
+}

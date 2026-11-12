@@ -1,0 +1,189 @@
+{
+  "provenance": {
+    "kind": "synthetic-store-fixture",
+    "description": "Supplied text-only v0.0.6 store records created for mechanical migration evaluation; not captured user data."
+  },
+  "brain": {
+    "state": [
+      {
+        "id": "prompt",
+        "value": "Remember durable project decisions and unresolved gaps.",
+        "updated_at": "2026-09-30T09:00:00.000Z"
+      },
+      {
+        "id": "models",
+        "value": {
+          "default": { "plugin": "local-runtime", "provider": "fixture", "id": "migration-model" },
+          "query": { "plugin": "local-runtime", "provider": "fixture", "id": "migration-model" }
+        },
+        "updated_at": "2026-09-30T09:00:00.000Z"
+      }
+    ],
+    "neurons": [
+      { "id": "projects", "type": "text", "status": "active" }
+    ],
+    "internalNeurons": [
+      { "id": "query-gaps", "type": "list", "status": "active" }
+    ],
+    "evolution": [
+      {
+        "id": "brain-evolution-1",
+        "decisions": [{ "action": "create", "lens": "projects" }],
+        "source": "manual",
+        "created_at": "2026-09-30T09:01:00.000Z"
+      }
+    ],
+    "dismissedBatches": [
+      {
+        "id": "unfinished-pending",
+        "data": ["A pending input still needs review."],
+        "gaps": ["No destination selected."],
+        "timestamp": "2026-09-30T09:02:00.000Z",
+        "retryCount": 0,
+        "status": "pending"
+      },
+      {
+        "id": "unfinished-retried",
+        "data": ["A retried input remains unresolved."],
+        "gaps": ["Prior retry did not settle it."],
+        "timestamp": "2026-09-30T09:03:00.000Z",
+        "retryCount": 1,
+        "status": "retried"
+      }
+    ],
+    "lenses": [
+      {
+        "record": { "id": "projects", "type": "text", "status": "active" },
+        "internal": false,
+        "store": {
+          "state": [
+            { "id": "instructions", "value": "Retain durable project decisions.", "updated_at": "2026-09-30T09:00:00.000Z" },
+            { "id": "models", "value": { "default": { "plugin": "local-runtime", "provider": "fixture", "id": "migration-model" } }, "updated_at": "2026-09-30T09:00:00.000Z" },
+            { "id": "observation_schema", "value": { "type": "string" }, "updated_at": "2026-09-30T09:00:00.000Z" },
+            { "id": "understanding_schema", "value": { "type": "string" }, "updated_at": "2026-09-30T09:00:00.000Z" }
+          ],
+          "observations": [
+            {
+              "id": "projects-observation-processed",
+              "data": "The Atlas launch uses a staged rollout.",
+              "metadata_importance": 0.9,
+              "metadata_tokens": 9,
+              "metadata_status": "processed",
+              "metadata_created_at": "2026-09-30T09:04:00.000Z"
+            },
+            {
+              "id": "projects-observation-pending",
+              "data": "The rollout owner changed to Mira.",
+              "metadata_importance": 0.8,
+              "metadata_tokens": 8,
+              "metadata_status": "pending",
+              "metadata_created_at": "2026-09-30T09:05:00.000Z"
+            }
+          ],
+          "understanding": [
+            {
+              "id": "current",
+              "data": "Atlas launches through a staged rollout owned by the delivery team.",
+              "metadata_confidence": 1,
+              "metadata_created_at": "2026-09-30T09:06:00.000Z",
+              "metadata_updated_at": "2026-09-30T09:07:00.000Z"
+            }
+          ],
+          "evolution": [
+            {
+              "id": "projects-evolution-1",
+              "summary": "Recorded the staged Atlas rollout.",
+              "reasoning": "The processed observation changed durable project knowledge.",
+              "significance": "notable",
+              "created_at": "2026-09-30T09:07:00.000Z"
+            }
+          ]
+        }
+      },
+      {
+        "record": { "id": "query-gaps", "type": "list", "status": "active" },
+        "internal": true,
+        "store": {
+          "state": [
+            { "id": "instructions", "value": "Retain unresolved query gaps.", "updated_at": "2026-09-30T09:00:00.000Z" },
+            { "id": "models", "value": { "default": { "plugin": "local-runtime", "provider": "fixture", "id": "migration-model" } }, "updated_at": "2026-09-30T09:00:00.000Z" },
+            { "id": "observation_schema", "value": { "type": "object" }, "updated_at": "2026-09-30T09:00:00.000Z" },
+            { "id": "understanding_schema", "value": { "type": "object" }, "updated_at": "2026-09-30T09:00:00.000Z" }
+          ],
+          "observations": [
+            {
+              "id": "gap-observation-pending",
+              "data": { "question": "Who owns the final launch approval?" },
+              "metadata_importance": 0.7,
+              "metadata_tokens": 8,
+              "metadata_status": "pending",
+              "metadata_created_at": "2026-09-30T09:08:00.000Z"
+            }
+          ],
+          "understanding": [
+            {
+              "id": "gap-1",
+              "data": {
+                "id": "gap-1",
+                "data": { "question": "Who owns the final launch approval?", "status": "open" },
+                "metadata": {
+                  "confidence": 0.5,
+                  "touchCount": 2,
+                  "firstSeen": "2026-09-30T09:08:00.000Z",
+                  "lastUpdated": "2026-09-30T09:09:00.000Z",
+                  "signals": ["observed", "repeated"]
+                }
+              },
+              "metadata_confidence": 0.5,
+              "metadata_created_at": "2026-09-30T09:08:00.000Z",
+              "metadata_updated_at": "2026-09-30T09:09:00.000Z"
+            }
+          ],
+          "evolution": [
+            {
+              "id": "gap-evolution-1",
+              "summary": "Tracked the unresolved approval owner.",
+              "significance": "routine",
+              "created_at": "2026-09-30T09:09:00.000Z"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "standalone": {
+    "state": [
+      { "id": "instructions", "value": "Retain durable standalone notes.", "updated_at": "2026-09-30T10:00:00.000Z" },
+      { "id": "models", "value": { "default": { "plugin": "local-runtime", "provider": "fixture", "id": "migration-model" } }, "updated_at": "2026-09-30T10:00:00.000Z" },
+      { "id": "observation_schema", "value": { "type": "string" }, "updated_at": "2026-09-30T10:00:00.000Z" },
+      { "id": "understanding_schema", "value": { "type": "string" }, "updated_at": "2026-09-30T10:00:00.000Z" }
+    ],
+    "observations": [
+      {
+        "id": "standalone-observation",
+        "data": "The release checklist is retained as learned context.",
+        "metadata_importance": 0.85,
+        "metadata_tokens": 10,
+        "metadata_status": "processed",
+        "metadata_created_at": "2026-09-30T10:01:00.000Z"
+      }
+    ],
+    "understanding": [
+      {
+        "id": "current",
+        "data": "The release checklist requires verification before publication.",
+        "metadata_confidence": 1,
+        "metadata_created_at": "2026-09-30T10:02:00.000Z",
+        "metadata_updated_at": "2026-09-30T10:03:00.000Z"
+      }
+    ],
+    "evolution": [
+      {
+        "id": "standalone-evolution-1",
+        "summary": "Recorded the release verification rule.",
+        "significance": "notable",
+        "created_at": "2026-09-30T10:03:00.000Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,267 @@
+{
+  "artifactDirectory": "evals/artifacts/evolution-v2",
+  "runId": "foundation-retention-2026-09-30",
+  "databaseFileName": "brain.db",
+  "failureStage": "after-registry-cas",
+  "failureMessage": "supplied interruption after authoritative registry CAS",
+  "initialRegistry": {
+    "head_revision_id": "eval-registry-0",
+    "revision": 0,
+    "created_at": "2026-09-30T12:00:00.000Z",
+    "lenses": [
+      {
+        "id": "eval-journal",
+        "physical_store_id": "eval-journal-store-0",
+        "type": "text",
+        "dependencies": [],
+        "config": {
+          "id": "eval-journal",
+          "name": "Evaluation journal",
+          "description": "Retains approval preferences.",
+          "type": "text",
+          "memory_schema": {
+            "id": "narrative-memory",
+            "version": "1"
+          },
+          "recipe": {
+            "id": "narrative-recipe",
+            "version": "1"
+          },
+          "recipe_composition": [
+            {
+              "id": "narrative-recipe",
+              "version": "1"
+            }
+          ],
+          "dependencies": [],
+          "settings": {
+            "max_items": 20
+          },
+          "developer_constraints": {
+            "instructions": [
+              "Retain source attribution."
+            ],
+            "local_only": true,
+            "provider_permissions": [
+              "local-model"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "validation": {
+    "proposal": {
+      "id": "eval-proposal-1",
+      "action": "update",
+      "reasoning": "Use the approved second recipe while preserving learned state.",
+      "trigger_id": "eval-trigger-1",
+      "evidence_ids": [
+        "eval-evidence-1"
+      ],
+      "expected_effect": "Change recipe configuration without changing memory.",
+      "target_lens_ids": [
+        "eval-journal"
+      ],
+      "resulting_lenses": [
+        {
+          "id": "eval-journal",
+          "name": "Evaluation journal",
+          "description": "Retains approval preferences.",
+          "type": "text",
+          "memory_schema": {
+            "id": "narrative-memory",
+            "version": "1"
+          },
+          "recipe": {
+            "id": "narrative-recipe",
+            "version": "2"
+          },
+          "recipe_composition": [
+            {
+              "id": "narrative-recipe",
+              "version": "2"
+            }
+          ],
+          "dependencies": [],
+          "settings": {
+            "max_items": 20
+          },
+          "developer_constraints": {
+            "instructions": [
+              "Retain source attribution."
+            ],
+            "local_only": true,
+            "provider_permissions": [
+              "local-model"
+            ]
+          }
+        }
+      ],
+      "regression_check_ids": [],
+      "created_at": "2026-09-30T12:00:00.000Z"
+    },
+    "evidence_ids": [
+      "eval-evidence-1"
+    ],
+    "catalogue": {
+      "recipes": [
+        {
+          "id": "narrative-recipe",
+          "version": "1",
+          "memory_types": [
+            "text"
+          ],
+          "required_capabilities": []
+        },
+        {
+          "id": "narrative-recipe",
+          "version": "2",
+          "memory_types": [
+            "text"
+          ],
+          "required_capabilities": []
+        }
+      ],
+      "compositions": [
+        {
+          "id": "composition-1",
+          "recipes": [
+            {
+              "id": "narrative-recipe",
+              "version": "1"
+            }
+          ],
+          "max_steps": 1
+        },
+        {
+          "id": "composition-2",
+          "recipes": [
+            {
+              "id": "narrative-recipe",
+              "version": "2"
+            }
+          ],
+          "max_steps": 1
+        }
+      ],
+      "transformations": [],
+      "memory_schemas": [
+        {
+          "id": "narrative-memory",
+          "version": "1"
+        }
+      ]
+    },
+    "policy": {
+      "available_capabilities": [
+        "local-model"
+      ],
+      "creation_constraints": {
+        "instructions": [
+          "Retain source attribution."
+        ],
+        "local_only": true,
+        "provider_permissions": [
+          "local-model"
+        ]
+      },
+      "setting_bounds": [
+        {
+          "key": "max_items",
+          "kind": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      ],
+      "protected_lens_ids": [],
+      "required_regression_checks": {
+        "create": [],
+        "update": [],
+        "merge": [],
+        "split": [],
+        "delete": []
+      },
+      "max_evidence": 10,
+      "max_catalogue_entries": 20,
+      "max_lenses": 10,
+      "max_dependencies_per_lens": 5,
+      "max_recipe_steps": 5,
+      "max_prompt_chars": 20000,
+      "max_evidence_chars": 5000,
+      "max_catalogue_chars": 10000,
+      "max_constraint_chars": 2000,
+      "allowed_deletion_modes": [
+        "lens-only",
+        "lens-and-retained-knowledge"
+      ]
+    }
+  },
+  "activation": {
+    "activation_id": "eval-activation-1",
+    "mode": "evolution",
+    "base_registry_revision_id": "eval-registry-0",
+    "target_registry": {
+      "id": "eval-registry-1",
+      "revision": 1,
+      "parent_id": "eval-registry-0",
+      "activation_id": "eval-activation-1",
+      "created_at": "2026-09-30T12:01:00.000Z",
+      "lenses": [
+        {
+          "id": "eval-journal",
+          "physical_store_id": "eval-journal-store-1",
+          "type": "text",
+          "dependencies": [],
+          "config": {
+            "id": "eval-journal",
+            "name": "Evaluation journal",
+            "description": "Retains approval preferences.",
+            "type": "text",
+            "memory_schema": {
+              "id": "narrative-memory",
+              "version": "1"
+            },
+            "recipe": {
+              "id": "narrative-recipe",
+              "version": "2"
+            },
+            "recipe_composition": [
+              {
+                "id": "narrative-recipe",
+                "version": "2"
+              }
+            ],
+            "dependencies": [],
+            "settings": {
+              "max_items": 20
+            },
+            "developer_constraints": {
+              "instructions": [
+                "Retain source attribution."
+              ],
+              "local_only": true,
+              "provider_permissions": [
+                "local-model"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "transformation_id": "eval-transform-run-1",
+    "stage_id": "eval-stage-1",
+    "mapping_id": "eval-mapping-1",
+    "source_lens_id": "eval-journal",
+    "source_store_id": "eval-journal-store-0",
+    "target_store_id": "eval-journal-store-1",
+    "created_at": "2026-09-30T12:00:00.000Z",
+    "updated_at": "2026-09-30T12:01:00.000Z",
+    "staging_policy": {
+      "max_targets": 2,
+      "max_snapshot_records": 100,
+      "max_snapshot_chars": 20000
+    }
+  },
+  "datasetPath": "evals/datasets/evolution-v2-foundation.json"
+}

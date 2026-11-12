@@ -1,0 +1,19 @@
+{
+  "provider": {
+    "name": "openrouter",
+    "baseURL": "https://openrouter.ai/api/v1",
+    "apiKeyEnv": "OPENROUTER_API_KEY"
+  },
+  "models": [
+    "google/gemini-3.8-flash"
+  ],
+  "settings": {
+    "temperature": 0,
+    "maxOutputTokens": 4096,
+    "maxRetries": 2,
+    "timeout": 120000
+  },
+  "outputRoot": "evals/.data/original-v1-gemini",
+  "memoryOnly": true,
+  "loadedContextTokens": 1048576
+}

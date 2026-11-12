@@ -1,0 +1,136 @@
+{
+ "schemaVersion": 1,
+ "streamId": "clinical-dimensions-heldout-2",
+ "note": "Literal answers to the indicator questions, written with the stream before any run. Used only for diagnosis after the frozen runs.",
+ "answers": {
+  "j01-a": {
+   "levels": {}
+  },
+  "j01-b": {
+   "levels": {}
+  },
+  "j01-c": {
+   "levels": {}
+  },
+  "j02-a": {
+   "levels": {}
+  },
+  "j02-b": {
+   "levels": {
+    "self_awareness": "emerging"
+   }
+  },
+  "j02-c": {
+   "irrelevant": true
+  },
+  "j03-a": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "j03-b": {
+   "levels": {}
+  },
+  "j03-c": {
+   "levels": {}
+  },
+  "j04-a": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "j04-b": {
+   "levels": {
+    "relational_flexibility": "emerging"
+   }
+  },
+  "j04-c": {
+   "levels": {
+    "agency": "emerging"
+   }
+  },
+  "j05-a": {
+   "levels": {
+    "emotional_regulation": "developing"
+   }
+  },
+  "j05-b": {
+   "levels": {}
+  },
+  "j05-c": {
+   "irrelevant": true
+  },
+  "j06-a": {
+   "levels": {
+    "emotional_regulation": "established"
+   }
+  },
+  "j06-b": {
+   "levels": {
+    "relational_flexibility": "developing"
+   }
+  },
+  "j06-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "j07-a": {
+   "levels": {
+    "emotional_regulation": "established"
+   }
+  },
+  "j07-b": {
+   "untrusted": true
+  },
+  "j07-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "j08-a": {
+   "levels": {
+    "self_awareness": "established"
+   }
+  },
+  "j08-b": {
+   "levels": {
+    "agency": "established",
+    "somatic_processing": "emerging"
+   }
+  },
+  "j08-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  },
+  "j09-a": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "j09-b": {
+   "levels": {
+    "agency": "developing"
+   }
+  },
+  "j09-c": {
+   "irrelevant": true
+  },
+  "j10-a": {
+   "levels": {
+    "emotional_regulation": "established"
+   }
+  },
+  "j10-b": {
+   "levels": {
+    "relational_flexibility": "established"
+   }
+  },
+  "j10-c": {
+   "levels": {
+    "self_awareness": "developing"
+   }
+  }
+ }
+}

@@ -9,6 +9,8 @@ dist-cjs/
 .DS_Store
 # Eval data (SQLite stores)
 evals/.data/
+evals/artifacts/
+evals/.scratch/
 
 # Internal docs (specs, history, playbooks)
 internal-docs/

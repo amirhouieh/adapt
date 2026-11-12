@@ -1,0 +1,13 @@
+{
+  "sourceText": "The Atlas release review moved to Thursday, and rollback evidence is required before approval.",
+  "observationData": "Atlas review is Thursday; approval requires rollback evidence.",
+  "observationImportance": 0.9,
+  "observationTokens": 11,
+  "learnedUnderstanding": "Atlas release reviews occur Thursday. Approval requires rollback evidence.",
+  "evolutionSummary": "Recorded the Atlas review schedule and approval requirement.",
+  "evolutionReasoning": "The pending derived observation materially changes the retained release understanding.",
+  "evolutionSignificance": "notable",
+  "historyExplanation": "Synthesized the pending Atlas observation into retained understanding.",
+  "changeSummary": "Updated the Atlas release review understanding.",
+  "changedIntentExplanation": "A different retry intent that must not reuse the completed attempt."
+}

@@ -1,0 +1,40 @@
+{
+  "adapter": "sqlite-node",
+  "artifactDirectory": "evals/artifacts/memory-commit",
+  "runId": "foundation-retention-2026-09-30",
+  "databaseFileName": "learning.sqlite",
+  "createdAt": "2026-09-30T20:00:00.000Z",
+  "committedAt": "2026-09-30T20:01:00.000Z",
+  "memoryId": "approval-preference",
+  "changeKind": "narrative-revision",
+  "outboxKind": "memory-change",
+  "failureStage": "before-complete",
+  "failureMessage": "supplied interruption after residual transfer",
+  "whole": {
+    "workId": "whole-work",
+    "attemptId": "whole-attempt",
+    "inputId": "whole-input",
+    "rawText": "Keep the original sentence only while this work is unfinished.",
+    "learnedText": "The user wants approval decisions recorded.",
+    "historyId": "whole-history",
+    "changeId": "whole-change",
+    "outboxId": "whole-outbox",
+    "deduplicationKey": "whole-change-event"
+  },
+  "partial": {
+    "workId": "partial-work",
+    "attemptId": "partial-attempt",
+    "inputId": "partial-consumed-input",
+    "rawText": "Record approval decisions.",
+    "learnedText": "The user wants approval decisions recorded with their outcome.",
+    "historyId": "partial-history",
+    "changeId": "partial-change",
+    "outboxId": "partial-outbox",
+    "deduplicationKey": "partial-change-event",
+    "residualWorkId": "residual-work",
+    "residualAttemptId": "residual-attempt",
+    "residualInputId": "residual-input",
+    "residualRawText": "The reviewer threshold is still unresolved.",
+    "residualHistoryId": "residual-history"
+  }
+}

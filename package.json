@@ -20,6 +20,11 @@
     "./sqlite/bun": {
       "types": "./dist/sqlite/bun.d.ts",
       "import": "./dist/sqlite/bun.js"
+    },
+    "./memgraph": {
+      "types": "./dist/memgraph.d.ts",
+      "import": "./dist/memgraph.js",
+      "require": "./dist-cjs/memgraph.js"
     }
   },
   "scripts": {
@@ -75,6 +80,7 @@
     "@openrouter/ai-sdk-provider": "^2.1.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
+    "neo4j-driver": "^6.2.0",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",
@@ -87,10 +93,14 @@
     "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "better-sqlite3": "^12.6.2"
+    "better-sqlite3": "^12.6.2",
+    "neo4j-driver": "^6.2.0"
   },
   "peerDependenciesMeta": {
     "better-sqlite3": {
+      "optional": true
+    },
+    "neo4j-driver": {
       "optional": true
     }
   }
