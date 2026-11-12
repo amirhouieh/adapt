@@ -8,7 +8,7 @@
 - Every extract request was byte-identical to the eval arm's (50 of 50 compared). Any difference in memory comes from the model, not the procedure.
 - Calls, time, cost and memory size are the same as the 4 eval-arm runs: 100 calls, about 23 minutes and about $0.065 per run. Memory stayed between 1,000 and 8,400 characters with no cap.
 - The core facts held, with two exceptions the model varies on (see below). The known slips came back at the same rate.
-- Local LM Studio (Q8 GGUF, thinking on): partial so far. 2 tasks have finished and 3 are partway through, with 0 failures and 0 cut-offs. The full result will follow in a separate commit.
+- Local LM Studio (Q8 GGUF, thinking on): confirmed. All 5 tasks learned every input, with 0 failures, 0 cut-offs and the same 100 calls. Same core, same kind of slips.
 
 ## What was built
 
@@ -81,20 +81,23 @@ Since the requests are identical, both gaps are the model varying from run to ru
 
 New single slips seen here: preference run 1 says the Samsung's screen cracked (it was the iPhone), and personal run 2 has "1:1s with Alex", as if Alex were the manager (Alex is the person).
 
-## Local LM Studio (partial)
+## Local LM Studio (1 run)
 
-| Task | Status | Inputs | Calls | Failures |
-|---|---|---|---:|---:|
-| coffee | done | 7/7 | 4 | 0 |
-| preference-evolution | done | 24/24 | 6 | 0 |
-| personal-behavior | running | 48/85 | 12 | 0 so far |
-| developer-memory | running | 64/150 | 16 | 0 so far |
-| therapist-profile | running | 64/120 | 16 | 0 so far |
+| Task | Inputs | Calls | Failures | Memory chars | Minutes |
+|---|---|---:|---:|---:|---:|
+| coffee | 7/7 | 4 | 0 | 1,545 | 1.4 |
+| preference-evolution | 24/24 | 6 | 0 | 1,650 | 4.4 |
+| personal-behavior | 85/85 | 22 | 0 | 6,287 | 38.7 |
+| developer-memory | 150/150 | 38 | 0 | 7,698 | 51.6 |
+| therapist-profile | 120/120 | 30 | 0 | 5,278 | 40.4 |
 
-- No cut-offs and no deferred runs so far. Reasoning comes back separately; answers are clean plain text.
+- No cut-offs and no deferred runs. Reasoning comes back separately as `reasoning_content`, so the answers are clean plain text.
+- It is slow: about 20 s per call with 4 jobs sharing the model (52 minutes for the longest task).
 - Coffee: all espresso values exact, but pour-over and French press were kept after the espresso-only switch, and listed twice. This is the eval arm's 1-in-4 slip.
 - Preference: same core (Google layoff, Stripe Staff Engineer, Nike, B12 → pescatarian, Samsung). Slips: stale "considering a more durable phone", and "lost it around Dec 15" (a job loss that never happened, also seen once in twostep2).
-- It is slow: about 20 s per call with 4 jobs sharing the model. The full result will be added in a follow-up commit.
+- Personal behavior: Dave, Sara, gym, dentist and late nights are kept, but the person is only "he", never Alex. Lecture 5 and lecture 6 are both stated as current. It adds advice ("Boundary suggestions", "concrete next steps").
+- Developer: "monolith first", immutability, simplicity and integration tests kept. Prettier is recorded correctly as replaced by Biome. Pagination regret missed again.
+- Therapist: CBT, ACT, ADHD, perfectionism, Asian-American focus, $300 and burnout kept. No "167 hours" garble this time.
 
 ## What this says
 
@@ -104,13 +107,12 @@ New single slips seen here: preference run 1 says the Samsung's screen cracked (
 
 ## Next steps
 
-1. Finish the local run and add it here.
-2. Remove the procedures two-step replaces (line revision, field revision, the narrative recipes) once nothing depends on them. `governance.strategy` should go with line revision.
-3. Target the repeating slips (staleness, Prettier/Biome, the always-missed regret, dropped single facts) with structural changes, judged over several runs.
+1. Remove the procedures two-step replaces (line revision, field revision, the narrative recipes) once nothing depends on them. `governance.strategy` should go with line revision.
+2. Target the repeating slips (staleness, Prettier/Biome, the always-missed regret, dropped single facts) with structural changes, judged over several runs.
 
 ## Limits
 
-- Two production runs on OpenRouter, plus a partial local run. Synthetic histories.
+- Two production runs on OpenRouter, plus one local run. Synthetic histories.
 - Judged by reading stored memory against the source histories, plus keyword counts to find facts quickly. No scores.
 - The cut-off path is covered by tests but did not happen live.
 - One unrelated test fails in the full suite: `tests/v1-text-phases.test.ts` "invalid observation response" ("Compared values have no visual difference", a v1-baseline comparison). `tests/integration.test.ts` needs a key. Neither touches text procedures.
