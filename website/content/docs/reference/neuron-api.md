@@ -35,7 +35,7 @@ All fields are optional. See [Brain — Fresh vs Restored](../brain#fresh-vs-res
 |---|---|---|
 | `learn(batch)` | `Promise<LearnOutput>` | Two stages: extract what is relevant, then update the memory. Plain text. |
 
-`batch` is `readonly LearnInput[]`, where `LearnInput = string | TextInput` (`{ deliveryId, text, observedAt, eventId?, urgency? }`).
+`batch` is `readonly LearnInput[]`, where `LearnInput = string | TextInput` (`{ deliveryId, text, observedAt, eventId?, urgency? }`). `observedAt` must be in the exact form `Date.toISOString()` gives.
 
 ### LearnOutput
 

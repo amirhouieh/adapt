@@ -37,11 +37,11 @@ A neuron keeps one memory: plain text. Each `learn()` call runs two stages, at m
 
 No schema, no buffer, no thresholds to wait for: `learn()` returns once the memory is updated.
 
-`learn()` takes `string` items or `TextInput` items (when you own ids and times):
+`learn()` takes `string` items or `TextInput` items (when you own ids and times). `observedAt` must be in the exact form `Date.toISOString()` gives (`2026-11-10T09:00:00.000Z`):
 
 ```typescript
 await neuron.learn([
-  { deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00Z' },
+  { deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00.000Z' },
 ])
 ```
 

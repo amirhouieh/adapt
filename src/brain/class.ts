@@ -1154,18 +1154,24 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			generateOptions,
 		)
 
+		// One neuron's failed query (e.g. a malformed reply) is skipped, not
+		// fatal: the neuron already emits neuron:query:failed.
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
-				const result = await neuron.query(query, {
-					mode: 'direct',
-					...generateOptions,
-				})
-				return { id: neuron.id, ...result }
+				try {
+					const result = await neuron.query(query, {
+						mode: 'direct',
+						...generateOptions,
+					})
+					return { id: neuron.id, ...result }
+				} catch {
+					return null
+				}
 			}),
 		)
 
 		const specialistResults = neuronQueries
-			.filter((r): r is NonNullable<typeof r> => r?.relevant)
+			.filter((r): r is NonNullable<typeof r> => r !== null && r.relevant)
 			.map((r) => ({
 				id: r.id,
 				relevance: r.relevance,
@@ -1306,18 +1312,24 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			generateOptions,
 		)
 
+		// One neuron's failed query (e.g. a malformed reply) is skipped, not
+		// fatal: the neuron already emits neuron:query:failed.
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
-				const result = await neuron.query(query, {
-					mode: 'direct',
-					...generateOptions,
-				})
-				return { id: neuron.id, ...result }
+				try {
+					const result = await neuron.query(query, {
+						mode: 'direct',
+						...generateOptions,
+					})
+					return { id: neuron.id, ...result }
+				} catch {
+					return null
+				}
 			}),
 		)
 
 		const specialistResults = neuronQueries
-			.filter((r): r is NonNullable<typeof r> => r?.relevant)
+			.filter((r): r is NonNullable<typeof r> => r !== null && r.relevant)
 			.map((r) => ({
 				id: r.id,
 				relevance: r.relevance,

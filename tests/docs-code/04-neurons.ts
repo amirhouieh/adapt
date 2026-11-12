@@ -82,7 +82,7 @@ async function main() {
 		store: new MemoryNeuronStore(),
 	})
 	const inputResult = await inputNeuron.learn([
-		{ deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00Z' },
+		{ deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00.000Z' },
 	])
 	assert(inputResult.status !== undefined, 'learn() accepts TextInput')
 	await inputNeuron.dispose()

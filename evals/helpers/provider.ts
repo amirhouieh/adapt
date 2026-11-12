@@ -3,7 +3,7 @@
  *
  * PROVIDER=ollama MODEL=deepseek-r1:1.5b  → local Ollama
  * PROVIDER=lmstudio MODEL=qwen2.5-7b  → local LM Studio
- * PROVIDER=openrouter MODEL=google/gemini-2.0-flash-001  → OpenRouter (default)
+ * PROVIDER=openrouter MODEL=google/gemini-2.5-flash  → OpenRouter (default)
  */
 
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
@@ -11,7 +11,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import type { LanguageModel } from 'ai'
 
 const PROVIDER = process.env.PROVIDER ?? 'openrouter'
-const MODEL = process.env.MODEL ?? 'google/gemini-2.0-flash-001'
+const MODEL = process.env.MODEL ?? 'google/gemini-2.5-flash'
 
 function createModel(): LanguageModel {
 	if (PROVIDER === 'ollama') {
