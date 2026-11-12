@@ -143,7 +143,7 @@ async function main() {
 			prompt: `Test ${strategy} governance.`,
 			model,
 			learning: {
-				governance: { strategy, maxTokens: 16000 },
+				governance: { strategy, maxTokens: 8000 },
 			},
 		})
 		assert(brain instanceof Brain, `governance strategy '${strategy}' accepted`)

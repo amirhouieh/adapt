@@ -56,7 +56,7 @@ Track answers to:
 - What does the network understand right now, taken as a whole?
 - What connections exist between specialists' domains that they can't see individually?
 - How is the network's collective understanding changing over time?`,
-			governance: { strategy: 'decay', maxTokens: 16000 },
+			governance: { strategy: 'decay', maxTokens: 8000 },
 		},
 	},
 	{
@@ -80,7 +80,7 @@ Track answers to:
 - What topics do users ask about most frequently?
 - What query clusters exist and how are they related?
 - Where are the coverage gaps between what users ask and what the system knows?`,
-			governance: { strategy: 'decay', maxTokens: 16000 },
+			governance: { strategy: 'decay', maxTokens: 8000 },
 		},
 	},
 	{
