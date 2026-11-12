@@ -633,26 +633,19 @@ function normalizeAdaptiveInput(
 	item: unknown,
 	runtime: AdaptiveTextLearningRuntime,
 ): TextInput {
-	if (typeof item === 'string') {
-		return {
-			deliveryId: runtime.inputIds.next(),
-			text: item,
-			observedAt: runtime.clock.now(),
-		}
-	}
-	if (typeof item !== 'object' || item === null)
-		throw new Error(
-			'adaptive text learn accepts only strings or TextInput values',
-		)
-	const value = item as Partial<TextInput>
+	const value = (typeof item === 'object' ? item : null) as Partial<TextInput> | null
 	if (
+		value === null ||
 		typeof value.deliveryId !== 'string' ||
 		typeof value.text !== 'string' ||
 		typeof value.observedAt !== 'string'
 	) {
-		throw new Error(
-			'adaptive TextInput requires deliveryId, text, and observedAt',
-		)
+		// Any other data (as Brain sends) is learned as text.
+		return {
+			deliveryId: runtime.inputIds.next(),
+			text: typeof item === 'string' ? item : JSON.stringify(item),
+			observedAt: runtime.clock.now(),
+		}
 	}
 	return {
 		deliveryId: value.deliveryId,
