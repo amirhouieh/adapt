@@ -1,6 +1,10 @@
 import { matchesSearchQuery } from '../internal/search'
 import type { StoreCollectionSpec } from '../internal/specs'
-import type { BrainCollection, NeuronCollection } from '../types'
+import type {
+	AtomicCollection,
+	BrainCollection,
+	NeuronCollection,
+} from '../types'
 
 class MemoryRecordCollection<T extends { id: string }> {
 	private items: T[] = []
@@ -8,43 +12,27 @@ class MemoryRecordCollection<T extends { id: string }> {
 	constructor(protected readonly spec?: StoreCollectionSpec<T>) {}
 
 	async add(item: T): Promise<void> {
-		if (this.items.some((existing) => existing.id === item.id)) {
-			throw new Error(`Record with id "${item.id}" already exists`)
-		}
-		this.items.push(item)
+		this.atomic().add(item)
 	}
 
 	async get(id: string): Promise<T | undefined> {
-		return this.items.find((item) => item.id === id)
+		return this.atomic().get(id)
 	}
 
 	async list(filter?: Record<string, unknown>): Promise<T[]> {
-		if (!filter) return [...this.items]
-		return this.items.filter((item) =>
-			Object.entries(filter).every(
-				([key, value]) => (item as Record<string, unknown>)[key] === value,
-			),
-		)
+		return this.atomic().list(filter)
 	}
 
 	async update(id: string, changes: Partial<Omit<T, 'id'>>): Promise<void> {
-		const index = this.items.findIndex((item) => item.id === id)
-		if (index === -1) {
-			throw new Error(`Record with id "${id}" not found`)
-		}
-		this.items[index] = { ...this.items[index], ...changes }
+		this.atomic().update(id, changes)
 	}
 
 	async delete(id: string): Promise<void> {
-		const index = this.items.findIndex((item) => item.id === id)
-		if (index === -1) {
-			throw new Error(`Record with id "${id}" not found`)
-		}
-		this.items.splice(index, 1)
+		this.atomic().delete(id)
 	}
 
 	async clear(): Promise<void> {
-		this.items = []
+		this.atomic().clear()
 	}
 
 	async count(filter?: Record<string, unknown>): Promise<number> {
@@ -58,17 +46,69 @@ class MemoryRecordCollection<T extends { id: string }> {
 	}
 
 	async search(query: string): Promise<T[]> {
-		return this.items.filter((item) => matchesSearchQuery(item, query))
+		return structuredClone(
+			this.items.filter((item) => matchesSearchQuery(item, query)),
+		)
 	}
 
 	async addBatch(items: T[]): Promise<void> {
-		for (const item of items) {
-			this.items.push(item)
-		}
+		const atomic = this.atomic()
+		for (const item of items) atomic.add(item)
 	}
 
 	async dispose(): Promise<void> {
 		/* no-op for in-memory */
+	}
+
+	atomic(): AtomicCollection<T> {
+		return {
+			add: (item) => {
+				if (this.items.some((existing) => existing.id === item.id)) {
+					throw new Error(`Record with id "${item.id}" already exists`)
+				}
+				this.items.push(structuredClone(item))
+			},
+			get: (id) => {
+				const item = this.items.find((record) => record.id === id)
+				return item ? structuredClone(item) : undefined
+			},
+			list: (filter) => {
+				const matches =
+					!filter || Object.keys(filter).length === 0
+						? this.items
+						: this.items.filter((item) =>
+								Object.entries(filter).every(
+									([key, value]) =>
+										(item as Record<string, unknown>)[key] === value,
+								),
+							)
+				return structuredClone(matches)
+			},
+			update: (id, changes) => {
+				const index = this.items.findIndex((item) => item.id === id)
+				if (index === -1) throw new Error(`Record with id "${id}" not found`)
+				this.items[index] = structuredClone({
+					...this.items[index],
+					...changes,
+				})
+			},
+			delete: (id) => {
+				const index = this.items.findIndex((item) => item.id === id)
+				if (index === -1) throw new Error(`Record with id "${id}" not found`)
+				this.items.splice(index, 1)
+			},
+			clear: () => {
+				this.items = []
+			},
+		}
+	}
+
+	snapshot(): T[] {
+		return structuredClone(this.items)
+	}
+
+	restore(snapshot: T[]): void {
+		this.items = structuredClone(snapshot)
 	}
 }
 

@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/reference-neuron-api.ts
  */
 
-import { TextNeuron, ListNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -44,8 +44,6 @@ async function main() {
 	assert(typeof textNeuron.dispose === 'function', 'textNeuron.dispose() exists')
 	assert(typeof textNeuron.isInitialized === 'function', 'textNeuron.isInitialized() exists')
 	assert(textNeuron.isInitialized() === true, 'isInitialized() returns true after create()')
-	assert(typeof textNeuron.getObserveSystemPrompt() === 'string', 'getObserveSystemPrompt() returns string after create()')
-	assert(typeof textNeuron.getUnderstandSystemPrompt() === 'string', 'getUnderstandSystemPrompt() returns string after create()')
 
 	// ── Learning ─────────────────────────────────────────────────────────
 	section('TextNeuron — Learning')
@@ -56,19 +54,25 @@ async function main() {
 	assert('status' in learnResult, 'LearnOutput has status')
 
 	// Verify all possible status values
-	const validStatuses = ['observed', 'synthesized', 'observe:dismissed', 'observe:error', 'synthesize:dismissed', 'synthesize:error']
+	const validStatuses = ['synthesized', 'observe:dismissed', 'synthesize:dismissed']
 	assert(validStatuses.includes(learnResult.status), `LearnOutput.status is valid: ${learnResult.status}`)
 
-	// learn() options: { forceSynthesize?: boolean }
-	const forceResult = await textNeuron.learn(['more data'], { forceSynthesize: true })
-	assert('status' in forceResult, 'learn({ forceSynthesize }) returns LearnOutput')
+	// learn() takes TextInput items too
+	const inputResult = await textNeuron.learn([
+		{ deliveryId: 'ref-1', text: 'more data', observedAt: new Date().toISOString() },
+	])
+	assert('status' in inputResult, 'learn(TextInput[]) returns LearnOutput')
+
+	// Memory strategy
+	const gov = textNeuron.getGovernance()
+	assert(gov.strategy === 'cumulative' && gov.maxTokens === 8000, 'getGovernance() returns neuron defaults')
 
 	// Verify synthesized fields if we got a synthesized result
-	if (forceResult.status === 'synthesized') {
-		assert(typeof forceResult.newUnderstanding !== 'undefined', 'synthesized: has newUnderstanding')
-		assert(typeof forceResult.significance === 'string', 'synthesized: has significance')
-		assert(['routine', 'notable', 'critical'].includes(forceResult.significance), 'significance is valid enum')
-		assert(typeof forceResult.evolution === 'string', 'synthesized: has evolution')
+	if (inputResult.status === 'synthesized') {
+		assert(typeof inputResult.newUnderstanding !== 'undefined', 'synthesized: has newUnderstanding')
+		assert(typeof inputResult.significance === 'string', 'synthesized: has significance')
+		assert(['routine', 'notable', 'critical'].includes(inputResult.significance), 'significance is valid enum')
+		assert(typeof inputResult.evolution === 'string', 'synthesized: has evolution')
 	}
 
 	// ── Querying ─────────────────────────────────────────────────────────
@@ -108,37 +112,6 @@ async function main() {
 	const hasKnowledge = await textNeuron.hasKnowledge()
 	assert(typeof hasKnowledge === 'boolean', 'hasKnowledge() returns boolean')
 
-	// ── Buffer ───────────────────────────────────────────────────────────
-	section('TextNeuron — Buffer')
-
-	assert(typeof textNeuron.getBufferState === 'function', 'getBufferState() exists')
-	assert(typeof textNeuron.getBufferedObservations === 'function', 'getBufferedObservations() exists')
-
-	const bufState = await textNeuron.getBufferState()
-	assert('count' in bufState, 'BufferState has count')
-	assert('avgImportance' in bufState, 'BufferState has avgImportance')
-	assert('totalTokens' in bufState, 'BufferState has totalTokens')
-
-	const buffered = await textNeuron.getBufferedObservations()
-	assert(Array.isArray(buffered), 'getBufferedObservations() returns array')
-
-	// ── Observations API ─────────────────────────────────────────────────
-	section('TextNeuron — Observations API')
-
-	assert(typeof textNeuron.getObservations === 'function', 'getObservations() exists')
-	assert(typeof textNeuron.setObservations === 'function', 'setObservations() exists')
-	assert(typeof textNeuron.updateObservation === 'function', 'updateObservation() exists')
-	assert(typeof textNeuron.removeObservation === 'function', 'removeObservation() exists')
-
-	const allObs = await textNeuron.getObservations()
-	assert(Array.isArray(allObs), 'getObservations() returns array')
-
-	const pendingObs = await textNeuron.getObservations({ status: 'pending' })
-	assert(Array.isArray(pendingObs), 'getObservations({status:pending}) returns array')
-
-	const processedObs = await textNeuron.getObservations({ status: 'processed' })
-	assert(Array.isArray(processedObs), 'getObservations({status:processed}) returns array')
-
 	// ── Introspection ────────────────────────────────────────────────────
 	section('TextNeuron — Introspection')
 
@@ -146,10 +119,6 @@ async function main() {
 	assert(typeof textNeuron.getMetrics === 'function', 'getMetrics() exists')
 	assert(typeof textNeuron.getMetadata === 'function', 'getMetadata() exists')
 	assert(typeof textNeuron.getEvolution === 'function', 'getEvolution() exists')
-	assert(typeof textNeuron.getObservationSchema === 'function', 'getObservationSchema() exists')
-	assert(typeof textNeuron.getUnderstandingSchema === 'function', 'getUnderstandingSchema() exists')
-	assert(typeof textNeuron.getObserveSystemPrompt === 'function', 'getObserveSystemPrompt() exists')
-	assert(typeof textNeuron.getUnderstandSystemPrompt === 'function', 'getUnderstandSystemPrompt() exists')
 	assert(typeof textNeuron.getUnderstandThresholds === 'function', 'getUnderstandThresholds() exists')
 
 	const health = textNeuron.getHealth()
@@ -191,68 +160,9 @@ async function main() {
 	assert(typeof textNeuron.name === 'string', 'neuron.name is string')
 	assert(typeof textNeuron.description === 'string', 'neuron.description is string')
 	assert(typeof textNeuron.instructions === 'string', 'neuron.instructions is string')
-	assert(textNeuron.focus === null || typeof textNeuron.focus === 'string', 'neuron.focus is string or null')
 	assert(textNeuron.origin === 'prompt' || textNeuron.origin === 'developer' || textNeuron.origin === 'emergent', 'neuron.origin is valid')
 
 	await textNeuron.dispose()
-
-	// ── ListNeuron — Verify Same API ─────────────────────────────────────
-	section('ListNeuron — API Parity')
-
-	const listNeuron = await ListNeuron.create({
-		model,
-		instructions: 'Track items for API ref test.',
-		store: new MemoryNeuronStore(),
-	})
-
-	// Lifecycle
-	assert(typeof ListNeuron.create === 'function', 'ListNeuron.create() exists')
-	assert(typeof ListNeuron.restore === 'function', 'ListNeuron.restore() exists')
-	assert(typeof listNeuron.dispose === 'function', 'listNeuron.dispose() exists')
-	assert(typeof listNeuron.isInitialized === 'function', 'listNeuron.isInitialized() exists')
-
-	// Learning
-	assert(typeof listNeuron.learn === 'function', 'listNeuron.learn() exists')
-
-	// Querying
-	assert(typeof listNeuron.query === 'function', 'listNeuron.query() exists')
-	assert(typeof listNeuron.queryStream === 'function', 'listNeuron.queryStream() exists')
-
-	// Understanding
-	assert(typeof listNeuron.getUnderstanding === 'function', 'listNeuron.getUnderstanding() exists')
-	assert(typeof listNeuron.setUnderstanding === 'function', 'listNeuron.setUnderstanding() exists')
-	assert(typeof listNeuron.getSummary === 'function', 'listNeuron.getSummary() exists')
-	assert(typeof listNeuron.hasKnowledge === 'function', 'listNeuron.hasKnowledge() exists')
-
-	// Buffer
-	assert(typeof listNeuron.getBufferState === 'function', 'listNeuron.getBufferState() exists')
-	assert(typeof listNeuron.getBufferedObservations === 'function', 'listNeuron.getBufferedObservations() exists')
-
-	// Observations API
-	assert(typeof listNeuron.getObservations === 'function', 'listNeuron.getObservations() exists')
-	assert(typeof listNeuron.setObservations === 'function', 'listNeuron.setObservations() exists')
-	assert(typeof listNeuron.updateObservation === 'function', 'listNeuron.updateObservation() exists')
-	assert(typeof listNeuron.removeObservation === 'function', 'listNeuron.removeObservation() exists')
-
-	// Introspection
-	assert(typeof listNeuron.getHealth === 'function', 'listNeuron.getHealth() exists')
-	assert(typeof listNeuron.getMetrics === 'function', 'listNeuron.getMetrics() exists')
-	assert(typeof listNeuron.getMetadata === 'function', 'listNeuron.getMetadata() exists')
-	assert(typeof listNeuron.getEvolution === 'function', 'listNeuron.getEvolution() exists')
-	assert(typeof listNeuron.getObservationSchema === 'function', 'listNeuron.getObservationSchema() exists')
-	assert(typeof listNeuron.getUnderstandingSchema === 'function', 'listNeuron.getUnderstandingSchema() exists')
-
-	// Config
-	assert(typeof listNeuron.update === 'function', 'listNeuron.update() exists')
-	assert(typeof listNeuron.adjust === 'function', 'listNeuron.adjust() exists')
-
-	// Identity
-	assert(typeof listNeuron.id === 'string', 'listNeuron.id is string')
-	assert(listNeuron.type === 'list', 'listNeuron.type is "list"')
-	assert(typeof listNeuron.name === 'string', 'listNeuron.name is string')
-	assert(typeof listNeuron.instructions === 'string', 'listNeuron.instructions is string')
-
-	await listNeuron.dispose()
 
 	// ── Summary ──────────────────────────────────────────────────────────
 	console.log(`\n${'═'.repeat(60)}`)

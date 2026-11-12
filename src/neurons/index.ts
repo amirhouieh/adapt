@@ -16,42 +16,32 @@ export type {
 	BaseNeuronUpdateInput,
 	BaseResolvedConfig,
 	EventUsage,
-	LearnCallbacks,
+	LearnInput,
 	LearnOptions,
 	LearnOutput,
+	ManagedLearnOutput,
 	ModelSlots,
 	SharedNeuronEventMap,
 	StateTransform,
 	StoredModelRef,
-	UnderstandCallResult,
 	UnderstandThresholds,
 } from './base'
 export { BaseNeuron } from './base'
 export type { QueryOptions, QueryResult } from './base/query'
 export { ToolBasedMethod } from './base/query'
-export type {
-	ListGovernanceConfig,
-	ListItem,
-	ListNeuronConfig,
-	ListNeuronEvent,
-	ListNeuronEventMap,
-	ListNeuronUpdateResult,
-	ListOperation,
-	ResolvedListGovernanceConfig,
-	ResolvedListNeuronConfig,
-} from './list'
-// ListNeuron
-export { ListNeuron } from './list'
-export { listNeuronDescriptor } from './list/descriptor'
 // Schemas
 export {
 	type GeneratedNeuronConfig,
 	neuronConfigSchema,
 } from './schema.config'
 export type {
-	ResolvedGovernanceConfig,
+	AdaptiveTextFlushOutput,
+	AdaptiveTextLearningConfig,
+	AdaptiveTextLearningRuntime,
+	AdaptiveTextLearningState,
+	AdaptiveTextLearnOutput,
+	AdaptiveTextModelProfile,
 	ResolvedTextNeuronConfig,
-	TextGovernanceConfig,
 	TextNeuronConfig,
 	TextNeuronEvent,
 	TextNeuronEventMap,
@@ -61,19 +51,8 @@ export type {
 export { TextNeuron } from './text'
 // Descriptors
 export { textNeuronDescriptor } from './text/descriptor'
-export type {
-	GovernanceConfig,
-	Strategy,
-	StrategyContext,
-	StrategyFn,
-	StrategyResult,
-} from './text/strategies'
-export {
-	applyStrategy,
-	STRATEGIES,
-	strategyFunctions,
-	strategyPrompts,
-} from './text/strategies'
+export type { GovernanceConfig, Strategy } from './text/strategies'
+export { STRATEGIES } from './text/strategies'
 export type {
 	Neuron,
 	NeuronHealth,

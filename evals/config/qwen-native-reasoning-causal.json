@@ -1,0 +1,22 @@
+{
+  "nativeChatUrl": "http://127.0.0.1:1234/api/v1/chat",
+  "model": "adapt-eval-qwen3.5-2b",
+  "outputRoot": "evals/.data/v2/diagnostics/qwen-native-reasoning-causal",
+  "requestTimeoutMs": 60000,
+  "contextLength": 4096,
+  "maxOutputTokens": 1536,
+  "temperature": 0,
+  "reasoningModes": ["off", "on"],
+  "appendCapturedOutputSchema": false,
+  "outputSchemaPrefix": "Output JSON Schema:",
+  "scenarios": [
+    {
+      "id": "attention-unrelated-build",
+      "sourceRequestPath": "evals/.data/v2/diagnostics/attention-decision-qwen3.5-2b/2026-09-30T23-47-21.172Z/transport/02-negative-uncovered-attempt-1-request-body.raw.txt"
+    },
+    {
+      "id": "narrative-scoped-exception",
+      "sourceRequestPath": "evals/.data/v2/learning-recipes-targeted-qwen3.5-2b/2026-09-30T23-47-59.013Z/transport/01-narrative-preference-exception-attempt-1-request-body.raw.txt"
+    }
+  ]
+}

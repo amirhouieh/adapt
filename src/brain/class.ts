@@ -15,7 +15,7 @@ import {
 	type AdjustResult,
 	type BaseNeuron,
 	type GeneratedNeuronConfig,
-	listNeuronDescriptor,
+	type LearnInput,
 	type NeuronHealth,
 	type NeuronTypeDescriptor,
 	type TokenUsage,
@@ -110,7 +110,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	private evolutionOrchestrator?: EvolutionOrchestrator
 
 	// Constructor config (not persisted, used during init only)
-	private readonly learningConfig?: LearningConfig
+	private learningConfig?: LearningConfig
 	private readonly autoSetup: boolean
 	private readonly configNeurons?: GeneratedNeuronConfig[]
 	private readonly internalNeuronsConfig: BrainConfig['internalNeurons']
@@ -132,10 +132,8 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				rawConfig.init?.model,
 				rawConfig.query?.model,
 				rawConfig.evolution?.model,
-				rawConfig.learning?.observer?.model,
-				rawConfig.learning?.observer?.blueprintModel,
-				rawConfig.learning?.understand?.model,
-				rawConfig.learning?.understand?.blueprintModel,
+				rawConfig.learning?.model,
+				rawConfig.learning?.blueprintModel,
 				rawConfig.learning?.query?.model,
 			],
 		})
@@ -188,10 +186,9 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			rawConfig.dismissedBatchBuffer?.maxSize ??
 			BRAIN_DEFAULTS.dismissedBatchBuffer.maxSize
 
-		// Register neuron type descriptors (default: text + list)
+		// Register neuron type descriptors
 		this.neuronTypes = new Map([
 			[textNeuronDescriptor.type, textNeuronDescriptor],
-			[listNeuronDescriptor.type, listNeuronDescriptor],
 		])
 	}
 
@@ -585,14 +582,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			const descriptor = this.neuronTypes.get(config.type)
 			if (!descriptor) continue
 
-			const governance =
-				config.type === 'text' && !config.governance
-					? {
-							strategy: BRAIN_DEFAULTS.learning.governance.strategy,
-							maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
-						}
-					: config.governance
-
 			const neuron = descriptor.factory({
 				id: config.id,
 				model: this.state.models.default,
@@ -600,15 +589,11 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				llm: this.llm,
 				...this.llmRepairOptions,
 				instructions: config.instructions,
-				observeInstructions: config.observeInstructions ?? null,
-				understandInstructions: config.understandInstructions ?? null,
 				origin: 'prompt' as const,
 				name: config.name,
 				description: config.description,
 				store: this.store.getNeuronStore(config.id),
-				governance,
-				skipObservation: config.skipObservation,
-				skipUnderstand: config.skipUnderstand,
+				governance: this.#governanceFor(config),
 				understand: {
 					thresholds: {
 						maxObservations: 3,
@@ -748,6 +733,16 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		})
 	}
 
+	/** Brain defaults, then `learning.governance`, then the neuron's own governance. */
+	#governanceFor(config: GeneratedNeuronConfig) {
+		return {
+			strategy: BRAIN_DEFAULTS.learning.governance.strategy,
+			maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
+			...definedOnly(this.learningConfig?.governance),
+			...definedOnly(config.governance),
+		}
+	}
+
 	/**
 	 * Create a neuron from a generated config (factory — routes by config.type)
 	 */
@@ -757,15 +752,15 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			health?: Partial<NeuronHealth>
 		},
 	): Promise<BaseNeuron<unknown>> {
+		const learning = this.learningConfig
 		const shared = {
 			id: config.id,
-			model: this.state.models.default,
-			blueprintModel: this.state.models.blueprint,
+			model: learning?.model ?? this.state.models.default,
+			blueprintModel: learning?.blueprintModel ?? this.state.models.blueprint,
+			...(learning?.query ? { query: learning.query } : {}),
 			llm: this.llm,
 			...this.llmRepairOptions,
 			instructions: config.instructions,
-			observeInstructions: config.observeInstructions ?? null,
-			understandInstructions: config.understandInstructions ?? null,
 			origin: 'prompt' as const,
 			name: config.name,
 			description: config.description,
@@ -788,23 +783,10 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			throw new Error(`Unknown neuron type: ${config.type}`)
 		}
 
-		// Apply default governance for text neurons if not provided
-		const governance =
-			config.type === 'text' && !config.governance
-				? {
-						strategy: BRAIN_DEFAULTS.learning.governance.strategy,
-						maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
-					}
-				: config.governance
-
 		const neuron = descriptor.factory({
 			...shared,
 			store: this.store.getNeuronStore(config.id),
-			governance,
-			skipObservation: config.skipObservation,
-			skipUnderstand: config.skipUnderstand,
-			observationSchema: config.observationSchema,
-			understandingSchema: config.understandingSchema,
+			governance: this.#governanceFor(config),
 		})
 
 		// Forward all neuron events through Brain
@@ -959,11 +941,14 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	 * Each neuron processes independently and may further chunk by token limit.
 	 */
 	async inject(
-		data: unknown | unknown[],
+		data: LearnInput | readonly LearnInput[],
 		options?: BrainInjectOptions,
 	): Promise<BrainInjectResult> {
 		const injectId = options?.id ?? `inject_${nanoid()}`
-		const items = Array.isArray(data) ? data : [data]
+		const items: readonly LearnInput[] =
+			typeof data === 'string' || !Array.isArray(data)
+				? [data as LearnInput]
+				: data
 		// Skip inactive neurons — pause is brain-level fan-out gating, not
 		// per-neuron concern. Query path (ask) is unaffected; their knowledge
 		// stays consultable.
@@ -973,7 +958,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 
 		// Split items into batches by batchSize
 		const batchSize = this.state.ingest.batchSize
-		const batches: unknown[][] = []
+		const batches: LearnInput[][] = []
 		for (let i = 0; i < items.length; i += batchSize) {
 			batches.push(items.slice(i, i + batchSize))
 		}
@@ -1169,18 +1154,24 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			generateOptions,
 		)
 
+		// One neuron's failed query (e.g. a malformed reply) is skipped, not
+		// fatal: the neuron already emits neuron:query:failed.
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
-				const result = await neuron.query(query, {
-					mode: 'direct',
-					...generateOptions,
-				})
-				return { id: neuron.id, ...result }
+				try {
+					const result = await neuron.query(query, {
+						mode: 'direct',
+						...generateOptions,
+					})
+					return { id: neuron.id, ...result }
+				} catch {
+					return null
+				}
 			}),
 		)
 
 		const specialistResults = neuronQueries
-			.filter((r): r is NonNullable<typeof r> => r?.relevant)
+			.filter((r): r is NonNullable<typeof r> => r?.relevant === true)
 			.map((r) => ({
 				id: r.id,
 				relevance: r.relevance,
@@ -1321,18 +1312,24 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			generateOptions,
 		)
 
+		// One neuron's failed query (e.g. a malformed reply) is skipped, not
+		// fatal: the neuron already emits neuron:query:failed.
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
-				const result = await neuron.query(query, {
-					mode: 'direct',
-					...generateOptions,
-				})
-				return { id: neuron.id, ...result }
+				try {
+					const result = await neuron.query(query, {
+						mode: 'direct',
+						...generateOptions,
+					})
+					return { id: neuron.id, ...result }
+				} catch {
+					return null
+				}
 			}),
 		)
 
 		const specialistResults = neuronQueries
-			.filter((r): r is NonNullable<typeof r> => r?.relevant)
+			.filter((r): r is NonNullable<typeof r> => r?.relevant === true)
 			.map((r) => ({
 				id: r.id,
 				relevance: r.relevance,
@@ -1621,7 +1618,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		const resolvedGaps: string[] = []
 
 		for (const batch of unresolved) {
-			const data = batch.data as unknown[]
+			const data = batch.data as LearnInput[]
 
 			// Try every new neuron — don't stop at first acceptance
 			let anyAccepted = false
@@ -1687,12 +1684,12 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 
 			try {
 				await queryNeuron.learn([
-					{
-						question: query,
-						relevantNeurons,
-						gaps: allGaps,
-						timestamp: now,
-					},
+					[
+						`Question: ${query}`,
+						`Relevant neurons: ${relevantNeurons.join(', ') || 'none'}`,
+						`Gaps: ${allGaps.join('; ') || 'none'}`,
+						`Asked at: ${now}`,
+					].join('\n'),
 				])
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err)
@@ -1710,11 +1707,11 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 				const allGaps = neuronResults.flatMap((r) => r.gaps)
 				try {
 					await gapNeuron.learn([
-						{
-							question: query,
-							gaps: allGaps,
-							timestamp: now,
-						},
+						[
+							`Question: ${query}`,
+							`Gaps: ${allGaps.join('; ')}`,
+							`Asked at: ${now}`,
+						].join('\n'),
 					])
 				} catch (err) {
 					const msg = err instanceof Error ? err.message : String(err)
@@ -1764,12 +1761,11 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			const feedGlobal = (understanding: string) => {
 				globalNeuron
 					.learn([
-						{
-							neuronId: event.neuronId,
-							understanding,
-							significance: event.significance,
-							evolution: event.evolution,
-						},
+						[
+							`Specialist ${event.neuronId} updated its understanding.`,
+							`Change: ${event.evolution}`,
+							`Understanding:\n${understanding}`,
+						].join('\n'),
 					])
 					.catch((err) => {
 						console.error(`[internal-neuron] feed error:`, err?.message ?? err)
@@ -1802,7 +1798,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	 */
 	private async handleDismissedBatch(
 		batchId: string,
-		batch: unknown[],
+		batch: LearnInput[],
 		neuronResults: NeuronBatchResult[],
 	): Promise<void> {
 		const allDismissed = neuronResults.every(
@@ -1845,11 +1841,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		// and signal the evaluator directly with the actual data content
 		if (neuronResults.length === 0) {
 			const summary = batch
-				.map((item) => {
-					if (typeof item === 'string') return item
-					const obj = item as Record<string, unknown>
-					return [obj.title, obj.type, obj.context].filter(Boolean).join(' — ')
-				})
+				.map((item) => (typeof item === 'string' ? item : item.text))
 				.join('; ')
 			this.signal({
 				source: 'system',
@@ -1864,10 +1856,10 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 		if (gapNeuron) {
 			try {
-				const gapText =
-					gaps.length > 0
-						? `Data arrived that no specialist could absorb. Topics identified: ${gaps.join(', ')}. This content has been set aside for now.`
-						: `Data arrived that no specialist could absorb. No topics could be identified from this content. It has been set aside for now.`
+				const items = batch.map((item) =>
+					typeof item === 'string' ? item : item.text,
+				)
+				const gapText = `Data arrived that no specialist could absorb. It has been set aside for now:\n${items.map((item) => `- ${item}`).join('\n')}`
 				await gapNeuron.learn([gapText])
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err)
@@ -2380,15 +2372,9 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		if (updates.learning?.model) neuronUpdate.model ??= updates.learning.model
 		if (updates.learning?.blueprintModel)
 			neuronUpdate.blueprintModel ??= updates.learning.blueprintModel
-		if (updates.learning?.observer) {
-			neuronUpdate.observer = updates.learning.observer
-		}
-		if (updates.learning?.understand) {
-			const s = updates.learning.understand
+		if (updates.learning?.understand?.thresholds) {
 			neuronUpdate.understand = {
-				...(s.model ? { model: s.model } : {}),
-				...(s.blueprintModel ? { blueprintModel: s.blueprintModel } : {}),
-				...(s.thresholds ? { thresholds: s.thresholds } : {}),
+				thresholds: updates.learning.understand.thresholds,
 			}
 		}
 		if (updates.learning?.query) {
@@ -2396,6 +2382,21 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		}
 		if (updates.learning?.governance) {
 			neuronUpdate.governance = updates.learning.governance
+		}
+		// Neurons created later (evolution, addNeuron) follow the same settings.
+		if (updates.learning) {
+			const current = this.learningConfig ?? {}
+			this.learningConfig = {
+				...current,
+				...updates.learning,
+				governance: { ...current.governance, ...updates.learning.governance },
+				understand: {
+					thresholds: {
+						...current.understand?.thresholds,
+						...updates.learning.understand?.thresholds,
+					},
+				},
+			}
 		}
 
 		// Forward to all neurons (each ignores fields it doesn't recognize)
@@ -2482,4 +2483,11 @@ async function resolveBrainStore(
 	if (typeof input !== 'string') return input
 	const { SQLiteBrainStore } = await import('../stores/sqlite/node/brain')
 	return new SQLiteBrainStore(input)
+}
+
+function definedOnly<T extends object>(value: T | undefined): Partial<T> {
+	if (!value) return {}
+	return Object.fromEntries(
+		Object.entries(value).filter(([, v]) => v !== undefined),
+	) as Partial<T>
 }

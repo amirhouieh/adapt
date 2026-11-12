@@ -9,7 +9,7 @@ Configuration and manual-control reference for evolution. For the conceptual ove
 
 Default firing conditions for the three signal sources:
 
-- **Automatic** — neuron emits when dismissal rate >80%, query relevance avg <0.3, confidence avg <0.3, or observation stagnation.
+- **Automatic** — neuron emits when dismissal rate >80%, query relevance avg <0.3, confidence avg <0.3, or learning stagnation.
 - **Coverage gaps** — query where all neurons score below `coverageGap.relevanceThreshold`, or injection batches dismissed by all neurons.
 - **Developer** — `brain.signal({ source, description })` from application logic. Pass `bypass: true` to force immediate evaluation regardless of threshold.
 

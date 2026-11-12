@@ -17,14 +17,9 @@ import type { EvolutionDecision } from './evaluator/types'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Observer phase configuration
+ * Thresholds Brain reads for neuron health signals and evolution
  */
-export interface ObserverPhaseConfig extends CascadableConfig {}
-
-/**
- * Understand phase configuration
- */
-export interface UnderstandPhaseConfig extends CascadableConfig {
+export interface UnderstandPhaseConfig {
 	thresholds?: {
 		maxObservations?: number
 		maxTokens?: number
@@ -40,7 +35,7 @@ export interface QueryPhaseConfig {
 }
 
 /**
- * Governance configuration (text neuron understanding management)
+ * Governance configuration (text neuron memory strategy)
  */
 export interface GovernanceConfig {
 	strategy?: Strategy
@@ -60,7 +55,6 @@ export interface LearningConfig extends CascadableConfig {
 	name?: string
 	/** Neuron description (semantic — goes through evaluator) */
 	description?: string
-	observer?: ObserverPhaseConfig
 	understand?: UnderstandPhaseConfig
 	query?: QueryPhaseConfig
 	governance?: GovernanceConfig

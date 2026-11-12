@@ -1,0 +1,24 @@
+{
+  "chatCompletionsUrl": "http://127.0.0.1:1234/v1/chat/completions",
+  "providerId": "lm-studio",
+  "model": { "plugin": "local", "provider": "lm-studio", "id": "adapt-eval-qwen3.5-2b", "options": { "temperature": 0, "maxOutputTokens": 384, "seed": 7 } },
+  "scheduler": { "maxConcurrent": 1, "maxQueued": 4 },
+  "requestTimeoutMs": 60000,
+  "defaultMaxOutputTokens": 384,
+  "priority": "foreground",
+  "datasetPath": "evals/datasets/v2-attention.json",
+  "outputRoot": "evals/.data/v2/diagnostics/attention-decision-qwen3.5-2b",
+  "question": "How completely does this one lens match the supplied content portion under its developer routing constraints?",
+  "answers": [
+    { "value": "complete_match", "description": "The lens is clearly relevant and accounts for every meaningful subject in the portion." },
+    { "value": "partial_match", "description": "The lens is clearly relevant to some, but not all, meaningful subjects in the portion." },
+    { "value": "unrelated", "description": "The lens is clearly not relevant to the portion." },
+    { "value": "unknown", "description": "The match cannot be determined from the supplied portion and constraints." }
+  ],
+  "cases": [
+    { "scenarioId": "positive-multi-lens", "lensId": "preferences" },
+    { "scenarioId": "negative-uncovered", "lensId": "preferences" },
+    { "scenarioId": "ambiguous-unknown", "lensId": "commitments" },
+    { "scenarioId": "adversarial-content", "lensId": "preferences" }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+ "schemaVersion": 1,
+ "streamId": "clinical-dimensions-heldout",
+ "note": "Literal answers to the procedure's questions, written by hand. levels[dimension] is the highest level whose indicator question the note answers yes, read literally; lower questions are treated as yes too, which does not change the outcome because code uses the highest yes. A dimension is selected when it has a level. Written after earlier model runs on these streams were seen.",
+ "answers": {
+  "h01-a": {
+   "levels": {}
+  },
+  "h01-b": {
+   "levels": {}
+  },
+  "h01-c": {
+   "levels": {}
+  },
+  "h02-a": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "h02-b": {
+   "levels": {
+    "agency": "developing"
+   }
+  },
+  "h02-c": {
+   "irrelevant": true
+  },
+  "h03-a": {
+   "levels": {}
+  },
+  "h03-b": {
+   "levels": {
+    "self_awareness": "emerging"
+   }
+  },
+  "h03-c": {
+   "irrelevant": true
+  },
+  "h04-a": {
+   "levels": {
+    "emotional_regulation": "developing"
+   }
+  },
+  "h04-b": {
+   "levels": {
+    "agency": "established"
+   }
+  },
+  "h04-c": {
+   "levels": {
+    "somatic_processing": "emerging"
+   }
+  },
+  "h05-a": {
+   "levels": {
+    "self_awareness": "integrated",
+    "agency": "developing"
+   }
+  },
+  "h05-b": {
+   "levels": {
+    "relational_flexibility": "emerging"
+   }
+  },
+  "h05-c": {
+   "irrelevant": true
+  },
+  "h06-a": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "h06-b": {
+   "levels": {}
+  },
+  "h06-c": {
+   "untrusted": true
+  },
+  "h07-a": {
+   "levels": {
+    "emotional_regulation": "established"
+   }
+  },
+  "h07-b": {
+   "levels": {
+    "self_awareness": "established"
+   }
+  },
+  "h07-c": {
+   "levels": {
+    "relational_flexibility": "developing"
+   }
+  },
+  "h08-a": {
+   "levels": {
+    "emotional_regulation": "established"
+   }
+  },
+  "h08-b": {
+   "levels": {
+    "agency": "established"
+   }
+  },
+  "h08-c": {
+   "levels": {
+    "relational_flexibility": "established"
+   }
+  },
+  "h09-a": {
+   "levels": {
+    "emotional_regulation": "emerging"
+   }
+  },
+  "h09-b": {
+   "levels": {
+    "somatic_processing": "emerging"
+   }
+  },
+  "h09-c": {
+   "levels": {
+    "agency": "established"
+   }
+  },
+  "h10-a": {
+   "levels": {
+    "emotional_regulation": "established"
+   }
+  },
+  "h10-b": {
+   "levels": {
+    "self_awareness": "integrated"
+   }
+  },
+  "h10-c": {
+   "levels": {
+    "relational_flexibility": "developing"
+   }
+  }
+ }
+}

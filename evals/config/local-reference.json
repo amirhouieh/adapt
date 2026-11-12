@@ -1,0 +1,50 @@
+{
+	"chatCompletionsUrl": "http://127.0.0.1:1234/v1/chat/completions",
+	"providerId": "lm-studio",
+	"model": {
+		"plugin": "local",
+		"provider": "lm-studio",
+		"id": "liquid/lfm2.5-1.2b",
+		"options": {
+			"temperature": 0,
+			"maxOutputTokens": 256,
+			"seed": 7
+		}
+	},
+	"scheduler": {
+		"maxConcurrent": 1,
+		"maxQueued": 8
+	},
+	"retry": {
+		"maxAttempts": 2,
+		"maxAttemptsCeiling": 2,
+		"initialDelayMs": 100,
+		"maxDelayMs": 500,
+		"backoff": "fixed"
+	},
+	"requestTimeoutMs": 60000,
+	"defaultMaxOutputTokens": 256,
+	"defaultPriority": "foreground",
+	"networkPolicy": {
+		"sandboxPolicy": "(version 1) (allow default) (deny network-outbound) (allow network-outbound (remote ip \"localhost:*\"))",
+		"allowedProbeUrl": "http://127.0.0.1:1234/v1/models",
+		"deniedProbeUrl": "http://1.1.1.1/",
+		"probeTimeoutMs": 3000
+	},
+	"datasetPath": "evals/datasets/preference-evolution.json",
+	"generationPriorEventId": "evt_001",
+	"generationEventId": "evt_009",
+	"decisionEventId": "evt_017",
+	"answeredDecisionEventId": "evt_009",
+	"expectedOutcomes": {
+		"structuredGeneration": "previousBrand is Adidas, currentBrand is Nike, and reason remains grounded in the shoes falling apart and needing return",
+		"abstainingDecision": "abstained because neither supplied concrete date is established",
+		"answeredDecision": "answered Nike"
+	},
+	"unacceptableOutcomes": {
+		"structuredGeneration": "invented reason, reversed brands, or omitted current brand",
+		"abstainingDecision": "selecting either unsupported date",
+		"answeredDecision": "abstention or Adidas"
+	},
+	"outputRoot": "evals/.data/v2/local-provider"
+}

@@ -50,8 +50,8 @@ const brain = await Brain.create({
 })
 
 await brain.inject([
-  { type: 'commit', message: 'refactor: extract validation into pure functions' },
-  { type: 'review', comment: 'Too heavy. Factory functions work fine at our scale.' },
+  'commit: refactor: extract validation into pure functions',
+  'review: Too heavy. Factory functions work fine at our scale.',
 ])
 
 const result = await brain.ask('What is my coding philosophy?')
@@ -69,6 +69,8 @@ const brain = await Brain.restore('./memory.db')
 ## How it works
 
 Memory lives in Neurons: small units of understanding, each holding a conclusion and the evidence behind it.
+
+Each Neuron learns in two stages, in plain text: extract what in the new data is relevant, then update its memory with it. A memory strategy (continuous, cumulative or decay) keeps the memory from growing without bound.
 
 When data arrives, Adapt decides what to do with it. New territory creates a Neuron. Supporting evidence strengthens one. Contradicting evidence revises it. A Neuron that has grown to cover two unrelated things splits. Two that have converged merge. Nothing that stops earning its place survives.
 
@@ -116,7 +118,9 @@ Requires a model with structured output and tool calling.
 
 ## Status
 
-`0.0.x`. In use, changing fast, breaking changes expected. Node, Bun, Electron. ESM and CJS. In-memory or SQLite. MIT.
+`0.1.x`. In use, changing fast, breaking changes expected. Node, Bun, Electron. ESM and CJS. In-memory or SQLite. MIT.
+
+**Upgrading from 0.0.6:** 0.1.0 does not support 0.0.6 stores; start with a new one. See the changelog.
 
 Local models (Ollama, LM Studio) are not fully tested yet.
 

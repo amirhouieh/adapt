@@ -36,7 +36,7 @@ const neuronConfigSchema = z.object({
 	description: z.string().describe('Brief description of what this neuron tracks'),
 	instructions: z.string().describe('Full structured instructions'),
 	focus: z.string().nullable().describe('Optional focus areas (null if none)'),
-	type: z.enum(['text', 'list']).describe('Neuron type'),
+	type: z.enum(['text']).describe('Neuron type'),
 })
 
 // src/brain/schemas/schema.brain-decomposition.ts
@@ -243,35 +243,6 @@ const completeAdjustInput = z.object({
 	reasoning: z.string().nullable().describe('Key reasoning, null if none'),
 })
 
-// src/neurons/list/understand/index.ts — list tools
-const searchItemsInput = z.object({
-	query: z.string().describe('Search query text'),
-})
-const getItemInput = z.object({
-	id: z.string().describe('The item ID'),
-})
-// addItem signals .optional → .nullable; data is dynamic so skip dynamic part
-const addItemInput = z.object({
-	data: z.record(z.string(), z.unknown()).describe('Item data'),
-	signals: z.array(z.string()).nullable().describe('Tags or signals (null if none)'),
-})
-// updateItem data + signals .optional → .nullable
-const updateItemInput = z.object({
-	id: z.string().describe('ID of the item to update'),
-	data: z.record(z.string(), z.unknown()).nullable().describe('Fields to update (null if none)'),
-	signals: z.array(z.string()).nullable().describe('Signals to add (null if none)'),
-})
-const removeItemInput = z.object({
-	id: z.string(),
-	reason: z.string().describe('Why this item should be removed'),
-})
-
-// src/neurons/list/query-tools.ts — filterKey/filterValue .optional → .nullable
-const getItemsInput = z.object({
-	filterKey: z.string().nullable().describe('Field to filter by (null if no filter)'),
-	filterValue: z.string().nullable().describe('Value to match (null if no filter)'),
-})
-
 // ─── Cases ──────────────────────────────────────────────────────────────────
 
 const cases: Array<{
@@ -400,36 +371,6 @@ const cases: Array<{
 		schema: completeAdjustInput,
 		prompt: 'Complete: evolution="renamed neuron", significance=routine, reasoning=null.',
 	},
-	{
-		name: 'searchItemsInput',
-		schema: searchItemsInput,
-		prompt: 'Build search items: query="biome".',
-	},
-	{
-		name: 'getItemInput',
-		schema: getItemInput,
-		prompt: 'Build get item: id="item_abc".',
-	},
-	{
-		name: 'addItemInput',
-		schema: addItemInput,
-		prompt: 'Build add item: data has name=foo, signals null.',
-	},
-	{
-		name: 'updateItemInput',
-		schema: updateItemInput,
-		prompt: 'Build update item: id="abc", data null, signals null.',
-	},
-	{
-		name: 'removeItemInput',
-		schema: removeItemInput,
-		prompt: 'Build remove: id="abc", reason="duplicate".',
-	},
-	{
-		name: 'getItemsInput',
-		schema: getItemsInput,
-		prompt: 'Build getItems: filterKey null, filterValue null.',
-	},
 	// ── isolate the z.record problem ─────────────────────────────────────────
 	{
 		name: 'record(string, unknown)',
@@ -461,18 +402,6 @@ const cases: Array<{
 		prompt: 'Produce two arbitrary values for a and b.',
 	},
 	// ── retry the failing shapes with strictJsonSchema: false ────────────────
-	{
-		name: 'addItemInput WITH strictJsonSchema:false',
-		schema: addItemInput,
-		prompt: 'Build add item: data has name=foo, signals null.',
-		strictJsonSchema: false,
-	},
-	{
-		name: 'updateItemInput WITH strictJsonSchema:false',
-		schema: updateItemInput,
-		prompt: 'Build update item: id="abc", data null, signals null.',
-		strictJsonSchema: false,
-	},
 	{
 		name: 'record(string, unknown) WITH strictJsonSchema:false',
 		schema: z.object({

@@ -37,10 +37,22 @@ export function openBunSQLiteDatabase(
 		prepare<Row = Record<string, unknown>>(sql: string): SQLiteStatement<Row> {
 			return createStatement<Row>(db.prepare(sql))
 		},
-		transaction<TArgs extends unknown[]>(
-			fn: (...args: TArgs) => void,
-		): (...args: TArgs) => void {
-			return db.transaction(fn)
+		transaction<TArgs extends unknown[], TResult>(
+			fn: (...args: TArgs) => TResult,
+		): (...args: TArgs) => TResult {
+			return (...args: TArgs): TResult => {
+				let result: TResult | undefined
+				let completed = false
+				const transaction = db.transaction((...innerArgs: TArgs) => {
+					result = fn(...innerArgs)
+					completed = true
+				})
+				transaction(...args)
+				if (!completed) {
+					throw new Error('SQLite transaction did not return a result')
+				}
+				return result as TResult
+			}
 		},
 		close(): void {
 			db.close()

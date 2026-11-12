@@ -42,7 +42,6 @@ const definitions: InternalNeuronDef[] = [
 			description:
 				'Synthesizes understanding across all specialists into a unified picture',
 			type: 'text',
-			focus: null,
 			instructions: `You receive understanding updates from every specialist in the network. Each update tells you what a specialist now knows — its current understanding after processing new data.
 
 Your job is to form a unified understanding from all specialists. You are not tracking raw data — you are synthesizing what the network as a whole understands.
@@ -56,8 +55,7 @@ Track answers to:
 - What does the network understand right now, taken as a whole?
 - What connections exist between specialists' domains that they can't see individually?
 - How is the network's collective understanding changing over time?`,
-			governance: { strategy: 'decay', maxTokens: 16000 },
-			skipObservation: true,
+			governance: { strategy: 'decay', maxTokens: 8000 },
 		},
 	},
 	{
@@ -67,8 +65,7 @@ Track answers to:
 			name: 'Global Query Understanding',
 			description:
 				'Tracks what users ask — query topics, frequency, clusters, and coverage gaps',
-			type: 'list',
-			focus: null,
+			type: 'text',
 			instructions: `Track and categorize all user queries to understand what information users need.
 
 Watch for:
@@ -81,7 +78,7 @@ Track answers to:
 - What topics do users ask about most frequently?
 - What query clusters exist and how are they related?
 - Where are the coverage gaps between what users ask and what the system knows?`,
-			skipObservation: true,
+			governance: { strategy: 'decay', maxTokens: 8000 },
 		},
 	},
 	{
@@ -92,7 +89,6 @@ Track answers to:
 			description:
 				'Tracks data that no external neuron could process — injection gaps',
 			type: 'text',
-			focus: null,
 			instructions: `You are a cross-domain, general-purpose gap tracker. You are NOT limited to any specific subject area — you track gaps from ALL topics and domains.
 
 You receive reports about data that was rejected by all specialized neurons in the system. These reports describe what topics were dismissed. EVERY item you receive is relevant by definition — never dismiss it.
@@ -107,7 +103,6 @@ Track:
 
 Drop topics that haven't appeared recently — if a gap stops being reported, it's likely been resolved.`,
 			governance: { strategy: 'decay', maxTokens: 8000 },
-			skipObservation: true,
 		},
 	},
 	{
@@ -118,7 +113,6 @@ Drop topics that haven't appeared recently — if a gap stops being reported, it
 			description:
 				'Tracks questions that external neurons could not answer well',
 			type: 'text',
-			focus: null,
 			instructions: `Accumulate and reason about query gaps — questions that users ask but no neuron can answer well.
 
 Watch for:
@@ -131,7 +125,6 @@ Track answers to:
 - Are there topic clusters of unanswerable questions?
 - What knowledge would need to be acquired to close these gaps?`,
 			governance: { strategy: 'cumulative', maxTokens: 8000 },
-			skipObservation: true,
 		},
 	},
 ]

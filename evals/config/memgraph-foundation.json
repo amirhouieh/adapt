@@ -1,0 +1,67 @@
+{
+  "connection": {
+    "uri": "bolt://127.0.0.1:7687",
+    "connectionTimeoutMs": 2000,
+    "maxConnectionPoolSize": 2,
+    "transactionTimeoutMs": 5000
+  },
+  "policy": {
+    "maxRecordsPerCommit": 32,
+    "maxSerializedCharsPerCommit": 20000,
+    "maxContextEntities": 16,
+    "maxContextEdges": 16,
+    "maxContextChars": 20000,
+    "maxTraversalDepth": 4,
+    "maxTraversalEntities": 16,
+    "maxTraversalEdges": 16,
+    "maxInspectionRecordsPerNamespace": 32,
+    "maxInspectionChars": 30000
+  },
+  "datasetPath": "evals/datasets/memgraph-foundation.json",
+  "artifactRoot": "evals/artifacts/memgraph-foundation",
+  "runId": "module6-foundation-2026-09-30-2200",
+  "failure": {
+    "stage": "after-graph",
+    "message": "injected after-graph foundation eval failure"
+  },
+  "inspection": {
+    "maxRecordsPerNamespace": 32,
+    "maxSerializedChars": 30000
+  },
+  "fullContext": {
+    "maxEntities": 12,
+    "maxEdges": 12,
+    "maxSerializedChars": 15000
+  },
+  "boundedContext": {
+    "maxEntities": 1,
+    "maxEdges": 1,
+    "maxSerializedChars": 15000
+  },
+  "fullTraversal": {
+    "maxDepth": 3,
+    "maxEntities": 12,
+    "maxEdges": 12,
+    "maxSerializedChars": 15000
+  },
+  "boundedTraversal": {
+    "maxDepth": 3,
+    "maxEntities": 1,
+    "maxEdges": 1,
+    "maxSerializedChars": 15000
+  },
+  "outbox": {
+    "consumerId": "foundation-eval-consumer",
+    "firstLeaseToken": "foundation-eval-lease-1",
+    "secondLeaseToken": "foundation-eval-lease-2",
+    "claimAt": "2026-09-30T20:00:10.000Z",
+    "firstLeaseExpiresAt": "2026-09-30T20:01:10.000Z",
+    "firstSettledAt": "2026-09-30T20:00:11.000Z",
+    "retryAt": "2026-09-30T20:00:12.000Z",
+    "reclaimAt": "2026-09-30T20:00:13.000Z",
+    "secondLeaseExpiresAt": "2026-09-30T20:01:13.000Z",
+    "finalSettledAt": "2026-09-30T20:00:14.000Z",
+    "retryError": "supplied transient delivery failure",
+    "limit": 8
+  }
+}

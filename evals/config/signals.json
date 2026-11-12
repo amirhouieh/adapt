@@ -1,0 +1,63 @@
+{
+  "chatCompletionsUrl": "http://127.0.0.1:1234/v1/chat/completions",
+  "providerId": "lm-studio",
+  "model": {
+    "plugin": "local",
+    "provider": "lm-studio",
+    "id": "liquid/lfm2.5-1.2b",
+    "options": { "temperature": 0, "maxOutputTokens": 768, "seed": 7 }
+  },
+  "scheduler": { "maxConcurrent": 1, "maxQueued": 8 },
+  "retry": {
+    "maxAttempts": 2,
+    "maxAttemptsCeiling": 2,
+    "initialDelayMs": 100,
+    "maxDelayMs": 500,
+    "backoff": "fixed"
+  },
+  "requestTimeoutMs": 60000,
+  "defaultMaxOutputTokens": 768,
+  "priority": "background",
+  "networkPolicy": {
+    "allowedProbeUrl": "http://127.0.0.1:1234/v1/models",
+    "deniedProbeUrl": "http://1.1.1.1/",
+    "probeTimeoutMs": 3000
+  },
+  "datasetPath": "evals/datasets/v2-signals.json",
+  "outputRoot": "evals/.data/v2/signals",
+  "storeFileName": "signal-state.db",
+  "assessmentConsumerId": "signal-assessor",
+  "assessmentLeaseTokenPrefix": "assessment-lease",
+  "deliveryConsumerId": "signal-delivery",
+  "deliveryLeaseToken": "delivery-lease-final",
+  "deliveryClaimAt": "2026-10-01T13:00:00.000Z",
+  "deliveryLeaseExpiresAt": "2026-10-01T13:05:00.000Z",
+  "deliverySettleAt": "2026-10-01T13:01:00.000Z",
+  "deliveryClaimLimit": 20,
+  "statePolicy": {
+    "stateRecordId": "adapt-v2-signals-eval",
+    "maxPendingAssessments": 20,
+    "maxReceipts": 20,
+    "maxAcceptedSignals": 20,
+    "maxDedupRecords": 20,
+    "maxCooldownRecords": 20,
+    "maxDeliveries": 20,
+    "maxSerializedCharacters": 200000,
+    "exactDedupRetentionMs": 86400000,
+    "cooldownMs": 3600000,
+    "receiptRetentionMs": 86400000,
+    "acceptedRetentionMs": 86400000,
+    "deliveredRetentionMs": 3600000
+  },
+  "assessmentPolicy": {
+    "id": "adapt-v2-useful-signals",
+    "version": "1",
+    "instructions": "Produce one concise outward signal only for a material new implication useful to the user. Be silent for unchanged meaning, unrelated changes, or a prior signal that already states the same implication. Defer when the supplied learned memory is genuinely ambiguous.",
+    "maxChanges": 4,
+    "maxMemories": 4,
+    "maxPriorSignals": 3,
+    "maxContextCharacters": 6000,
+    "maxRequestCharacters": 12000,
+    "maxSignalCharacters": 700
+  }
+}

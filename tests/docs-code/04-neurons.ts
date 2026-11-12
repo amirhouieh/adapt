@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/04-neurons.ts
  */
 
-import { Brain, TextNeuron, ListNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { SQLiteNeuronStore } from '@unbody-io/adapt/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -67,35 +67,25 @@ async function main() {
 		instructions: 'Track product design principles and user research insights.',
 		store: new MemoryNeuronStore(),
 		governance: { strategy: 'decay', maxTokens: 8000 },
-		understand: { thresholds: { maxObservations: 5, minImportance: 0.3 } },
 	})
 	assert(govNeuron instanceof TextNeuron, 'TextNeuron with governance config created')
+	const gov = govNeuron.getGovernance()
+	assert(gov.strategy === 'decay' && gov.maxTokens === 8000, 'getGovernance() returns config')
+	await govNeuron.update({ governance: { strategy: 'cumulative' } })
+	assert(govNeuron.getGovernance().strategy === 'cumulative', 'update({ governance }) changes strategy')
 	await govNeuron.dispose()
 
-	// ── TextNeuron — Phase Instructions ───────────────────────────────────
-	section('TextNeuron — Phase Instructions')
-
-	const phaseNeuron = await TextNeuron.create({
+	// TextInput items (caller-owned ids and times)
+	const inputNeuron = await TextNeuron.create({
 		model,
-		instructions: 'Track product design principles and user research insights.',
+		instructions: 'Track product launch dates.',
 		store: new MemoryNeuronStore(),
-		observeInstructions: 'Keep any data about design decisions, user research, or accessibility.',
-		understandInstructions: 'Synthesize into a coherent set of design principles with evidence.',
-		focus: 'design systems and component libraries',
 	})
-	assert(phaseNeuron.observeInstructions !== null, 'observeInstructions accessor set')
-	assert(phaseNeuron.understandInstructions !== null, 'understandInstructions accessor set')
-	await phaseNeuron.dispose()
-
-	// skipUnderstand neuron — observes but never synthesizes
-	const skipUnderstandNeuron = await TextNeuron.create({
-		model,
-		instructions: 'Collect raw design feedback.',
-		store: new MemoryNeuronStore(),
-		skipUnderstand: true,
-	})
-	assert(skipUnderstandNeuron instanceof TextNeuron, 'skipUnderstand neuron created')
-	await skipUnderstandNeuron.dispose()
+	const inputResult = await inputNeuron.learn([
+		{ deliveryId: 'msg-42', text: 'Moved the launch to March.', observedAt: '2026-11-10T09:00:00.000Z' },
+	])
+	assert(inputResult.status !== undefined, 'learn() accepts TextInput')
+	await inputNeuron.dispose()
 
 	// ── TextNeuron — Restore ──────────────────────────────────────────────
 	section('TextNeuron — Restore')
@@ -131,66 +121,6 @@ async function main() {
 	assert(restoredWithId instanceof TextNeuron, 'TextNeuron.restore(path, { id, model }) succeeds')
 	await restoredWithId.dispose()
 
-	// ── ListNeuron — Basic ───────────────────────────────────────────────
-	section('ListNeuron — Basic')
-
-	const listNeuron = await ListNeuron.create({
-		model,
-		instructions: 'Track restaurants with cuisine type, location, price range, and rating.',
-		store: new MemoryNeuronStore(),
-	})
-
-	await listNeuron.learn([
-		'Had amazing ramen at Ichiran in Shibuya — rich tonkotsu broth, ¥1200',
-		'Tried the new Italian place on 5th — mediocre pasta, overpriced',
-	])
-
-	const items = await listNeuron.getUnderstanding()
-	assert(Array.isArray(items), 'ListNeuron getUnderstanding() returns array')
-
-	// ── Custom Schemas via Brain ─────────────────────────────────────────
-	section('Custom Schemas via Brain')
-
-	const customSchemaBrain = await Brain.create({
-		prompt: 'Track therapy sessions.',
-		model,
-		autoSetup: false,
-		neurons: [{
-			id: 'relationships',
-			type: 'list',
-			name: 'Relationships',
-			description: 'Key people, client descriptions, shifts in perception',
-			instructions: 'Track the key people in this client\'s life and how perception evolves.',
-			governance: { deduplication: 'strict', maxItems: 100, pruning: 'least-confident' },
-			observationSchema: {
-				type: 'object',
-				properties: {
-					person_name: { type: 'string' },
-					relationship_to_client: { type: 'string' },
-					description: { type: 'string' },
-				},
-				required: ['person_name', 'description'],
-			},
-			understandingSchema: {
-				type: 'object',
-				properties: {
-					person_name: { type: 'string' },
-					relationship_to_client: { type: 'string' },
-					emotional_charge: { type: 'string', enum: ['positive', 'negative', 'ambivalent', 'neutral'] },
-					role_in_client_patterns: { type: 'string' },
-					perception_shift_observed: { type: 'boolean' },
-				},
-				required: ['person_name', 'relationship_to_client'],
-			},
-		}],
-	})
-
-	const relNeuron = customSchemaBrain.getNeuron('relationships')
-	assert(relNeuron !== undefined, 'custom schema neuron created')
-	assert(relNeuron!.type === 'list', 'custom schema neuron is list type')
-
-	await customSchemaBrain.dispose()
-
 	// ── Common Neuron API ────────────────────────────────────────────────
 	section('Common Neuron API')
 
@@ -203,9 +133,6 @@ async function main() {
 	// Learning
 	const learnResult = await apiNeuron.learn(['some batch data'])
 	assert(learnResult.status !== undefined, 'learn() returns status')
-
-	const learnForce = await apiNeuron.learn(['force data'], { forceSynthesize: true })
-	assert(learnForce.status !== undefined, 'learn() with forceSynthesize works')
 
 	// Querying
 	const qResult = await apiNeuron.query('test query')
@@ -239,47 +166,8 @@ async function main() {
 	const evoHistory = await apiNeuron.getEvolution()
 	assert(Array.isArray(evoHistory), 'getEvolution() returns array')
 
-	const obsSchema = apiNeuron.getObservationSchema()
-	assert(obsSchema === null || typeof obsSchema === 'object', 'getObservationSchema() works')
-
-	const undSchema = apiNeuron.getUnderstandingSchema()
-	assert(undSchema === null || typeof undSchema === 'object', 'getUnderstandingSchema() works')
-
 	const metadata = apiNeuron.getMetadata()
 	assert(typeof metadata === 'object', 'getMetadata() returns object')
-
-	// Buffer
-	const bufState = await apiNeuron.getBufferState()
-	assert('count' in bufState, 'getBufferState() has count')
-	assert('avgImportance' in bufState, 'getBufferState() has avgImportance')
-	assert('totalTokens' in bufState, 'getBufferState() has totalTokens')
-
-	const buffered = await apiNeuron.getBufferedObservations()
-	assert(Array.isArray(buffered), 'getBufferedObservations() returns array')
-
-	// Observations API (full history)
-	const allObs = await apiNeuron.getObservations()
-	assert(Array.isArray(allObs), 'getObservations() returns array')
-
-	const pendingObs = await apiNeuron.getObservations({ status: 'pending' })
-	assert(Array.isArray(pendingObs), 'getObservations({status:pending}) returns array')
-
-	const processedObs = await apiNeuron.getObservations({ status: 'processed' })
-	assert(Array.isArray(processedObs), 'getObservations({status:processed}) returns array')
-
-	if (allObs.length > 0) {
-		const first = allObs[0]
-		await apiNeuron.updateObservation(first.id, { metadata_importance: 0.9 })
-		assert(true, 'updateObservation() succeeds')
-	}
-
-	await apiNeuron.setObservations([])
-	const afterClear = await apiNeuron.getObservations()
-	assert(afterClear.length === 0, 'setObservations([]) clears the collection')
-
-	// removeObservation needs an id; verify it accepts the call signature
-	await apiNeuron.removeObservation('non-existent-id').catch(() => {})
-	assert(true, 'removeObservation() accepts id')
 
 	// Config
 	await apiNeuron.adjust('natural language directive')
@@ -292,11 +180,8 @@ async function main() {
 	assert(typeof apiNeuron.id === 'string', 'neuron.id is string')
 	assert(typeof apiNeuron.name === 'string', 'neuron.name is string')
 	assert(typeof apiNeuron.instructions === 'string', 'neuron.instructions is string')
-	assert(apiNeuron.observeInstructions === null || typeof apiNeuron.observeInstructions === 'string', 'neuron.observeInstructions is string or null')
-	assert(apiNeuron.understandInstructions === null || typeof apiNeuron.understandInstructions === 'string', 'neuron.understandInstructions is string or null')
 	assert(typeof apiNeuron.description === 'string', 'neuron.description is string')
 	assert(apiNeuron.type === 'text', 'neuron.type is text')
-	assert(apiNeuron.focus === null || typeof apiNeuron.focus === 'string', 'neuron.focus is string or null')
 	assert(apiNeuron.origin === 'prompt' || apiNeuron.origin === 'developer' || apiNeuron.origin === 'emergent', 'neuron.origin is valid')
 
 	// ── Learn Output — Discriminated Union ────────────────────────────────
@@ -311,30 +196,23 @@ async function main() {
 	const learnOut = await learnNeuron.learn(['test data item'])
 
 	switch (learnOut.status) {
-		case 'observed':
-			assert(Array.isArray(learnOut.output), 'observed: has output array')
-			console.log(`  Buffered ${learnOut.output.length} observations`)
-			break
 		case 'synthesized':
-			assert(typeof learnOut.significance === 'string', 'synthesized: has significance')
 			assert(typeof learnOut.evolution === 'string', 'synthesized: has evolution')
-			console.log(`  Significance: ${learnOut.significance}`)
+			console.log(`  What changed: ${learnOut.evolution}`)
 			break
 		case 'observe:dismissed':
 			assert(Array.isArray(learnOut.gaps), 'dismissed: has gaps')
-			console.log(`  Gaps: ${learnOut.gaps}`)
 			break
-		case 'observe:error':
 		case 'synthesize:dismissed':
-		case 'synthesize:error':
 			assert(true, `learn returned status: ${learnOut.status}`)
 			break
+		default:
+			assert(false, `unexpected learn status: ${learnOut.status}`)
 	}
 
 	await learnNeuron.dispose()
 	await apiNeuron.dispose()
 	await textNeuron.dispose()
-	await listNeuron.dispose()
 	} finally {
 		rmSync(tmpDir, { recursive: true, force: true })
 	}

@@ -27,22 +27,6 @@ interface ScriptedModelHandle {
 	getCallCount: () => number
 }
 
-const compareSkills = [
-	{ skill: 'confirms', description: 'What reinforces the same engineering decision?' },
-	{ skill: 'contradicts', description: 'What conflicts with the recorded decision?' },
-	{ skill: 'extends', description: 'What adds more detail to the decision?' },
-	{ skill: 'new', description: 'What introduces a brand new decision?' },
-	{ skill: 'irrelevant', description: 'What does not belong to this decision log?' },
-] as const
-
-const dynamicsSkills = [
-	{ skill: 'recurs', description: 'What decision keeps coming up again?' },
-	{ skill: 'intensifies', description: 'What tradeoff is becoming more important?' },
-	{ skill: 'fades', description: 'What decision is no longer active?' },
-	{ skill: 'shifts', description: 'How is the team changing its decision?' },
-	{ skill: 'avoids', description: 'What decision keeps being deferred?' },
-] as const
-
 function createUsage() {
 	return {
 		inputTokens: {
@@ -110,31 +94,18 @@ function extractSection(text: string, heading: string, endMarker?: string): stri
 	return (end === -1 ? rest : rest.slice(0, end)).trim()
 }
 
-function buildUnderstanding(promptText: string): string {
+function buildUnderstanding(systemPromptPrompt: string): string {
 	const currentUnderstanding = extractSection(
-		promptText,
-		'## Current Understanding\n\n',
-		'\n\n## Observations to Integrate',
+		systemPromptPrompt,
+		'Existing understanding:\n',
+		'\n\nExtracted information:',
 	)
-	const observationsSection = extractSection(
-		promptText,
-		'## Observations to Integrate\n\n',
-		'\n\nIntegrate these observations into your understanding.',
-	)
-
-	const observations = observationsSection
-		.split('\n\n---\n\n')
-		.map((item) => item.trim())
-		.filter(Boolean)
-
+	const extracted = extractSection(systemPromptPrompt, 'Extracted information:\n')
 	const pieces = new Set<string>()
-	if (currentUnderstanding && !currentUnderstanding.startsWith('(No understanding yet')) {
+	if (currentUnderstanding && currentUnderstanding !== '(none yet)') {
 		pieces.add(currentUnderstanding)
 	}
-	for (const observation of observations) {
-		pieces.add(observation)
-	}
-
+	if (extracted) pieces.add(extracted)
 	return Array.from(pieces).join('\n')
 }
 
@@ -143,7 +114,7 @@ function extractSpecialistIds(promptText: string): string[] {
 }
 
 function extractUnderstandingFromSystem(systemText: string): string {
-	return extractSection(systemText, '# Your Understanding\n', '\n\nAnswer from your understanding.')
+	return extractSection(systemText, '# Committed Understanding\n', '\n\n# Learning Status')
 }
 
 function extractSpecialistInsights(systemText: string): string[] {
@@ -163,13 +134,6 @@ function createScriptedBrainModel(): ScriptedModelHandle {
 			const promptText = getPromptText(options)
 			const systemText = getSystemText(options)
 
-			if (promptText.includes('customizing cognitive skill prompts')) {
-				return createJsonResult({
-					skills: compareSkills,
-					dynamicsSkills,
-				})
-			}
-
 			if (promptText.includes('You are analyzing a user-authored prompt for a living knowledge network')) {
 				return createJsonResult({
 					purpose: 'Track engineering decisions and remember their rationale.',
@@ -178,16 +142,12 @@ function createScriptedBrainModel(): ScriptedModelHandle {
 				})
 			}
 
-			if (promptText.includes('## Current Understanding') && promptText.includes('## Observations to Integrate')) {
-				const understanding = buildUnderstanding(promptText)
-				return createJsonResult({
-					status: 'synthesized',
-					newUnderstanding: understanding,
-					significance: 'notable',
-					evolution: 'Integrated the new engineering decision into stored understanding.',
-					reasoning: 'The new observation adds concrete project knowledge.',
-					output: '',
-				})
+			if (systemText.startsWith('Here is some data.')) {
+				return createTextResult(extractSection(promptText, 'Data:\n'))
+			}
+
+			if (systemText.startsWith('Here is information extracted about this topic')) {
+				return createTextResult(buildUnderstanding(promptText))
 			}
 
 			if (systemText.includes('You select which specialist neurons are relevant to a user query.')) {
@@ -196,7 +156,7 @@ function createScriptedBrainModel(): ScriptedModelHandle {
 				})
 			}
 
-			if (systemText.includes('# Your Understanding')) {
+			if (systemText.includes('# Committed Understanding')) {
 				const understanding = extractUnderstandingFromSystem(systemText)
 				return createJsonResult({
 					relevant: true,
@@ -262,9 +222,6 @@ function createBrainConfig(
 				type: 'text' as const,
 				instructions:
 					'Track engineering decisions, runtime tradeoffs, and the rationale behind technical changes.',
-				skipObservation: true,
-				observationSchema: { type: 'string' },
-				understandingSchema: { type: 'string' },
 			},
 		],
 	}

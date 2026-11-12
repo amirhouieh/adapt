@@ -1,0 +1,40 @@
+{
+  "eval": {
+    "name": "portable learning recipe runner",
+    "modelReason": "This module eval exercises deterministic planner and executor mechanics only."
+  },
+  "schemas": {
+    "text": { "id": "adapt.eval.text", "version": "1" },
+    "boolean": { "id": "adapt.eval.boolean", "version": "1" },
+    "texts": { "id": "adapt.eval.texts", "version": "1" }
+  },
+  "recipe": {
+    "id": "preference-exception-mechanical-eval",
+    "version": "1",
+    "nodes": {
+      "gate": "has-observations",
+      "collection": "select-bounded-evidence",
+      "result": "propose-change"
+    },
+    "operations": {
+      "gate": { "id": "has-observations", "version": "1" },
+      "collection": { "id": "retain-evidence", "version": "1" },
+      "result": { "id": "propose-change", "version": "1" }
+    },
+    "collectionLimit": 2
+  },
+  "roots": {
+    "memory": "Prefers simple designs.",
+    "observations": [
+      "For a system handling financial records, I accept extra complexity for a clear audit trail.",
+      "The exception applies specifically to systems that handle financial records.",
+      "This third observation remains pending because the supplied collection limit is two."
+    ]
+  },
+  "revisions": { "memory": 12, "configuration": 4, "registry": "eval-registry-1" },
+  "limits": { "maxNodes": 4, "maxCollectionItems": 2, "maxOperations": 4, "maxBudgetClaims": 8 },
+  "result": {
+    "consumedInputIds": ["preference-exception-1", "preference-scope-1"],
+    "explanation": "The supplied evidence adds a scoped exception to the current preference."
+  }
+}

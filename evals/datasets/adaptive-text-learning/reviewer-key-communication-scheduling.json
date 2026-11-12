@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "streamId": "communication-scheduling",
+  "modelInput": false,
+  "checkpoints": [
+    {
+      "afterInput": 30,
+      "expectations": [
+        {
+          "id": "comm-030-channels",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Routine status uses email; urgent production alerts use Signal."
+          ],
+          "unacceptable": [
+            "Using Signal for all messages.",
+            "Using email for urgent alerts."
+          ]
+        },
+        {
+          "id": "comm-030-schedule",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Tuesday 09:30 planning and Wednesday 13:00–16:00 focus time are current."
+          ],
+          "unacceptable": [
+            "Scheduling everything at midnight."
+          ]
+        },
+        {
+          "id": "comm-030-family",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Sunday family call is tentative."
+          ],
+          "unacceptable": [
+            "Saying Sunday is confirmed."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 60,
+      "expectations": [
+        {
+          "id": "comm-060-channel",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Routine status now uses Signal; urgent production alerts still use Signal for their separate scope."
+          ],
+          "unacceptable": [
+            "Keeping routine email as current."
+          ]
+        },
+        {
+          "id": "comm-060-focus-scope",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Wednesday focus time remains general, with a 14:00 check-in exception only during the April launch."
+          ],
+          "unacceptable": [
+            "Removing the general focus block.",
+            "Making the exception permanent."
+          ]
+        },
+        {
+          "id": "comm-060-confirmation",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Family call is confirmed Sunday 19:00; Lisbon remains tentative."
+          ],
+          "unacceptable": [
+            "Treating both as confirmed or both as tentative."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 90,
+      "expectations": [
+        {
+          "id": "comm-090-travel",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Lisbon is confirmed 12–16 May; phone applies only to urgent travel changes during that trip."
+          ],
+          "unacceptable": [
+            "Replacing production Signal alerts with phone globally."
+          ]
+        },
+        {
+          "id": "comm-090-launch-pattern",
+          "dimension": "pattern",
+          "critical": false,
+          "expected": [
+            "The Wednesday 14:00 launch check-in recurred, with an asynchronous counterexample."
+          ],
+          "unacceptable": [
+            "Claiming it happened every Wednesday."
+          ]
+        },
+        {
+          "id": "comm-090-old-focus",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "General Wednesday focus time and Tuesday 10:00 planning remain current."
+          ],
+          "unacceptable": [
+            "Losing either preference."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 120,
+      "expectations": [
+        {
+          "id": "comm-120-focus",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Wednesday 13:00–16:00 focus is fully restored; launch exception ended."
+          ],
+          "unacceptable": [
+            "Keeping 14:00 launch meetings as current."
+          ]
+        },
+        {
+          "id": "comm-120-channels",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Signal handles routine status and production alerts; email remains for formal client approvals."
+          ],
+          "unacceptable": [
+            "Using one channel universally."
+          ]
+        },
+        {
+          "id": "comm-120-temporary",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Conference Thursday planning and one cancelled family call are temporary exceptions."
+          ],
+          "unacceptable": [
+            "Replacing Tuesday planning or Sunday family schedule permanently."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 150,
+      "expectations": [
+        {
+          "id": "comm-150-volunteer",
+          "dimension": "novelty",
+          "critical": true,
+          "expected": [
+            "Monthly museum volunteering is confirmed for the first Saturday at 11:00 from 6 June."
+          ],
+          "unacceptable": [
+            "Leaving it tentative.",
+            "Treating it as a weekly shift."
+          ]
+        },
+        {
+          "id": "comm-150-old-state",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "Channel, Tuesday planning, focus, family, captions, and timezone preferences survive the long note."
+          ],
+          "unacceptable": [
+            "Remembering groceries or parcel collection as communication preferences."
+          ]
+        },
+        {
+          "id": "comm-150-current-planning",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Planning is Tuesday 10:00 after conference week."
+          ],
+          "unacceptable": [
+            "Thursday 11:00 remains current."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 180,
+      "expectations": [
+        {
+          "id": "comm-180-current",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Current channels remain scoped; Tuesday planning is 10:00; family call is Sunday 18:30."
+          ],
+          "unacceptable": [
+            "Routine email.",
+            "Family call at 19:00.",
+            "Friday-night planning."
+          ]
+        },
+        {
+          "id": "comm-180-volunteer-scope",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Museum shift is generally first Saturday 11:00, with a second-Saturday exception only in July."
+          ],
+          "unacceptable": [
+            "Making second Saturday permanent."
+          ]
+        },
+        {
+          "id": "comm-180-captions",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Captions remain required only above four participants; captions for every call is an unconfirmed suggestion."
+          ],
+          "unacceptable": [
+            "Treating the suggestion as adopted."
+          ]
+        }
+      ]
+    }
+  ]
+}

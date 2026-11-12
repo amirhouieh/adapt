@@ -5,6 +5,7 @@ import {
 	serializeBrainModelSlots,
 } from '../src/brain/state'
 import { BRAIN_DEFAULTS } from '../src/brain/config.defaults'
+import { getInternalNeuronConfigs } from '../src/brain/internal-neurons'
 import { createAiSdkLLM } from '../src/llm'
 import { mockModel } from './helpers'
 
@@ -218,8 +219,14 @@ describe('BRAIN_DEFAULTS', () => {
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.maxObservations).toBe(10)
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.maxTokens).toBe(8000)
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.minImportance).toBe(0.5)
-		expect(BRAIN_DEFAULTS.learning.governance.strategy).toBe('cumulative')
-		expect(BRAIN_DEFAULTS.learning.governance.maxTokens).toBe(16000)
+		// Below the two-step memory cap (8192 tokens), so it is not silently capped.
+		expect(BRAIN_DEFAULTS.learning.governance).toEqual({ strategy: 'cumulative', maxTokens: 8000 })
+	})
+
+	it('internal neurons stay under the two-step memory cap (8192 tokens)', () => {
+		for (const config of getInternalNeuronConfigs(undefined)) {
+			expect(config.governance?.maxTokens ?? 0).toBeLessThanOrEqual(8192)
+		}
 	})
 
 	it('has correct evolution defaults', () => {

@@ -10,7 +10,7 @@ Brain emits events at every pipeline stage. Use them for real-time UIs, debuggin
 ```typescript
 // Specific event (typed)
 brain.on('neuron:synthesized', (payload) => {
-  console.log(`${payload.neuronId}: ${payload.significance} — ${payload.evolution}`)
+  console.log(`${payload.neuronId}: ${payload.evolution}`)
 })
 
 // All events
@@ -45,7 +45,7 @@ const brain = await Brain.create({
 })
 ```
 
-`onEvent` is also accepted by `Brain.restore()` runtime options, and by `TextNeuron`/`ListNeuron` `create` configs and `restore` options for standalone-neuron `neuron:init:*` events.
+`onEvent` is also accepted by `Brain.restore()` runtime options, and by `TextNeuron.create` configs and `restore` options for standalone-neuron `neuron:init:*` events.
 
 ## Lifecycle
 
@@ -54,8 +54,8 @@ A Brain's lifecycle has two phases:
 ```text
 BIRTH                          LEARN (repeats per inject)
 ─────                          ─────
- Config generation              Observe (parallel)
- Neuron setup (sequential)      Synthesize
+ Config generation              Extract (parallel)
+ Neuron setup (sequential)      Update
  Internal neuron setup          Internal cascade
  Ready                          Evolve (optional)
 ```
@@ -76,7 +76,7 @@ brain:init:config:generating
 brain:init:config:generated          → N neuron configs
 ```
 
-**2. Neuron setup** — each neuron is initialized **sequentially**. The observe and understand system prompts are assembled deterministically from the verbatim instructions (no LLM call). Each neuron makes one init LLM call — a TextNeuron for cognitive-skill customization, a ListNeuron for schema generation (skipped when a custom schema is supplied).
+**2. Neuron setup** — each neuron is initialized **sequentially**. No LLM call: the neuron saves its config and its two-stage learning setup.
 
 ```text
 neuron:init:started                  → neuron 1
@@ -99,23 +99,20 @@ brain:init:completed                 → Brain is ready
 
 ### Learning
 
-Each `brain.inject()` call processes data through observe → synthesize. Injections are split into batches.
+Each `brain.inject()` call processes data through extract → update. Injections are split into batches.
 
 ```text
 brain:inject:started
  └─ Batch 1 ─────────────────────────────────────
-     neuron:observe:started (×N)        ← parallel
-     neuron:observe:thinking            ← per neuron
-     neuron:observed                    ← observation recorded
-     neuron:synthesize:started          ← begins when observe completes
-     neuron:synthesized                 ← understanding updated
-     neuron:health:updated              ← always follows synthesize
+     (each neuron, in parallel, one of:)
+     neuron:observe:dismissed           ← extract found nothing relevant
+     neuron:synthesize:dismissed        ← relevant, memory unchanged
+     neuron:synthesized                 ← memory updated
+     neuron:health:updated              ← always follows synthesized
      brain:inject:batch:completed
 
  └─ Batch 2 (internal cascade) ──────────────────
-     neuron:observe:started (×M)        ← internal neurons
-     neuron:synthesize:started
-     neuron:synthesized
+     neuron:synthesized                 ← internal neurons
      neuron:health:updated
      neuron:query:started               ← internal global query
      brain:inject:batch:completed
@@ -125,10 +122,10 @@ brain:inject:completed
 
 Key invariants:
 
-- **Observe is parallel.** All neurons in a batch begin observing at the same time.
-- **Synthesize follows observe.** A neuron synthesizes as soon as its buffer crosses a threshold — it doesn't wait for siblings.
+- **Neurons learn in parallel.** All neurons in a batch start at the same time; each runs extract, then update.
+- **One outcome event per neuron per batch:** `neuron:observe:dismissed`, `neuron:synthesize:dismissed`, or `neuron:synthesized`. The event names are kept from the earlier engine.
 - **`neuron:health:updated` always follows `neuron:synthesized`.** Reliable pair.
-- **Internal neurons run in a second batch.** They observe the user-facing neurons' updated state, then synthesize their own meta-knowledge. This is why you see two batches per injection.
+- **Internal neurons run in a second batch.** They learn from the user-facing neurons' updated memory. This is why you see two batches per injection.
 
 ### Async cascade
 
@@ -142,7 +139,7 @@ Injection 1:
 
 Injection 2:
   brain:inject:started
-  neuron:observe:started (×N)
+  neuron:synthesized
   neuron:query:completed             ← previous query finishes mid-injection
   ...
 ```
@@ -170,12 +167,12 @@ Rough ranges based on typical LLM latency. Actual times vary by model, provider,
 | Config generation | 2–4s |
 | Per neuron init | 3–10s |
 | Full birth (2–3 neurons) | 30–60s |
-| Observe (per batch) | 2–4s |
-| Synthesize (per neuron) | 2–10s |
+| Extract (per neuron, per batch) | 2–4s |
+| Update (per neuron, per batch) | 2–10s |
 | Internal query | 3–6s |
 | Single injection | 8–30s |
 
-The largest variance comes from synthesis — a neuron integrating many observations into a complex understanding takes longer than one processing routine data. Injections that trigger evolution take longer still.
+The largest variance comes from the update step — rewriting a large memory takes longer than a small one. Injections that trigger evolution take longer still.
 
 ## Event Reference
 
@@ -199,14 +196,12 @@ Events are grouped by phase. The most-used ones are `neuron:synthesized` (a neur
 | Phase | Events | Key payload fields |
 |---|---|---|
 | **Init** | `neuron:init:started`, `neuron:init:completed`, `neuron:init:failed` | `neuronId`, `systemPrompt`, `usage` |
-| **Observe** | `neuron:observe:started`, `neuron:observe:thinking`, `neuron:observed`, `neuron:observe:dismissed`, `neuron:observe:error` | `neuronId`, `output[]`, `importance`, `bufferCount`, `gaps[]` |
-| **Synthesize** | `neuron:synthesize:started`, `neuron:synthesize:thinking`, `neuron:synthesized`, `neuron:synthesize:dismissed`, `neuron:synthesize:error` | `neuronId`, `newUnderstanding`, `significance`, `evolution` |
-| **Learn** | `neuron:learn:failed` | `neuronId`, `error` |
+| **Learn** | `neuron:observe:dismissed` (extract found nothing), `neuron:synthesize:dismissed` (memory unchanged), `neuron:synthesized` (memory updated) | `neuronId`, `newUnderstanding`, `previousUnderstanding`, `evolution` |
 | **Query** | `neuron:query:started`, `neuron:query:completed`, `neuron:query:failed`, `neuron:query:thinking` | `neuronId`, `insight`, `relevance`, `confidence`, `gaps[]` |
 | **Health** | `neuron:health:updated` | `neuronId`, `activation`, `status`, `previousStatus` |
 | **Signals** | `neuron:signal` | `neuronId`, `description`, `metrics` |
-| **Config** | `neuron:config:updated`, `neuron:prompts:regenerated`, `neuron:understanding:set`, `neuron:understanding:adjusted` | `neuronId`, `changedFields[]`, `directive`, `significance` |
+| **Config** | `neuron:config:updated`, `neuron:understanding:set` | `neuronId`, `changedFields[]`, `understanding` |
 
 ### Thinking events
 
-`neuron:observe:thinking`, `neuron:synthesize:thinking`, and `neuron:query:thinking` fire when the LLM produces intermediate reasoning. Payload: `thoughts: string[]` and `usage: TokenUsage`. Useful for debugging (seeing *why* a neuron made a decision) and real-time UI feedback (streaming the thought process to users).
+`neuron:query:thinking` fires when the LLM produces intermediate reasoning. Payload: `thoughts: string[]` and `usage: TokenUsage`. Useful for debugging (seeing *why* a neuron made a decision) and real-time UI feedback (streaming the thought process to users).

@@ -352,6 +352,11 @@ export type AdaptGenerateRequest<
 	prompt?: string
 	messages?: AdaptMessage[]
 	output?: AdaptOutputSpec
+	/**
+	 * Schema the reply is checked (and repaired) against. Defaults to the
+	 * output schema. Pass a lenient version to accept replies that leave out
+	 * a field the model was asked for, while still sending the strict schema.
+	 */
 	repairSchema?: ZodSchema
 	tools?: Record<string, AdaptTool>
 	toolChoice?: ToolChoice<Record<string, never>>
@@ -1055,6 +1060,28 @@ function normalizeMessages(
 	return [{ role: 'user', content: [{ type: 'text', text: '' }] }]
 }
 
+function validateToolInput(
+	schema: unknown,
+	input: unknown,
+): { success: true; data: unknown } | { success: false; error: string } {
+	const parser = schema as
+		| {
+				safeParse?: (value: unknown) => {
+					success: boolean
+					data?: unknown
+					error?: unknown
+				}
+		  }
+		| undefined
+	if (typeof parser?.safeParse !== 'function')
+		return { success: true, data: input }
+	const result = parser.safeParse(input)
+	if (result.success) return { success: true, data: result.data }
+	const message =
+		result.error instanceof Error ? result.error.message : String(result.error)
+	return { success: false, error: message.slice(0, 600) }
+}
+
 async function executeToolCalls(
 	toolCalls: AdaptToolCall[],
 	tools: Record<string, AdaptTool> | undefined,
@@ -1065,7 +1092,23 @@ async function executeToolCalls(
 	for (const toolCall of toolCalls) {
 		const toolDef = tools[toolCall.toolName]
 		if (!toolDef?.execute) continue
-		const output = await toolDef.execute(toolCall.input, {
+		// Validate model-supplied input against the tool's declared schema before
+		// running it. Invalid input becomes a tool error the model can correct,
+		// instead of malformed data reaching the tool.
+		const validated = validateToolInput(toolDef.inputSchema, toolCall.input)
+		if (!validated.success) {
+			results.push({
+				type: 'tool-result',
+				toolCallId: toolCall.toolCallId,
+				toolName: toolCall.toolName,
+				output: {
+					success: false,
+					error: `Invalid tool input: ${validated.error}`,
+				},
+			})
+			continue
+		}
+		const output = await toolDef.execute(validated.data, {
 			toolCallId: toolCall.toolCallId,
 			toolName: toolCall.toolName,
 			messages,
@@ -1113,7 +1156,7 @@ async function validateOutput(
 	options: ValidateOutputOptions,
 ): Promise<unknown> {
 	if (!output || output.type === 'text') return undefined
-	const schema = output.schema ?? repairSchema
+	const schema = repairSchema ?? output.schema
 	const text = turn.text ?? stringifyJsonCandidate(turn.json)
 
 	try {

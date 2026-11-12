@@ -85,7 +85,7 @@ export class SplitHandler extends EvolutionActionHandler<SplitActionResult> {
 						name: config.name,
 						description: config.description,
 						instructions: config.instructions,
-						type: neuronType as 'text' | 'list',
+						type: neuronType as 'text',
 					})
 					const newNeuron =
 						await this.brain.createNeuronFromConfig(completeConfig)

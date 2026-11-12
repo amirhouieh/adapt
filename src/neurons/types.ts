@@ -1,3 +1,4 @@
+import type { LearnInput } from './base/class'
 /**
  * Core types for Neurons
  *
@@ -62,7 +63,7 @@ export interface Neuron<TUnderstanding = unknown> {
 	getMetrics(): NeuronMetrics
 
 	// Core operations
-	learn(batch: unknown[]): Promise<unknown>
+	learn(batch: readonly LearnInput[]): Promise<unknown>
 	query(question: string): Promise<unknown>
 
 	// Introspection
@@ -84,7 +85,7 @@ export interface TokenUsage {
  * Brain's evolution system uses descriptors for dispatch and LLM prompts.
  */
 export interface NeuronTypeDescriptor {
-	/** Type identifier: 'text' | 'list' | future types */
+	/** Type identifier: 'text' | future types */
 	type: string
 	/** When to use this type (for evaluator/decomposition prompts) */
 	description: string

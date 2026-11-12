@@ -12,7 +12,7 @@
  *   model: openai('gpt-4o'),
  * })
  *
- * await brain.inject([{ type: 'commit', message: 'refactor to functional style' }])
+ * await brain.inject(['commit: refactor to functional style'])
  * const result = await brain.ask('What is my coding philosophy?')
  *
  * // Subsequent runs (different process / restart) — restore from disk and

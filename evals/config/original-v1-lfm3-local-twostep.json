@@ -1,0 +1,18 @@
+{
+  "provider": {
+    "name": "lmstudio",
+    "baseURL": "http://localhost:1234/v1"
+  },
+  "models": [
+    "lfm3-1.7b"
+  ],
+  "settings": {
+    "temperature": 0,
+    "maxOutputTokens": 8192,
+    "maxRetries": 0,
+    "timeout": 600000
+  },
+  "outputRoot": "evals/.data/two-step-production-lfm3-local",
+  "memoryOnly": true,
+  "loadedContextTokens": 32768
+}

@@ -53,7 +53,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 		const events: string[] = []
 		const store = new MemoryBrainStore()
 		const { model } = createQueuedJsonModel([
-			{ skills: [], dynamicsSkills: [] },
 			{
 				purpose: 'Track coding preferences.',
 				evolutionGuidance: null,
@@ -105,7 +104,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 		await brainStore.internalNeurons.add({ id: 'leftover-internal', type: 'text' })
 
 		const { model } = createQueuedJsonModel([
-			{ skills: [], dynamicsSkills: [] },
 			{
 				purpose: 'Track coding preferences.',
 				evolutionGuidance: null,

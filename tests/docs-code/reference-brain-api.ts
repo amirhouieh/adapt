@@ -67,7 +67,7 @@ async function main() {
 	assert(typeof brain.inspect === 'function', 'brain.inspect() exists')
 
 	// Inject and verify BrainInjectResult shape
-	const injectResult = await brain.inject([{ test: 'api ref' }])
+	const injectResult = await brain.inject(['test: api ref'])
 	assert(typeof injectResult.id === 'string', 'BrainInjectResult.id is string')
 	assert(Array.isArray(injectResult.batches), 'BrainInjectResult.batches is array')
 	if (injectResult.batches.length > 0) {
@@ -151,7 +151,7 @@ async function main() {
 
 	// Verify BrainUpdateResult shape
 	const updateResult = await brain.update({
-		learning: { understand: { thresholds: { maxObservations: 15 } } },
+		learning: { governance: { strategy: 'decay' } },
 	})
 	assert(Array.isArray(updateResult.changedFields), 'BrainUpdateResult.changedFields is array')
 	assert(typeof updateResult.config === 'object', 'BrainUpdateResult.config is object')

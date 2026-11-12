@@ -320,7 +320,7 @@ async function testTextPipeline(createStore: CreateNeuronStore) {
 	await store.dispose()
 }
 
-// ── Test: Pipeline simulation (ListNeuron-style) ───────────────────────────
+// ── Test: Pipeline simulation (item-style) ───────────────────────────
 
 async function testListPipeline(createStore: CreateNeuronStore) {
 	section('List pipeline simulation')

@@ -1,0 +1,37 @@
+{
+  "chatCompletionsUrl": "http://127.0.0.1:1234/v1/chat/completions",
+  "outputRoot": "evals/.data/v1/diagnostics/lfm-v1-sampling-causal",
+  "requestTimeoutMs": 180000,
+  "repetitions": 2,
+  "scenarios": [
+    {
+      "id": "case-1-delivery-2-observe",
+      "sourceRequestPath": "evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/scenarios/001/run/v1/transport/004-v1-delivery-2-request-body.raw.txt",
+      "arms": [
+        {
+          "id": "recorded-settings",
+          "omitRequestFields": []
+        },
+        {
+          "id": "native-v1-settings",
+          "omitRequestFields": ["seed", "max_tokens"],
+          "requestOverrides": { "temperature": 0.2 }
+        }
+      ]
+    },
+    {
+      "id": "case-1-delivery-2-synthesize",
+      "sourceRequestPath": "evals/.data/text-dag-comparison-suite/2026-10-01T11-42-48.940Z/scenarios/001/run/v1/transport/005-v1-delivery-2-request-body.raw.txt",
+      "arms": [
+        {
+          "id": "recorded-settings",
+          "omitRequestFields": []
+        },
+        {
+          "id": "native-v1-settings",
+          "omitRequestFields": ["temperature", "seed", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}

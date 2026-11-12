@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "streamId": "project-commitments",
+  "modelInput": false,
+  "checkpoints": [
+    {
+      "afterInput": 30,
+      "expectations": [
+        {
+          "id": "proj-030-identities",
+          "dimension": "identity",
+          "critical": true,
+          "expected": [
+            "Cedar Labs Alex Rowan owns Atlas and has blue badge; Cedar Clinic Alex Rowan owns clinic scheduling and has green badge."
+          ],
+          "unacceptable": [
+            "Merging the two Alex Rowans.",
+            "Moving projects to Amsterdam."
+          ]
+        },
+        {
+          "id": "proj-030-dates",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Atlas 18 April remains tentative; clinic release is confirmed 8 April."
+          ],
+          "unacceptable": [
+            "Calling Atlas confirmed."
+          ]
+        },
+        {
+          "id": "proj-030-harbor",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Harbor backups are daily at 02:00 UTC in eu-west."
+          ],
+          "unacceptable": [
+            "Changing time or region."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 60,
+      "expectations": [
+        {
+          "id": "proj-060-atlas",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Atlas migration is confirmed 18 April; Alex remains owner, with Priya handling operations only for migration weekend."
+          ],
+          "unacceptable": [
+            "Calling Priya permanent owner.",
+            "Keeping Atlas tentative."
+          ]
+        },
+        {
+          "id": "proj-060-clinic",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Clinic 8 April is the existing confirmed date; 10 April is only a pending possible delay."
+          ],
+          "unacceptable": [
+            "Treating 10 April as confirmed."
+          ]
+        },
+        {
+          "id": "proj-060-pattern",
+          "dimension": "pattern",
+          "critical": false,
+          "expected": [
+            "Two distinct Harbor failures occurred at 95–96% cache usage, without claiming causation."
+          ],
+          "unacceptable": [
+            "Saying high cache use definitively caused all failures."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 90,
+      "expectations": [
+        {
+          "id": "proj-090-clinic",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Clinic release is now confirmed for 10 April, replacing 8 April."
+          ],
+          "unacceptable": [
+            "Keeping both dates current."
+          ]
+        },
+        {
+          "id": "proj-090-cache",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Failures recur near 95–97% cache usage, but a 96% success is a material counterexample and mirror recovery may matter."
+          ],
+          "unacceptable": [
+            "A universal cache threshold rule."
+          ]
+        },
+        {
+          "id": "proj-090-morgan",
+          "dimension": "identity",
+          "critical": true,
+          "expected": [
+            "Northstar Finance Morgan Lee and Harbor Works Morgan Lee remain distinct roles."
+          ],
+          "unacceptable": [
+            "Merging the two Morgan Lees."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 120,
+      "expectations": [
+        {
+          "id": "proj-120-atlas",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Atlas migration completed 18 April; Alex remains owner and Priya's temporary role ended."
+          ],
+          "unacceptable": [
+            "Keeping migration pending or Priya current operations owner."
+          ]
+        },
+        {
+          "id": "proj-120-hotfix",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Clinic hotfix is confirmed for 14 April after validation."
+          ],
+          "unacceptable": [
+            "Keeping it tentative."
+          ]
+        },
+        {
+          "id": "proj-120-pattern",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "High cache usage is associated with several failures but is neither necessary nor sufficient; registry availability also matters."
+          ],
+          "unacceptable": [
+            "Claiming cleanup permanently solved Harbor failures."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 150,
+      "expectations": [
+        {
+          "id": "proj-150-orchard",
+          "dimension": "novelty",
+          "critical": true,
+          "expected": [
+            "Orchard is a Fieldstone inventory-forecasting discovery led by Imani Cole; procurement automation is out of scope; 1 August pilot is tentative."
+          ],
+          "unacceptable": [
+            "Treating pilot as confirmed.",
+            "Including procurement automation."
+          ]
+        },
+        {
+          "id": "proj-150-identities",
+          "dimension": "identity",
+          "critical": true,
+          "expected": [
+            "Both Alex Rowans and both Morgan Lees remain distinct after the long note."
+          ],
+          "unacceptable": [
+            "Any identity merge."
+          ]
+        },
+        {
+          "id": "proj-150-pattern-fade",
+          "dimension": "pattern",
+          "critical": false,
+          "expected": [
+            "The high-cache failure pattern has not appeared for six weeks below 85%, while earlier counterexamples remain relevant."
+          ],
+          "unacceptable": [
+            "Saying the pattern is proven gone forever."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 180,
+      "expectations": [
+        {
+          "id": "proj-180-orchard",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Orchard pilot is confirmed 5 August; Imani is sponsor, Theo is day-to-day lead; procurement remains out of scope."
+          ],
+          "unacceptable": [
+            "Using 1 August.",
+            "Replacing Imani entirely with Theo."
+          ]
+        },
+        {
+          "id": "proj-180-retention",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "Atlas eu-central and Harbor eu-west/02:00 survive the full stream."
+          ],
+          "unacceptable": [
+            "Swapping regions or losing backup time."
+          ]
+        },
+        {
+          "id": "proj-180-pattern",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Cache-associated failures can recur after a quiet period; association remains qualified by prior success and registry-outage counterexamples."
+          ],
+          "unacceptable": [
+            "A simple universal threshold or permanent-resolution claim."
+          ]
+        }
+      ]
+    }
+  ]
+}

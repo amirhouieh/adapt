@@ -8,7 +8,7 @@ Brain has two independent storage layers:
 | Layer | Interface | Purpose |
 |---|---|---|
 | **Brain Store** | `BrainStore` | Brain state, neuron registry, evolution history, dismissed batches |
-| **Neuron Store** | `NeuronStore` | Per-neuron observations, understanding, evolution, state |
+| **Neuron Store** | `NeuronStore` | Per-neuron memory, learning history, evolution, state |
 
 You only configure the brain store directly. Per-neuron stores are derived from it through `BrainStore.getNeuronStore(neuronId)` — same code path on `Brain.create` and `Brain.restore`, so the two cannot disagree on where each neuron's data lives.
 
@@ -121,7 +121,7 @@ The `model` argument rehydrates persisted model refs through the LLM plugin. See
 
 If you need a backend other than in-memory or SQLite (e.g., PostgreSQL, Redis, a cloud database), you can implement your own stores. Both interfaces follow a simple collection-based pattern — each namespace is a CRUD collection for a specific type of record.
 
-**NeuronStore** — one per neuron, holds that neuron's observations, understanding, evolution history, and state:
+**NeuronStore** — one per neuron, holds that neuron's memory (`understanding`), learning records, evolution history, and state. Abridged:
 
 ```typescript
 interface NeuronStore {
@@ -133,14 +133,7 @@ interface NeuronStore {
 }
 ```
 
-### Observation lifecycle
-
-Observations are persistent, not ephemeral buffered input. Each `ObservationRecord` carries a `metadata_status` field that moves through two states:
-
-- **`pending`** — written during the observe phase of `learn()`. These are the only rows `getBufferedObservations()` and `getBufferState()` return, and they're what synthesis will consume on the next understand pass.
-- **`processed`** — set after synthesis completes. The record stays in the collection; it's *not* deleted. With `SQLiteNeuronStore`, both pending and processed observations survive process restarts.
-
-This means the full history of what a neuron has seen remains queryable via `neuron.store.observations.list(...)`. If you need only processed history, filter by `{ metadata_status: 'processed' }`. The neuron class itself only exposes the pending buffer today — for anything else, go through the store collection directly.
+The full interface also has the collections two-step learning writes to (`learningHistory`, `memoryChanges`, `pendingInputs`, `processedInputs`, and others) — see `NeuronStore` in `src/stores/types.ts`. The `observations` collection is kept for older stores; TextNeuron learning does not write to it.
 
 **BrainStore** — one per brain, holds the brain's state, neuron registry, internal neuron registry, evolution history, and dismissed batches. Also resolves per-neuron stores via `getNeuronStore(id)`:
 

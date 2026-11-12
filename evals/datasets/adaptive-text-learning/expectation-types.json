@@ -1,0 +1,232 @@
+{
+ "schemaVersion": 1,
+ "synthetic": true,
+ "modelInput": false,
+ "principle": "record = the current value of an attribute of a named item (owner, date, slot, card, region, identity). narrative = preferences with scope, practices, patterns, and qualified uncertainty. mixed = both; the note says which part is which.",
+ "expectations": {
+  "dev-030-abstraction": {
+   "type": "narrative"
+  },
+  "dev-030-testing": {
+   "type": "narrative"
+  },
+  "dev-030-errors": {
+   "type": "narrative"
+  },
+  "dev-060-abstraction-scope": {
+   "type": "narrative"
+  },
+  "dev-060-rust": {
+   "type": "narrative"
+  },
+  "dev-060-errors-retention": {
+   "type": "narrative"
+  },
+  "dev-090-rust": {
+   "type": "narrative"
+  },
+  "dev-090-observability": {
+   "type": "narrative"
+  },
+  "dev-090-sam": {
+   "type": "record"
+  },
+  "dev-120-abstraction": {
+   "type": "narrative"
+  },
+  "dev-120-test-fade": {
+   "type": "narrative"
+  },
+  "dev-120-retain-api": {
+   "type": "narrative"
+  },
+  "dev-150-novelty": {
+   "type": "narrative"
+  },
+  "dev-150-rust-result": {
+   "type": "narrative"
+  },
+  "dev-150-old-fact": {
+   "type": "narrative"
+  },
+  "dev-180-current": {
+   "type": "narrative"
+  },
+  "dev-180-pattern-qualified": {
+   "type": "narrative"
+  },
+  "dev-180-generalization": {
+   "type": "narrative"
+  },
+  "comm-030-channels": {
+   "type": "narrative"
+  },
+  "comm-030-schedule": {
+   "type": "record"
+  },
+  "comm-030-family": {
+   "type": "record"
+  },
+  "comm-060-channel": {
+   "type": "narrative"
+  },
+  "comm-060-focus-scope": {
+   "type": "narrative"
+  },
+  "comm-060-confirmation": {
+   "type": "record"
+  },
+  "comm-090-travel": {
+   "type": "mixed",
+   "note": "Narrative part: phone applies only to urgent travel changes during the trip. Record part: Lisbon 12-16 May."
+  },
+  "comm-090-launch-pattern": {
+   "type": "narrative"
+  },
+  "comm-090-old-focus": {
+   "type": "mixed",
+   "note": "Narrative part: general Wednesday focus time remains. Record part: Tuesday 10:00 planning."
+  },
+  "comm-120-focus": {
+   "type": "narrative"
+  },
+  "comm-120-channels": {
+   "type": "narrative"
+  },
+  "comm-120-temporary": {
+   "type": "mixed",
+   "note": "Narrative part: conference planning move and the cancelled call are temporary exceptions, not new rules. Record part: the specific slots."
+  },
+  "comm-150-volunteer": {
+   "type": "record"
+  },
+  "comm-150-old-state": {
+   "type": "mixed",
+   "note": "Narrative part: channel, focus, captions, and timezone preferences survive. Record part: Tuesday planning and family call times."
+  },
+  "comm-150-current-planning": {
+   "type": "record"
+  },
+  "comm-180-current": {
+   "type": "mixed",
+   "note": "Narrative part: channels remain scoped. Record part: Tuesday 10:00 and Sunday 18:30."
+  },
+  "comm-180-volunteer-scope": {
+   "type": "record"
+  },
+  "comm-180-captions": {
+   "type": "narrative"
+  },
+  "proj-030-identities": {
+   "type": "record"
+  },
+  "proj-030-dates": {
+   "type": "record"
+  },
+  "proj-030-harbor": {
+   "type": "record"
+  },
+  "proj-060-atlas": {
+   "type": "record"
+  },
+  "proj-060-clinic": {
+   "type": "record"
+  },
+  "proj-060-pattern": {
+   "type": "narrative"
+  },
+  "proj-090-clinic": {
+   "type": "record"
+  },
+  "proj-090-cache": {
+   "type": "narrative"
+  },
+  "proj-090-morgan": {
+   "type": "record"
+  },
+  "proj-120-atlas": {
+   "type": "record"
+  },
+  "proj-120-hotfix": {
+   "type": "record"
+  },
+  "proj-120-pattern": {
+   "type": "narrative"
+  },
+  "proj-150-orchard": {
+   "type": "record"
+  },
+  "proj-150-identities": {
+   "type": "record"
+  },
+  "proj-150-pattern-fade": {
+   "type": "narrative"
+  },
+  "proj-180-orchard": {
+   "type": "record"
+  },
+  "proj-180-retention": {
+   "type": "record"
+  },
+  "proj-180-pattern": {
+   "type": "narrative"
+  },
+  "held-030-identity": {
+   "type": "record"
+  },
+  "held-030-permit": {
+   "type": "record"
+  },
+  "held-030-practice": {
+   "type": "narrative"
+  },
+  "held-060-permit": {
+   "type": "record"
+  },
+  "held-060-storm-scope": {
+   "type": "narrative"
+  },
+  "held-060-algae": {
+   "type": "narrative"
+  },
+  "held-090-scope": {
+   "type": "narrative"
+  },
+  "held-090-battery": {
+   "type": "narrative"
+  },
+  "held-090-identity": {
+   "type": "record"
+  },
+  "held-120-permit": {
+   "type": "record"
+  },
+  "held-120-algae": {
+   "type": "narrative"
+  },
+  "held-120-radio": {
+   "type": "narrative"
+  },
+  "held-150-novelty": {
+   "type": "record"
+  },
+  "held-150-retention": {
+   "type": "mixed",
+   "note": "Narrative part: sampling scopes, battery caveat, radio practice survive. Record part: people and permit status."
+  },
+  "held-150-pattern-fade": {
+   "type": "narrative"
+  },
+  "held-180-current": {
+   "type": "mixed",
+   "note": "Narrative part: hourly checks are temporary during storm Lark and normal practices remain. Record part: South Marsh surveys continue."
+  },
+  "held-180-bats": {
+   "type": "narrative"
+  },
+  "held-180-retention": {
+   "type": "mixed",
+   "note": "Narrative part: distinct sampling times survive. Record part: distinct Jordan Bells."
+  }
+ }
+}

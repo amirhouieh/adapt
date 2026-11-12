@@ -40,9 +40,9 @@ export function openNodeSQLiteDatabase(
 		prepare<Row = Record<string, unknown>>(sql: string): SQLiteStatement<Row> {
 			return createStatement<Row>(db.prepare(sql))
 		},
-		transaction<TArgs extends unknown[]>(
-			fn: (...args: TArgs) => void,
-		): (...args: TArgs) => void {
+		transaction<TArgs extends unknown[], TResult>(
+			fn: (...args: TArgs) => TResult,
+		): (...args: TArgs) => TResult {
 			return db.transaction(fn)
 		},
 		close(): void {

@@ -31,20 +31,9 @@ export function resolveTextNeuronConfig(
 		model,
 		blueprintModel,
 		instructions: config.instructions,
-		observeInstructions: config.observeInstructions ?? null,
-		understandInstructions: config.understandInstructions ?? null,
 		id: config.id ?? `neuron_${nanoid()}`,
 		origin: config.origin ?? TEXT_NEURON_DEFAULTS.origin,
-		observer: {
-			model: cascade(config.observer?.model, model),
-			blueprintModel: cascade(config.observer?.blueprintModel, blueprintModel),
-		},
 		understand: {
-			model: cascade(config.understand?.model, model),
-			blueprintModel: cascade(
-				config.understand?.blueprintModel,
-				blueprintModel,
-			),
 			thresholds: {
 				maxObservations:
 					config.understand?.thresholds?.maxObservations ??
@@ -59,13 +48,6 @@ export function resolveTextNeuronConfig(
 		},
 		query: {
 			model: cascade(config.query?.model, model),
-		},
-		governance: {
-			strategy:
-				config.governance?.strategy ?? TEXT_NEURON_DEFAULTS.governance.strategy,
-			maxTokens:
-				config.governance?.maxTokens ??
-				TEXT_NEURON_DEFAULTS.governance.maxTokens,
 		},
 	}
 }

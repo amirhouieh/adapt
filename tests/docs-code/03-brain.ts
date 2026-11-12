@@ -56,9 +56,7 @@ async function main() {
 			prompt: 'Track user coding patterns and development philosophy.',
 			model,
 			store: new SQLiteBrainStore(join(tmpDir, 'brain.db')),
-			learning: {
-				understand: { thresholds: { maxObservations: 5 } },
-			},
+			learning: { governance: { strategy: 'decay', maxTokens: 6000 } },
 			evolution: { enabled: true },
 		})
 		assert(brain2 instanceof Brain, 'Brain created with full config')
@@ -143,29 +141,24 @@ async function main() {
 			],
 		})
 
-		// Array or single item — anything serializable
+		// Array or single item — plain text
 		await brain.inject([
-			{ type: 'note', text: 'Users prefer dark mode' },
-			{ type: 'commit', message: 'refactor: move to composition API' },
+			'note: Users prefer dark mode',
+			'commit: refactor: move to composition API',
 		])
 		assert(true, 'brain.inject() with array succeeds')
 
 		// With custom ID
-		await brain.inject([{ type: 'test' }], { id: 'session-42' })
+		await brain.inject(['test'], { id: 'session-42' })
 		assert(true, 'brain.inject() with custom ID succeeds')
 
 		// Structured data — good pattern from docs
 		await brain.inject([
-			{
-				type: 'bookmark',
-				url: 'https://example.com/local-first',
-				title: 'Local-First Software',
-				highlights: ['CRDTs enable...', 'Offline-first is...'],
-				tags: ['architecture', 'sync'],
-				savedAt: '2025-03-01T10:30:00Z',
-			},
+			`bookmark (saved 2025-03-01): "Local-First Software" — https://example.com/local-first
+highlights: CRDTs enable...; Offline-first is...
+tags: architecture, sync`,
 		])
-		assert(true, 'brain.inject() with structured data succeeds')
+		assert(true, 'brain.inject() with self-describing text succeeds')
 
 		// ── Querying ─────────────────────────────────────────────────────────
 		section('Querying')
@@ -355,7 +348,7 @@ async function main() {
 
 		// brain.update() — mechanical cascade
 		await updateBrain.update({
-			learning: { understand: { thresholds: { maxObservations: 20 } } },
+			learning: { governance: { strategy: 'decay' } },
 		})
 		assert(true, 'brain.update() mechanical succeeds')
 
@@ -376,14 +369,14 @@ async function main() {
 
 		await standaloneNeuron.learn(['Some coding data'])
 
-		// adjust() — incremental, LLM sees current state
+		// adjust() — adds a rule, no LLM call
 		await standaloneNeuron.adjust('Also track performance metrics')
 		assert(true, 'neuron.adjust() succeeds')
 
-		// update() — replace config, regenerate from scratch
+		// update() — replace config fields
 		await standaloneNeuron.update({
 			instructions: 'Track only React performance patterns.',
-			understand: { thresholds: { maxObservations: 5 } },
+			governance: { strategy: 'cumulative', maxTokens: 6000 },
 		})
 		assert(true, 'neuron.update() succeeds')
 

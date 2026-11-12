@@ -9,8 +9,8 @@ import type {
 	UnderstandThresholds,
 } from '../base/types'
 import type { NeuronOrigin, Significance } from '../types'
-import type { Strategy } from './strategies'
-import type { UnderstandIdentity } from './understand'
+import type { AdaptiveTextLearningConfig } from './adaptive-runtime'
+import type { GovernanceConfig } from './strategies'
 
 /**
  * TextNeuron event map
@@ -43,20 +43,6 @@ export interface TextNeuronEventMap extends SharedNeuronEventMap {
 
 export type TextNeuronEvent = EventsFromMap<TextNeuronEventMap>
 
-// ── Governance ──────────────────────────────────────────────────────────────
-
-export interface TextGovernanceConfig {
-	/** How understanding evolves over time */
-	strategy: Strategy
-	/** Max tokens before governance kicks in (for cumulative/decay) */
-	maxTokens?: number
-}
-
-export interface ResolvedGovernanceConfig {
-	strategy: Strategy
-	maxTokens: number
-}
-
 // ── Query ───────────────────────────────────────────────────────────────────
 
 export interface QueryConfig {
@@ -71,12 +57,6 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	model: LanguageModel
 	/** Natural language instructions for what this neuron tracks and watches for */
 	instructions: string
-	/** Optional observe-phase-only instructions */
-	observeInstructions?: string | null
-	/** Optional understand-phase-only instructions */
-	understandInstructions?: string | null
-	/** Optional focus areas to narrow observation filtering */
-	focus?: string | null
 	/** Optional unique identifier */
 	id?: string
 	/** Optional display name */
@@ -87,37 +67,23 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	origin?: NeuronOrigin
 	/** Injected store */
 	store: NeuronStore
-	/** Governance settings for understanding management */
-	governance?: TextGovernanceConfig
-	/** Observer phase configuration */
-	observer?: { model?: LanguageModel; blueprintModel?: LanguageModel }
-	/** Understand phase configuration */
-	understand?: {
-		model?: LanguageModel
-		blueprintModel?: LanguageModel
-		thresholds?: UnderstandThresholds
-	}
+	/** Memory strategy: cumulative (default, 8000 tokens), decay or continuous. */
+	governance?: Partial<GovernanceConfig>
+	/** Thresholds Brain reads for health signals and evolution. */
+	understand?: { thresholds?: UnderstandThresholds }
 	/** Query phase configuration */
 	query?: QueryConfig
 	/** Health configuration (Living Brain) */
 	health?: Partial<import('../types').NeuronHealth>
-	/** Skip observation phase — data goes directly to understanding buffer */
-	skipObservation?: boolean
-	/** Skip understand phase — observations are retained but never synthesized */
-	skipUnderstand?: boolean
-	/** Custom observation schema — skips LLM generation when provided */
-	observationSchema?: Record<string, unknown>
-	/** Custom understanding schema — skips LLM generation when provided */
-	understandingSchema?: Record<string, unknown>
 	/** Subscribe before initialization starts, so init events can be observed. */
 	onEvent?: UnifiedHandler<EventsFromMap<SharedNeuronEventMap>>
+	/** Supply an explicit adaptive text-learning setup. Omit for the default two-step setup. */
+	learning?: AdaptiveTextLearningConfig
 }
 
 // ── Resolved Config ─────────────────────────────────────────────────────────
 
-export interface ResolvedTextNeuronConfig extends BaseResolvedConfig {
-	governance: ResolvedGovernanceConfig
-}
+export type ResolvedTextNeuronConfig = BaseResolvedConfig
 
 export interface TextNeuronUpdateResult {
 	changedFields: string[]
@@ -127,6 +93,5 @@ export interface TextNeuronUpdateResult {
 // ── State ──────────────────────────────────────────────────────────────────
 
 export interface TextNeuronState extends BaseNeuronState {
-	understand_identity: UnderstandIdentity | null
-	governance: ResolvedGovernanceConfig
+	governance: Required<GovernanceConfig>
 }

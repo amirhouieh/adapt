@@ -1,27 +1,38 @@
+import { isDeepStrictEqual } from 'node:util'
+
+import type { TextLearningConfig } from '../../learning/text-procedures'
+import type { TextInput, TextProfileSnapshot } from '../../learning/text-state'
 import type { AdaptLLMPlugin, LanguageModel } from '../../llm'
 import { resolveRuntimeLLM } from '../../llm'
 import type { NeuronStore } from '../../stores'
 import type { ParentModels } from '../../types/config'
-import type { UnderstandCallResult } from '../base/class'
+import type {
+	AdjustResult,
+	LearnInput,
+	LearnOptions,
+	LearnOutput,
+} from '../base/class'
 import { BaseNeuron } from '../base/class'
-import { resolveUnderstandInstructions } from '../base/instructions'
 import type { QueryMethod } from '../base/query'
-import { DirectMethod, ToolBasedMethod } from '../base/query'
-import type { Significance } from '../types'
+import { DirectMethod } from '../base/query'
+import {
+	type AdaptiveTextFlushOutput,
+	type AdaptiveTextLearningConfig,
+	type AdaptiveTextLearningRuntime,
+	type AdaptiveTextLearningState,
+	AdaptiveTextRuntime,
+} from './adaptive-runtime'
 import { resolveTextNeuronConfig } from './config.resolver'
 import {
-	buildTextQueryPrompt,
-	createReadUnderstandingTool,
-} from './query-tools'
-import { applyStrategy } from './strategies'
-import type { TextNeuronConfig, TextNeuronState } from './types'
+	applyStrategy,
+	DEFAULT_GOVERNANCE,
+	type GovernanceConfig,
+} from './strategies'
 import {
-	adjustUnderstand,
-	adjustUnderstandingContent,
-	initUnderstand,
-	understand,
-} from './understand'
-import { understandSystemPromptTemplate } from './understand/prompts/system'
+	defaultTwoStepLearning,
+	defaultTwoStepRuntime,
+} from './two-step-defaults'
+import type { TextNeuronConfig, TextNeuronState } from './types'
 
 const RESTORE_PLACEHOLDER_MODEL =
 	'unknown:placeholder' as unknown as LanguageModel
@@ -29,10 +40,16 @@ const RESTORE_PLACEHOLDER_MODEL =
 /**
  * TextNeuron - A learning agent that maintains understanding as narrative text
  *
- * Strategy application is handled in postProcessUnderstanding.
  * Store is injected — caller must provide it.
  */
 export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
+	readonly #adaptive: AdaptiveTextRuntime
+	readonly #adaptiveConfig: AdaptiveTextLearningConfig
+	/** In-flight learn() calls; dispose waits for them before closing the store. */
+	readonly #learning = new Set<Promise<unknown>>()
+	/** True when the two-step setup was built from plain options, not supplied. */
+	readonly #defaultLearning: boolean
+
 	get type(): string {
 		return 'text'
 	}
@@ -41,44 +58,36 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		rawConfig: TextNeuronConfig & { llm?: AdaptLLMPlugin },
 		parentModels?: ParentModels,
 	) {
-		const config = resolveTextNeuronConfig(rawConfig, parentModels)
-		const maxObsForStagnation =
-			3 * (config.understand.thresholds.maxObservations ?? 10)
+		const suppliedLearning = rawConfig.learning
+		const preparedConfig =
+			suppliedLearning === undefined
+				? rawConfig
+				: prepareAdaptiveConfig(rawConfig, suppliedLearning)
+		const config = resolveTextNeuronConfig(preparedConfig, parentModels)
 		const llm = resolveRuntimeLLM({
 			llm: rawConfig.llm,
-			models: [
-				config.model,
-				config.blueprintModel,
-				config.observer.model,
-				config.observer.blueprintModel,
-				config.understand.model,
-				config.understand.blueprintModel,
-				config.query.model,
-			],
+			models: [config.model, config.blueprintModel, config.query.model],
 		})
+		const learning =
+			suppliedLearning ??
+			defaultTwoStepLearning({
+				neuronId: config.id,
+				instructions: config.instructions,
+				developerInstructions: [],
+				llm,
+				model: config.model,
+			})
 
 		const initialState: TextNeuronState = {
 			instructions: config.instructions,
-			observeInstructions: config.observeInstructions,
-			understandInstructions: config.understandInstructions,
 			name: rawConfig.name || config.id,
 			description: rawConfig.description ?? '',
-			focus: rawConfig.focus ?? null,
 			origin: config.origin,
 			models: {
 				default: config.model,
 				blueprint: config.blueprintModel,
-				observer: config.observer.model,
-				observer_blueprint: config.observer.blueprintModel,
-				understand: config.understand.model,
-				understand_blueprint: config.understand.blueprintModel,
 				query: config.query.model,
 			},
-			observe_prompt: null,
-			understand_prompt: null,
-			understand_identity: null,
-			observation_schema: rawConfig.observationSchema ?? null,
-			understanding_schema: rawConfig.understandingSchema ?? null,
 			thresholds: {
 				maxObservations: config.understand.thresholds.maxObservations,
 				maxTokens: config.understand.thresholds.maxTokens,
@@ -93,7 +102,8 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 					maxDismissalRate: 0.8,
 					minRelevance: 0.3,
 					minConfidence: 0.3,
-					maxObservationsWithoutSynthesis: maxObsForStagnation,
+					maxObservationsWithoutSynthesis:
+						3 * config.understand.thresholds.maxObservations,
 					...rawConfig.health?.signalThresholds,
 				},
 			},
@@ -112,17 +122,49 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 					gaps: [],
 				},
 			},
-			stagnation_signal_fired: false,
 			dismissal_signal_fired: false,
-			governance: config.governance,
-			skipObservation: rawConfig.skipObservation ?? false,
-			skipUnderstand: rawConfig.skipUnderstand ?? false,
+			governance: {
+				...DEFAULT_GOVERNANCE,
+				...definedOnly(rawConfig.governance),
+			},
 		}
 
 		super(config.id, llm, rawConfig.store, initialState, {
 			repairWithFeedback: rawConfig.repairWithFeedback,
 			maxRepairAttempts: rawConfig.maxRepairAttempts,
 		})
+		this.#defaultLearning = suppliedLearning === undefined
+		this.#adaptiveConfig = learning
+		this.#adaptive = new AdaptiveTextRuntime(
+			rawConfig.store,
+			learning.runtime,
+			(memory, { maxCharacters, maxOutputTokens, topic, rules, signal }) =>
+				applyStrategy({
+					memory,
+					topic,
+					rules,
+					governance: this.state.governance,
+					maxCharacters,
+					maxOutputTokens,
+					llm: this.llm,
+					model: this.state.models.default,
+					abortSignal: signal,
+					...this.llmRepairOptions,
+				}),
+		)
+	}
+
+	override async init(opts?: { expect?: 'fresh' | 'restore' }): Promise<void> {
+		await super.init(opts)
+		const saved = this.#defaultLearning
+			? await readDurableAdaptiveProfile(
+					this.store,
+					this.#adaptiveConfig.runtime,
+				)
+			: undefined
+		await this.#adaptive.initialize(
+			saved ?? this.#adaptiveConfig.initialProfile,
+		)
 	}
 
 	// ── Abstract implementations ───────────────────────────────────────────────
@@ -133,6 +175,15 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 	}
 
 	async setUnderstanding(understanding: string): Promise<void> {
+		const state = await this.#adaptive.snapshot()
+		if (
+			state.memoryRevision > 0 ||
+			(await this.store.understanding.get('current')) !== undefined
+		) {
+			throw new Error(
+				'adaptive text understanding is changed only by the learning coordinator; a starting memory can be set only on an empty neuron',
+			)
+		}
 		const existing = await this.store.understanding.get('current')
 		if (existing) {
 			await this.store.understanding.update('current', {
@@ -165,218 +216,200 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		return !!record?.data
 	}
 
-	protected async regenUnderstandPrompt(
-		model: LanguageModel,
-		instructions: string,
-	): Promise<void> {
-		const result = await initUnderstand(
-			this.llm,
-			model,
-			instructions,
-			this.state.governance.strategy,
-			this.llmRepairOptions,
-		)
-		await this.setState({
-			understand_identity: result.identity,
-			understand_prompt: result.systemPrompt,
-		} as Partial<TextNeuronState>)
-	}
-
-	protected rebuildUnderstandPromptFromState(instructions: string): string {
-		return understandSystemPromptTemplate(
-			instructions,
-			this.state.understand_identity ?? { skills: [], dynamicsSkills: [] },
-			this.state.governance.strategy,
-		)
-	}
-
-	protected async adjustUnderstandPrompt(
-		model: LanguageModel,
-		directive: string,
-		newInstructions: string,
-	): Promise<void> {
-		const result = await adjustUnderstand(
-			this.llm,
-			model,
-			directive,
-			newInstructions,
-			this.state.understand_identity!,
-			this.state.governance.strategy,
-			this.llmRepairOptions,
-		)
-		await this.setState({
-			understand_identity: result.identity,
-			understand_prompt: result.systemPrompt,
-		} as Partial<TextNeuronState>)
-	}
-
-	protected async adjustUnderstanding(
-		model: LanguageModel,
-		directive: string,
-	): Promise<{ evolution: string; significance: Significance }> {
-		const currentUnderstanding = await this.getUnderstanding()
-		const result = await adjustUnderstandingContent(
-			this.llm,
-			model,
-			directive,
-			currentUnderstanding,
-			resolveUnderstandInstructions(this.state),
-			this.llmRepairOptions,
-		)
-
-		if (result.status === 'synthesized') {
-			const processed = await this.postProcessUnderstanding(
-				result.newUnderstanding,
-			)
-			await this.setUnderstanding(processed)
-			return { evolution: result.evolution, significance: result.significance }
-		}
-
-		return { evolution: result.evolution, significance: 'routine' }
-	}
-
-	protected async callUnderstand(
-		model: LanguageModel,
-		understanding: string,
-		observations: string[],
-		callbacks?: { onThinking?: (thoughts: string[]) => void },
-	): Promise<UnderstandCallResult> {
-		const result = await understand(
-			this.llm,
-			model,
-			this.state.understand_prompt!,
-			{
-				neuronId: this.id,
-				instructions: this.state.instructions,
-				currentUnderstanding: understanding,
-				observations,
-			},
-			callbacks,
-			this.llmRepairOptions,
-		)
-
-		if (result.status === 'error') {
-			return { status: 'error', error: result.error }
-		}
-		if (result.status === 'dismissed') {
-			return {
-				status: 'dismissed',
-				output: result.output,
-				usage: result.usage,
-			}
-		}
-		return {
-			status: 'synthesized',
-			newUnderstanding: result.newUnderstanding,
-			significance: result.significance,
-			evolution: result.evolution,
-			reasoning: result.reasoning,
-			usage: result.usage,
-		}
-	}
-
-	protected async postProcessUnderstanding(raw: string): Promise<string> {
-		const result = await applyStrategy({
-			understanding: raw,
-			llm: this.llm,
-			model: this.state.models.default,
-			config: this.state.governance,
-			...this.llmRepairOptions,
-		})
-		return result.understanding
-	}
-
 	protected createQueryMethod(): QueryMethod {
-		return new ToolBasedMethod(this.llm, this.state.models.query, {
-			tools: {
-				readUnderstanding: createReadUnderstandingTool(
-					() => this.getUnderstanding(),
-					() => this.getBufferedObservations(),
-				),
-			},
-			buildPrompt: buildTextQueryPrompt,
-		})
+		return this.createAdaptiveQueryMethod()
 	}
 
 	protected createDirectQueryMethod(): QueryMethod {
-		return new DirectMethod(this.llm, this.state.models.query, {
-			getUnderstanding: () => this.getUnderstanding(),
-			buildPrompt: (ctx, understanding) =>
-				`You are a specialist. Your domain:\n"${ctx.instructions}"\n\n# Your Understanding\n${understanding || '(empty — no knowledge yet)'}\n\nAnswer from your understanding. Be specific — cite data points, counts, dates. If you don't have enough, say so. Don't fabricate.`,
-		})
+		return this.createAdaptiveQueryMethod()
 	}
 
-	// ── Schema generation (hardcoded for text) ──────────────────────────────────
-
-	protected async generateSchemas() {
-		return {
-			observationSchema: {
-				type: 'string',
-				description: 'Single observation. Concise and factual.',
-				minLength: 10,
-				maxLength: 500,
+	private createAdaptiveQueryMethod(): QueryMethod {
+		return new DirectMethod(this.llm, this.state.models.query, {
+			getUnderstanding: () => this.getUnderstanding(),
+			buildPrompt: (ctx, understanding) => {
+				const state = this.#adaptive.queryStatus()
+				const pendingCount = state?.pendingDeliveryIds.length ?? 0
+				const capacity = state?.capacity ?? []
+				return `You are a specialist. Your domain:\n"${ctx.instructions}"\n\n# Committed Understanding\n${understanding || '(empty — no committed knowledge yet)'}\n\n# Learning Status\nCommitted memory revision: ${state?.memoryRevision ?? 0}\nPending inputs: ${pendingCount}. Pending input contents are unavailable and must not be treated as learned.\nCapacity blocked: ${capacity.length > 0 ? 'yes' : 'no'}${capacity.length > 0 ? ` (${capacity.map(({ reason }) => reason).join('; ')})` : ''}.\n\nAnswer only from the committed understanding. Be specific. If it is insufficient or newer input is pending, state the gap. Do not fabricate.`
 			},
-			understandingSchema: {
-				type: 'string',
-				description:
-					'Comprehensive prose synthesis. Well-structured narrative.',
-				minLength: 100,
-				maxLength: 5000,
-			},
-		}
+		})
 	}
 
 	// ── Text-specific accessors ────────────────────────────────────────────────
 
-	getUnderstandIdentity() {
-		return this.state.understand_identity
+	getQueryMethodName(): string {
+		return 'direct'
 	}
 
-	getGovernance() {
+	getGovernance(): Required<GovernanceConfig> {
 		return { ...this.state.governance }
 	}
 
-	getQueryMethodName(): string {
-		return 'tool-based'
-	}
-
-	// ── Type-specific update (only governance) ─────────────────────────────────
-
-	protected applyTypeSpecificUpdates(
-		updates: Record<string, unknown>,
-		changedFields: string[],
-	): Partial<TextNeuronState> {
-		const u = updates as Partial<TextNeuronConfig>
-		const result: Partial<TextNeuronState> = {}
-
-		if (u.governance) {
-			const newGov = { ...this.state.governance }
-			if (
-				u.governance.strategy !== undefined &&
-				u.governance.strategy !== this.state.governance.strategy
-			) {
-				newGov.strategy = u.governance.strategy
-				changedFields.push('governance.strategy')
-			}
-			if (
-				u.governance.maxTokens !== undefined &&
-				u.governance.maxTokens !== this.state.governance.maxTokens
-			) {
-				newGov.maxTokens = u.governance.maxTokens
-				changedFields.push('governance.maxTokens')
-			}
-			result.governance = newGov
+	override async getBufferState(): Promise<{
+		count: number
+		avgImportance: number
+		totalTokens: number
+	}> {
+		return {
+			count: this.#adaptive.queryStatus()?.pendingDeliveryIds.length ?? 0,
+			avgImportance: 0,
+			totalTokens: 0,
 		}
-
-		return result
 	}
 
 	// ── Typed update wrapper ───────────────────────────────────────────────────
 
+	async #updateGovernance(
+		update: Partial<GovernanceConfig> | undefined,
+	): Promise<string[]> {
+		if (update === undefined) return []
+		const current = this.state.governance
+		const changed = (['strategy', 'maxTokens'] as const).filter(
+			(key) => update[key] !== undefined && update[key] !== current[key],
+		)
+		if (changed.length === 0) return []
+		await this.setState({
+			governance: { ...current, ...definedOnly(update) },
+		})
+		return changed.map((key) => `governance.${key}`)
+	}
+
 	async update(
 		updates: Partial<TextNeuronConfig>,
 	): Promise<{ changedFields: string[] }> {
-		return super.update(updates as Record<string, unknown>)
+		const settings = updates as Record<string, unknown>
+		if (settings.id !== undefined && settings.id !== this.id) {
+			throw new Error(
+				'Cannot update immutable field "id". Neuron identity cannot be changed.',
+			)
+		}
+		const identity = await this.#updateIdentity(updates)
+		const changedFields = [
+			...identity.changedFields,
+			...(await this.#updateGovernance(updates.governance)),
+			...(await this.updateSettings(settings)),
+		]
+		if (changedFields.length > 0) {
+			this.emit('neuron:config:updated', {
+				neuronId: this.id,
+				changedFields,
+				config: { ...this.state },
+			})
+		}
+		return { changedFields }
+	}
+
+	/**
+	 * `adjust` appends the directive verbatim as a developer instruction and
+	 * publishes a new profile. Learned memory is not edited: it changes only
+	 * through learning.
+	 */
+	override async adjust(directive: string): Promise<AdjustResult> {
+		const text = directive.trim()
+		if (text.length === 0) throw new Error('adjust directive must not be empty')
+		await this.#activateAdaptive((configuration) => ({
+			...configuration,
+			lens: {
+				...configuration.lens,
+				developerInstructions: [
+					...configuration.lens.developerInstructions,
+					text,
+				],
+			},
+		}))
+		return {
+			changedFields: ['lens.developerInstructions'],
+			adjustedConfig: true,
+			adjustedUnderstanding: false,
+		}
+	}
+
+	/**
+	 * `instructions` is the lens purpose. Directives added by `adjust` are
+	 * kept. The new profile is activated first; the instructions are then
+	 * written so restore sees a consistent pair.
+	 */
+	async #updateIdentity(
+		updates: Partial<TextNeuronConfig>,
+	): Promise<{ changedFields: string[] }> {
+		const instructions = updates.instructions
+		if (instructions === undefined || instructions === this.state.instructions)
+			return { changedFields: [] }
+		if (instructions.trim().length === 0)
+			throw new Error('adaptive text instructions must not be empty')
+		await this.#activateAdaptive(
+			(configuration): TextLearningConfig => ({
+				...configuration,
+				lens: { ...configuration.lens, purpose: instructions },
+			}),
+		)
+		await this.setState({ instructions } as never)
+		return { changedFields: ['instructions'] }
+	}
+
+	async #activateAdaptive(
+		change: (configuration: TextLearningConfig) => TextLearningConfig,
+	): Promise<void> {
+		const result = await this.#adaptive.updateConfiguration(change)
+		if (result.status !== 'activated') {
+			throw new Error(
+				`adaptive text profile change was not activated: ${result.status}`,
+			)
+		}
+	}
+
+	override async learn(
+		batch: readonly LearnInput[],
+		_options?: LearnOptions,
+	): Promise<LearnOutput> {
+		const run = this.#learn(batch)
+		this.#learning.add(run)
+		try {
+			return await run
+		} finally {
+			this.#learning.delete(run)
+		}
+	}
+
+	async #learn(batch: readonly LearnInput[]): Promise<LearnOutput> {
+		const adaptive = this.#adaptive
+		const adaptiveConfig = this.#adaptiveConfig
+		const inputs = batch.map((item) =>
+			normalizeAdaptiveInput(item, adaptiveConfig.runtime),
+		)
+		const previousUnderstanding = await this.getUnderstanding()
+		const learned = await adaptive.learnNow(inputs)
+		const understanding = await this.getUnderstanding()
+		let result: LearnOutput
+		if (learned.nothingRelevant) {
+			result = { status: 'observe:dismissed', output: [...batch], gaps: [] }
+		} else if (understanding !== previousUnderstanding) {
+			result = {
+				status: 'synthesized',
+				newUnderstanding: understanding,
+				significance: 'routine',
+				evolution: `Learned from ${inputs.length} input${inputs.length === 1 ? '' : 's'}.`,
+			}
+		} else if (learned.runs?.some((run) => run.status === 'settled')) {
+			result = { status: 'synthesize:dismissed', output: 'No changes needed' }
+		} else {
+			return learned
+		}
+		await this.handleLearnResult(result, undefined, { previousUnderstanding })
+		return result
+	}
+
+	async flush(signal?: AbortSignal): Promise<AdaptiveTextFlushOutput> {
+		return this.#adaptive.flush(signal)
+	}
+
+	async resume(signal?: AbortSignal): Promise<AdaptiveTextFlushOutput> {
+		return this.#adaptive.resume(signal)
+	}
+
+	async getLearningState(): Promise<AdaptiveTextLearningState> {
+		return this.#adaptive.snapshot()
 	}
 
 	/**
@@ -413,21 +446,84 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 			repairWithFeedback?: TextNeuronConfig['repairWithFeedback']
 			maxRepairAttempts?: number
 			onEvent?: TextNeuronConfig['onEvent']
+			learning?: {
+				mode: 'adaptive'
+				runtime: AdaptiveTextLearningRuntime
+				expectedProfile?: TextProfileSnapshot<TextLearningConfig>
+			}
 		},
 	): Promise<TextNeuron> {
 		const store = await resolveNeuronStore(input)
+		const durableProfile = await readDurableAdaptiveProfile(
+			store,
+			runtime?.learning?.runtime,
+		)
+		if (durableProfile !== undefined && runtime?.learning === undefined) {
+			const savedModels = (await store.state.get('models'))?.value as
+				| { default?: LanguageModel }
+				| undefined
+			const model = runtime?.model ?? savedModels?.default
+			if (model === undefined)
+				throw new Error('restoring a text neuron requires a live model')
+			const llm = resolveRuntimeLLM({ llm: runtime?.llm, models: [model] })
+			runtime = {
+				...runtime,
+				model,
+				learning: {
+					mode: 'adaptive',
+					runtime: defaultTwoStepRuntime(llm, model),
+				},
+			}
+		}
+		if (runtime?.learning !== undefined && durableProfile === undefined) {
+			throw new Error('adaptive text profile is missing from the store')
+		}
+		if (
+			runtime?.learning?.expectedProfile !== undefined &&
+			(durableProfile === undefined ||
+				!sameProfile(runtime.learning.expectedProfile, durableProfile))
+		) {
+			throw new Error(
+				'durable adaptive text profile does not match the expected profile',
+			)
+		}
+		if (runtime?.learning !== undefined && runtime.model === undefined) {
+			throw new Error(
+				'restoring adaptive text learning requires a live query model',
+			)
+		}
+		const adaptiveState =
+			durableProfile === undefined
+				? undefined
+				: await readAdaptiveIdentityState(store)
 		const neuron = new TextNeuron({
 			store,
 			model: runtime?.model ?? RESTORE_PLACEHOLDER_MODEL,
 			llm: runtime?.llm,
 			repairWithFeedback: runtime?.repairWithFeedback,
 			maxRepairAttempts: runtime?.maxRepairAttempts,
-			instructions: '',
-			id: runtime?.id,
+			instructions: adaptiveState?.instructions ?? '',
+			id: durableProfile?.bindings.neuron.id ?? runtime?.id,
+			...(durableProfile && runtime?.learning
+				? {
+						learning: {
+							mode: 'adaptive' as const,
+							initialProfile: durableProfile,
+							runtime: runtime.learning.runtime,
+						},
+					}
+				: {}),
 		})
 		if (runtime?.onEvent) neuron.on(runtime.onEvent)
 		await neuron.init({ expect: 'restore' })
+		if (durableProfile !== undefined) await neuron.resume()
 		return neuron
+	}
+
+	override async dispose(): Promise<void> {
+		await Promise.allSettled([...this.#learning])
+		await this.#adaptive.dispose()
+		await super.dispose()
 	}
 }
 
@@ -437,4 +533,86 @@ async function resolveNeuronStore(
 	if (typeof input !== 'string') return input
 	const { SQLiteNeuronStore } = await import('../../stores/sqlite/node/neuron')
 	return new SQLiteNeuronStore(input)
+}
+
+function prepareAdaptiveConfig(
+	raw: TextNeuronConfig & { llm?: AdaptLLMPlugin },
+	learning: AdaptiveTextLearningConfig,
+): TextNeuronConfig & { llm?: AdaptLLMPlugin } {
+	const profile = learning.initialProfile
+	const neuronId = raw.id ?? profile.bindings.neuron.id
+	if (profile.bindings.neuron.id !== neuronId)
+		throw new Error('adaptive profile neuron id does not match TextNeuron id')
+	if (profile.configuration.lens.purpose !== raw.instructions)
+		throw new Error('adaptive lens purpose must equal TextNeuron instructions')
+	return {
+		...raw,
+		id: neuronId,
+	}
+}
+
+function normalizeAdaptiveInput(
+	item: LearnInput,
+	runtime: AdaptiveTextLearningRuntime,
+): TextInput {
+	if (typeof item !== 'string') return item
+	return {
+		deliveryId: runtime.inputIds.next(),
+		text: item,
+		observedAt: runtime.clock.now(),
+	}
+}
+
+async function readDurableAdaptiveProfile(
+	store: NeuronStore,
+	runtime?: AdaptiveTextLearningRuntime,
+): Promise<TextProfileSnapshot<TextLearningConfig> | undefined> {
+	const records =
+		runtime === undefined
+			? await store.state.list()
+			: [await store.state.get(runtime.policy.headStateId)].filter(
+					(value): value is NonNullable<typeof value> => value !== undefined,
+				)
+	for (const record of records) {
+		if (typeof record.value !== 'object' || record.value === null) continue
+		const value = record.value as {
+			kind?: unknown
+			record?: unknown
+			profile?: unknown
+		}
+		if (
+			value.record !== 'head' ||
+			typeof value.profile !== 'object' ||
+			value.profile === null
+		)
+			continue
+		if (runtime !== undefined && value.kind !== runtime.policy.stateKind)
+			continue
+		const profile = value.profile as TextProfileSnapshot<TextLearningConfig>
+		if (profile.configuration?.lens?.incomingTextRole === 'data-only')
+			return profile
+	}
+	return undefined
+}
+
+async function readAdaptiveIdentityState(
+	store: NeuronStore,
+): Promise<{ instructions: string }> {
+	const instructions = await store.state.get('instructions')
+	if (typeof instructions?.value !== 'string')
+		throw new Error('adaptive TextNeuron durable instructions are missing')
+	return { instructions: instructions.value }
+}
+
+function sameProfile(
+	left: TextProfileSnapshot<TextLearningConfig>,
+	right: TextProfileSnapshot<TextLearningConfig>,
+): boolean {
+	return isDeepStrictEqual(left, right)
+}
+
+function definedOnly<T extends object>(value: T | undefined): Partial<T> {
+	return Object.fromEntries(
+		Object.entries(value ?? {}).filter(([, v]) => v !== undefined),
+	) as Partial<T>
 }

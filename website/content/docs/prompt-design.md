@@ -1,6 +1,6 @@
 ---
 title: Prompt Design
-description: How prompts and instructions shape decomposition, schema generation, and neuron behavior.
+description: How prompts and instructions shape decomposition and neuron behavior.
 ---
 
 Prompts and instructions are the single most important inputs to the system. They determine everything downstream:
@@ -9,15 +9,14 @@ Prompts and instructions are the single most important inputs to the system. The
 Brain prompt  → Decomposition (what neurons are created, how many)
                → Evolution context (how the brain reshapes itself)
 
-Neuron instructions → Observe prompt (what data is relevant?)
-                    → Schema generation (ListNeuron: what fields exist?)
-                    → Understand prompt (how to synthesize?)
+Neuron instructions → Extract prompt (what in this data is relevant?)
+                    → Update prompt (how to update the memory?)
                     → Query behavior (how to answer questions?)
 ```
 
 A vague prompt produces a vague system. A specific prompt with clear decomposition guidance produces focused specialists that build deep, evidence-backed knowledge.
 
-> **Instructions reach the LLM verbatim.** A neuron's `instructions` are not paraphrased or compressed — they are inserted directly into the observe and understand system prompts under a `## Developer Instructions` heading. The runtime prompt is assembled deterministically in three layers: (1) a static framework role frame, (2) your verbatim instructions, (3) framework mechanics (JSON envelope, importance scale, cognitive skills). No LLM call rewrites your text. This makes the wording of your instructions directly load-bearing — what you write is what the model sees.
+> **Instructions reach the LLM verbatim.** A neuron's `instructions` are not paraphrased or compressed — they are inserted directly into the extract and update prompts as the topic. Directives added by `adjust()` follow as a list of rules. Both prompts are short and plain text: no JSON, no schema. No LLM call rewrites your text. This makes the wording of your instructions directly load-bearing — what you write is what the model sees.
 
 ## Brain Prompt
 
@@ -118,7 +117,7 @@ Notice: the prompt lists dimensions as possibilities, not mandates. It tells the
 
 ## Neuron Instructions
 
-Lead with the questions the neuron should be able to answer. These root questions orient everything — what the observer filters for, how the synthesizer reasons, and what the query layer prioritizes.
+Lead with the questions the neuron should be able to answer. These root questions orient everything — what extract keeps, how update writes the memory, and what the query layer prioritizes.
 
 ```text
 Track product design principles and user research insights.
@@ -136,21 +135,9 @@ Watch for:
 
 The "Track answers to" section is the most important part. It gives the neuron a purpose beyond collecting data.
 
-### Per-phase instructions
+## Ask for specifics
 
-By default the shared `instructions` field feeds both the observe phase (relevance filtering) and the understand phase (synthesis). When a phase needs different wording, override it:
-
-- **`observeInstructions`** — replaces the verbatim instructions used by the observe prompt only. Use it when the relevance criteria should read differently from the synthesis directive.
-- **`understandInstructions`** — replaces the verbatim instructions used by the understand prompt only.
-- **`focus`** — observe-only. Appended to the observe instructions under a `Focus:` heading to narrow what data is kept.
-
-When an override is omitted or set to `null`, that phase falls back to the shared `instructions`. These fields exist on `TextNeuron`/`ListNeuron` configs and on Brain explicit-neuron configs.
-
-## Instructions for TextNeuron
-
-TextNeuron instructions shape how cognitive skills are applied to your domain. The neuron automatically detects confirmation, contradiction, recurrence, intensification, avoidance, etc. — your instructions determine *what* it applies these skills to.
-
-**Ask for specifics if you want them.** The synthesizer defaults to abstract patterns unless instructions push for grounding:
+**Ask for specifics if you want them.** The update step writes what the instructions ask for. Without a push for grounding, it tends toward abstract patterns:
 
 ```text
 // Vague — produces "Alex exercises sometimes"
@@ -166,7 +153,7 @@ Track answers to:
 - Where do stated intentions contradict actual behavior?
 ```
 
-The difference is that specific instructions trigger the dynamics skills (recurs, avoids, shifts) to gather evidence — counts, timeframes, concrete instances — rather than just labeling patterns.
+Specific instructions make the neuron keep evidence — counts, timeframes, concrete instances — rather than just labeling patterns.
 
 ### Real-World Example: Clinical Trajectory
 
@@ -194,37 +181,14 @@ A claim without a quote or concrete example is not a claim.
 
 Notice: specific sub-questions, explicit dimensions to track, and a grounding instruction at the end.
 
-## Instructions for ListNeuron
-
-ListNeuron instructions directly control schema generation. **The fields in your schema come from what you describe in instructions.**
-
-**Name the fields you want.** If you say "track cuisine type, location, and price range," the schema will have those fields. If you don't mention a field, it won't exist.
-
-```text
-// Missing status field — if a PM rejects a feature, there's nowhere to record it
-Track feature requests with name, description, and customer segment.
-
-// Has status field — deprioritization data is captured
-Track feature requests for a SaaS product. Each item is a distinct feature request.
-
-For each feature request, track:
-- The feature name and description
-- Which customer segments are asking (enterprise, SMB, startup)
-- Whether it's been deprioritized or rejected by the PM
-```
-
-**Describe what each item IS.** "Each item is a distinct feature request" is better than "Track features" — it tells the synthesizer the granularity you expect, which affects deduplication behavior.
-
-**Don't ask the LLM to count.** If your instructions say "track how many sources requested this," the LLM will manage a `request_count` field — but it drifts over time (LLMs are bad at arithmetic across batches). Use `metadata.touchCount` instead, which is mechanically accurate.
-
 ## Specificity and Signal-to-Noise
 
-Instructions control how much data the observer lets through:
+Instructions control how much data the extract step lets through:
 
-- **Narrow instructions** → observer dismisses most data → high precision, may miss related patterns
-- **Broad instructions** → observer accepts most data → comprehensive but noisy, more synthesis needed
+- **Narrow instructions** → most batches dismissed → high precision, may miss related patterns
+- **Broad instructions** → most batches kept → comprehensive but noisy, larger memory
 
-This is a design choice, not a quality issue. A neuron tracking "React performance antipatterns" will be precise but miss general coding philosophy. A neuron tracking "coding patterns" will be comprehensive but need more synthesis cycles to find structure.
+This is a design choice, not a quality issue. A neuron tracking "React performance antipatterns" will be precise but miss general coding philosophy. A neuron tracking "coding patterns" will be comprehensive but its memory grows faster — pick a memory strategy to match.
 
 ## Neuron Granularity
 
@@ -232,7 +196,7 @@ This is a design choice, not a quality issue. A neuron tracking "React performan
 
 Start with 3–7 neurons covering broad domains. Let evolution split them as data arrives. Reasons:
 
-- Each neuron makes independent LLM calls during observe, understand, and query. More neurons = linear cost increase per inject/ask.
+- Each neuron makes independent LLM calls during extract, update, and query. More neurons = linear cost increase per inject/ask.
 - Evolution is designed for this — it detects when a neuron is overloaded (high dismissal, low confidence) and splits it.
 - Narrow neurons miss cross-cutting patterns. A "React hooks" neuron won't notice your general preference for functional patterns.
 
@@ -258,4 +222,4 @@ await brain.adjustNeuron('patterns', 'Be stricter about what counts as a distinc
 await brain.adjustNeuron('trends', 'Weight recent observations more heavily')
 ```
 
-The LLM sees the neuron's current raw instruction fields (`instructions`, `observeInstructions`, `understandInstructions`, `focus`), then evolves them incrementally — preserving existing text unless the directive clearly changes it. The updated instructions are re-inserted verbatim into the observe and understand prompts. If the directive is ambiguous, it preserves more rather than less.
+No LLM call: the directive is added verbatim as a rule in both the extract and update prompts. Earlier directives are kept. The memory is not edited — new data is learned under the new rules. To replace the instructions themselves, use `update({ instructions })`.

@@ -30,10 +30,6 @@ export type StoredModelRef = AdaptModelConfig & {
 export interface ModelSlots {
 	default: LanguageModel
 	blueprint: LanguageModel
-	observer: LanguageModel
-	observer_blueprint: LanguageModel
-	understand: LanguageModel
-	understand_blueprint: LanguageModel
 	query: LanguageModel
 }
 
@@ -54,21 +50,12 @@ export interface ModelSlots {
 export interface BaseNeuronState {
 	// Semantic identity
 	instructions: string
-	observeInstructions: string | null
-	understandInstructions: string | null
 	name: string
 	description: string
-	focus: string | null
 	origin: NeuronOrigin
 
 	// Models (model inputs in cache; StoredModelRef in store)
 	models: ModelSlots
-
-	// Runtime artifacts (null before init)
-	observe_prompt: string | null
-	understand_prompt: string | null
-	observation_schema: Record<string, unknown> | null
-	understanding_schema: Record<string, unknown> | null
 
 	// Phase config
 	thresholds: {
@@ -80,14 +67,7 @@ export interface BaseNeuronState {
 	// Runtime
 	health: NeuronHealth
 	metrics: NeuronMetrics
-	stagnation_signal_fired: boolean
 	dismissal_signal_fired: boolean
-
-	// Skip observation phase — data goes directly to buffer
-	skipObservation: boolean
-
-	// Skip understand phase — observations are retained but never synthesized
-	skipUnderstand: boolean
 }
 
 // ── Transform types ─────────────────────────────────────────────────────────

@@ -49,8 +49,8 @@ async function main() {
 		})
 
 		await brain.inject([
-			{ type: 'commit', message: 'refactor: extract validation into pure functions' },
-			{ type: 'review', comment: 'Too heavy — factory functions work fine for our scale.' },
+			'commit: refactor: extract validation into pure functions',
+			'review: Too heavy — factory functions work fine for our scale.',
 		])
 
 		const result = await brain.ask('What is my coding philosophy?')
@@ -97,7 +97,7 @@ async function main() {
 				{
 					id: 'recipes',
 					name: 'Recipe Collection',
-					type: 'list',
+					type: 'text',
 					description: 'Tracked recipes and ingredients',
 					instructions: 'Track recipes with cuisine type, ingredients, and difficulty level.',
 				},

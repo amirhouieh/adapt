@@ -9,15 +9,13 @@ Common patterns for building with Adapt. Each recipe addresses a specific proble
 
 **Problem:** By default, insights only come when you ask for them via `ask()`. But sometimes you want the system to proactively surface important findings — for example, notifying a user when a critical pattern emerges.
 
-**Solution:** Subscribe to `neuron:synthesized` events and trigger a query when significance is high:
+**Solution:** Subscribe to `neuron:synthesized` (a neuron's memory changed) and ask when something new may have emerged:
 
 ```typescript
 brain.on('neuron:synthesized', async (payload) => {
-  if (payload.significance === 'critical' || payload.significance === 'notable') {
-    const insight = await brain.ask('What new patterns or tensions have emerged?')
-    if (insight.sources.some(s => s.confidence > 0.7)) {
-      notifyUser(insight)
-    }
+  const insight = await brain.ask('What new patterns or tensions have emerged?')
+  if (insight.sources.some(s => s.confidence > 0.7)) {
+    notifyUser(insight)
   }
 })
 ```
@@ -61,7 +59,7 @@ await brain.adjustNeuron('categories', 'Stop categorizing things as inspiration'
 
 ## Dual-Brain Architecture
 
-**Problem:** Some use cases need both long-term memory (patterns across weeks or months) and short-term processing (extracting observations from a single session). A single Brain can't easily serve both — long-term brains have accumulated knowledge that biases observation, while session brains need to start fresh.
+**Problem:** Some use cases need both long-term memory (patterns across weeks or months) and short-term processing (extracting what happened in a single session). A single Brain can't easily serve both — long-term brains have accumulated knowledge that biases what they keep, while session brains need to start fresh.
 
 **Solution:** Use two separate brains. A session brain processes the immediate data with a fixed, lightweight structure. After the session, transfer its knowledge into the long-term brain:
 
@@ -79,7 +77,7 @@ const longTermBrain = await Brain.create({
 
 // Session brain: fixed structure, short-lived
 const sessionBrain = await Brain.create({
-  prompt: 'Extract observations from this session.',
+  prompt: 'Extract what happened in this session.',
   model,
   autoSetup: false,
   neurons: sessionNeuronDefs,
@@ -93,7 +91,7 @@ await sessionBrain.inject(sessionData)
 for (const neuron of sessionBrain.getNeurons()) {
   const understanding = await neuron.getUnderstanding()
   if (understanding) {
-    await longTermBrain.inject({ source: neuron.name, content: understanding })
+    await longTermBrain.inject(`${neuron.name}:\n${understanding}`)
   }
 }
 ```
@@ -102,9 +100,9 @@ On Bun, import the same adapters from `@unbody-io/adapt/sqlite/bun`.
 
 ## Event-Driven Synchronization
 
-**Problem:** `brain.inject()` returns after observation completes, but synthesis may still be running. If you need to guarantee that all neurons have finished processing before continuing (e.g., before querying), you need to wait for the full pipeline.
+**Problem:** `brain.inject()` can return while internal-neuron work is still running. If you need to guarantee that all neurons have finished processing before continuing (e.g., before querying), you need to wait for the full pipeline.
 
-**Solution:** Listen for the `brain:inject:completed` event, which fires after all neurons finish both observation and synthesis:
+**Solution:** Listen for the `brain:inject:completed` event, which fires after all neurons finish learning:
 
 ```typescript
 const injectDone = new Promise<void>((resolve) => {
@@ -117,9 +115,9 @@ await injectDone // Block until all neurons finish processing
 
 ## Multi-Provider Model Setup
 
-**Problem:** You want to minimize cloud API costs, but local models aren't good enough for synthesis and querying.
+**Problem:** You want to minimize cloud API costs, but local models aren't good enough for decomposition and answers.
 
-**Solution:** Use the [model cascade](./configuration#model-cascade) to assign a local model for high-volume observation and a cloud model for the operations that need quality:
+**Solution:** Use the [model cascade](./configuration#model-cascade) to assign a local model for high-volume learning (plain text, extract + update) and a cloud model for the operations that need quality:
 
 ```typescript
 import { openai } from '@ai-sdk/openai'
@@ -132,20 +130,16 @@ const local = createOpenAICompatible({
 
 const brain = await Brain.create({
   prompt: '...',
-  model: local('llama3.1'),
+  model: local('llama3.1'),          // Learning (extract + update) runs on this
   blueprintModel: openai('gpt-4o'),
   init: { model: openai('gpt-4o') },
   query: { model: openai('gpt-4o') },
-  learning: {
-    observer: { model: local('llama3.1') },
-    understand: { model: openai('gpt-4o') },
-  },
 })
 ```
 
 ## SSE Event Broadcasting
 
-**Problem:** You're building a web app and want to stream Brain activity (observation progress, synthesis results, evolution decisions) to the browser in real time.
+**Problem:** You're building a web app and want to stream Brain activity (learning results, evolution decisions) to the browser in real time.
 
 **Solution:** Forward Brain events over Server-Sent Events. The event system emits structured payloads that map cleanly to SSE:
 

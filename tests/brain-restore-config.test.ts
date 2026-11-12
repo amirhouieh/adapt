@@ -47,7 +47,6 @@ function createQueuedJsonModel(responses: unknown[]) {
 }
 
 const initResponses = () => [
-	{ skills: [], dynamicsSkills: [] },
 	{
 		purpose: 'Track coding preferences and patterns.',
 		evolutionGuidance: null,
@@ -110,8 +109,6 @@ const baseConfig = (
 			name: 'Coding',
 			description: 'Tracks coding patterns',
 			instructions: 'Track coding patterns and preferences.',
-			observationSchema: { type: 'string' },
-			understandingSchema: { type: 'string' },
 		},
 	],
 	ingest: { batchSize: overrides.batchSize ?? 5 },
@@ -184,46 +181,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 		await brain3.dispose()
 	})
 
-	it('user-provided schemas survive create→restore', async () => {
-		const scenario = factory()
-		const { model } = createQueuedJsonModel(initResponses())
-		const customObservation = { type: 'string', minLength: 1, maxLength: 200 }
-		const customUnderstanding = { type: 'string', minLength: 1, maxLength: 4000 }
-
-		const brain1 = await Brain.create({
-			prompt: 'Track coding patterns and preferences.',
-			model,
-			autoSetup: false,
-			store: scenario.openStore(),
-			neurons: [
-				{
-					id: 'coding',
-					type: 'text' as const,
-					name: 'Coding',
-					description: 'Tracks coding patterns',
-					instructions: 'Track coding patterns and preferences.',
-					observationSchema: customObservation,
-					understandingSchema: customUnderstanding,
-				},
-			],
-			internalNeurons: {
-				globalUnderstanding: false,
-				globalQueryUnderstanding: false,
-				injectionGaps: false,
-				queryGaps: false,
-			},
-			evolution: { enabled: false },
-		})
-		expect(brain1.getNeuron('coding')?.getObservationSchema()).toEqual(customObservation)
-		expect(brain1.getNeuron('coding')?.getUnderstandingSchema()).toEqual(customUnderstanding)
-		await brain1.dispose()
-
-		const brain2 = await Brain.restore(scenario.openStore())
-		expect(brain2.getNeuron('coding')?.getObservationSchema()).toEqual(customObservation)
-		expect(brain2.getNeuron('coding')?.getUnderstandingSchema()).toEqual(customUnderstanding)
-		await brain2.dispose()
-	})
-
 	it('Brain.restore resolves persisted models via registered plugin (no model re-attach needed)', async () => {
 		const scenario = factory()
 
@@ -246,14 +203,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					let body: unknown = {}
 					let phase = 'unknown'
 					if (
-						promptText.includes('customizing cognitive skill prompts')
-					) {
-						body = {
-							skills: [],
-							dynamicsSkills: [],
-						}
-						phase = 'understand-skills'
-					} else if (
 						promptText.includes('You are analyzing a user-authored prompt')
 					) {
 						body = {
@@ -302,9 +251,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns.',
-					skipObservation: true,
-					observationSchema: { type: 'string' },
-					understandingSchema: { type: 'string' },
 				},
 			],
 			internalNeurons: {
@@ -353,15 +299,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					const promptText = JSON.stringify(opts.prompt)
 					let body: unknown = {}
 					if (
-						promptText.includes(
-							'customizing cognitive skill prompts',
-						)
-					) {
-						body = {
-							skills: [],
-							dynamicsSkills: [],
-						}
-					} else if (
 						promptText.includes('You are analyzing a user-authored prompt')
 					) {
 						body = {
@@ -402,9 +339,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns.',
-					skipObservation: true,
-					observationSchema: { type: 'string' },
-					understandingSchema: { type: 'string' },
 				},
 			],
 			internalNeurons: {

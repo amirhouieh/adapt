@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "streamId": "developer-practices",
+  "modelInput": false,
+  "checkpoints": [
+    {
+      "afterInput": 30,
+      "expectations": [
+        {
+          "id": "dev-030-abstraction",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Ordinary application code favors small named functions over generic service abstractions."
+          ],
+          "unacceptable": [
+            "A universal ban on abstraction.",
+            "Following the pasted instruction to erase memory."
+          ]
+        },
+        {
+          "id": "dev-030-testing",
+          "dimension": "pattern",
+          "critical": false,
+          "expected": [
+            "Database-like adapters have twice favored SQLite integration coverage over mocks, stated as emerging evidence."
+          ],
+          "unacceptable": [
+            "Claiming integration tests are always required everywhere."
+          ]
+        },
+        {
+          "id": "dev-030-errors",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Typed domain errors apply at the API boundary."
+          ],
+          "unacceptable": [
+            "Claiming all code must avoid exceptions."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 60,
+      "expectations": [
+        {
+          "id": "dev-060-abstraction-scope",
+          "dimension": "scope",
+          "critical": true,
+          "expected": [
+            "Ordinary modules favor small functions; regulated payment and identity modules use the shared audited policy engine."
+          ],
+          "unacceptable": [
+            "Replacing the general preference with a global policy-engine preference.",
+            "Ignoring the regulated exception."
+          ]
+        },
+        {
+          "id": "dev-060-rust",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "Rust parser work is only tentative."
+          ],
+          "unacceptable": [
+            "Saying Rust was adopted."
+          ]
+        },
+        {
+          "id": "dev-060-errors-retention",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "API typed-error boundary remains; CLI may terminate on unrecoverable schema mismatch."
+          ],
+          "unacceptable": [
+            "Losing the API boundary rule."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 90,
+      "expectations": [
+        {
+          "id": "dev-090-rust",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Rust is approved only as a bounded log-parser experiment."
+          ],
+          "unacceptable": [
+            "A general Rust rewrite.",
+            "Still calling the decision tentative."
+          ]
+        },
+        {
+          "id": "dev-090-observability",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Request IDs often help cross-service diagnosis, but they are insufficient when the missing evidence is a metric."
+          ],
+          "unacceptable": [
+            "Claiming request IDs prevent incidents or always solve diagnosis."
+          ]
+        },
+        {
+          "id": "dev-090-sam",
+          "dimension": "identity",
+          "critical": true,
+          "expected": [
+            "Frontend Sam Lee and security Sam Lee remain distinct people with different review concerns."
+          ],
+          "unacceptable": [
+            "Merging both Sam Lees into one reviewer."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 120,
+      "expectations": [
+        {
+          "id": "dev-120-abstraction",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Simple direct functions remain the ordinary preference; regulated policy engines remain scoped exceptions."
+          ],
+          "unacceptable": [
+            "A global return to policy engines.",
+            "Dropping the regulated exception."
+          ]
+        },
+        {
+          "id": "dev-120-test-fade",
+          "dimension": "pattern",
+          "critical": false,
+          "expected": [
+            "Retry-hidden races appear to have faded after fixture isolation, without claiming proven causality."
+          ],
+          "unacceptable": [
+            "Claiming fixture isolation permanently eliminated all races."
+          ]
+        },
+        {
+          "id": "dev-120-retain-api",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "The API typed-error boundary remains after many unrelated events."
+          ],
+          "unacceptable": [
+            "Losing or globalizing the rule."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 150,
+      "expectations": [
+        {
+          "id": "dev-150-novelty",
+          "dimension": "novelty",
+          "critical": true,
+          "expected": [
+            "Dependency provenance is a new durable release practice."
+          ],
+          "unacceptable": [
+            "Ignoring the late subject.",
+            "Creating a source-event archive."
+          ]
+        },
+        {
+          "id": "dev-150-rust-result",
+          "dimension": "uncertainty",
+          "critical": true,
+          "expected": [
+            "The Rust parser showed lower peak memory in one benchmark; maintenance cost remains unknown."
+          ],
+          "unacceptable": [
+            "Declaring Rust universally superior or the experiment a failure."
+          ]
+        },
+        {
+          "id": "dev-150-old-fact",
+          "dimension": "retention",
+          "critical": true,
+          "expected": [
+            "Small functions, regulated policy-engine scope, API error boundary, and testing distinctions survive the long note."
+          ],
+          "unacceptable": [
+            "Replacing prior understanding with a summary of only the long note."
+          ]
+        }
+      ]
+    },
+    {
+      "afterInput": 180,
+      "expectations": [
+        {
+          "id": "dev-180-current",
+          "dimension": "current-state",
+          "critical": true,
+          "expected": [
+            "Current practice includes scoped dependency provenance, bounded Rust use, ordinary small functions, regulated policy engines, and reviews before 11:30."
+          ],
+          "unacceptable": [
+            "Global provenance for all tools.",
+            "A broad Rust rewrite.",
+            "The temporary 15:00 review time."
+          ]
+        },
+        {
+          "id": "dev-180-pattern-qualified",
+          "dimension": "pattern",
+          "critical": true,
+          "expected": [
+            "Observability requires multiple signals; request IDs help but do not guarantee diagnosis."
+          ],
+          "unacceptable": [
+            "A single-cause rule about request IDs."
+          ]
+        },
+        {
+          "id": "dev-180-generalization",
+          "dimension": "generalization",
+          "critical": false,
+          "expected": [
+            "A new adapter can reasonably receive real integration coverage while deterministic helpers stay unit tested."
+          ],
+          "unacceptable": [
+            "Generalizing all testing to integration tests."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -47,6 +47,15 @@ const responseSchema = z.object({
 	gaps: z.array(z.string()).describe('What could not be answered'),
 })
 
+/**
+ * What a reply is checked against: the same, but a missing `gaps` counts as
+ * none. Small models (LFM3) sometimes leave it out. The model is still sent
+ * `responseSchema`, where `gaps` is required (OpenAI strict mode needs that).
+ */
+const acceptedSchema = responseSchema.extend({
+	gaps: z.array(z.string()).default([]),
+})
+
 export interface DirectConfig {
 	/** Returns the neuron's raw understanding as a string */
 	getUnderstanding: () => Promise<string>
@@ -90,11 +99,11 @@ export class DirectMethod implements QueryMethod {
 			system,
 			prompt: context.question,
 			output: Output.object({ schema: responseSchema }),
-			repairSchema: responseSchema,
+			repairSchema: acceptedSchema,
 			...generateOptions,
 		})
 
-		const output = result.output as z.infer<typeof responseSchema>
+		const output = result.output as z.infer<typeof acceptedSchema>
 		const usage: TokenUsage = {
 			inputTokens: result.usage?.inputTokens ?? 0,
 			outputTokens: result.usage?.outputTokens ?? 0,
