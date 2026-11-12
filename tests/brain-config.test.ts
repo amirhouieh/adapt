@@ -218,6 +218,8 @@ describe('BRAIN_DEFAULTS', () => {
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.maxObservations).toBe(10)
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.maxTokens).toBe(8000)
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.minImportance).toBe(0.5)
+		// Below the two-step memory cap (8192 tokens), so it is not silently capped.
+		expect(BRAIN_DEFAULTS.learning.governance).toEqual({ strategy: 'cumulative', maxTokens: 8000 })
 	})
 
 	it('has correct evolution defaults', () => {
