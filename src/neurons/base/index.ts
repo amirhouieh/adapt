@@ -1,5 +1,6 @@
 export type {
 	AdjustResult,
+	LearnInput,
 	LearnOptions,
 	LearnOutput,
 	ManagedLearnOutput,

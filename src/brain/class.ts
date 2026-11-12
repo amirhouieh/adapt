@@ -15,6 +15,7 @@ import {
 	type AdjustResult,
 	type BaseNeuron,
 	type GeneratedNeuronConfig,
+	type LearnInput,
 	type NeuronHealth,
 	type NeuronTypeDescriptor,
 	type TokenUsage,
@@ -957,11 +958,14 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	 * Each neuron processes independently and may further chunk by token limit.
 	 */
 	async inject(
-		data: unknown | unknown[],
+		data: LearnInput | readonly LearnInput[],
 		options?: BrainInjectOptions,
 	): Promise<BrainInjectResult> {
 		const injectId = options?.id ?? `inject_${nanoid()}`
-		const items = Array.isArray(data) ? data : [data]
+		const items: readonly LearnInput[] =
+			typeof data === 'string' || !Array.isArray(data)
+				? [data as LearnInput]
+				: data
 		// Skip inactive neurons — pause is brain-level fan-out gating, not
 		// per-neuron concern. Query path (ask) is unaffected; their knowledge
 		// stays consultable.
@@ -971,7 +975,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 
 		// Split items into batches by batchSize
 		const batchSize = this.state.ingest.batchSize
-		const batches: unknown[][] = []
+		const batches: LearnInput[][] = []
 		for (let i = 0; i < items.length; i += batchSize) {
 			batches.push(items.slice(i, i + batchSize))
 		}
@@ -1619,7 +1623,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		const resolvedGaps: string[] = []
 
 		for (const batch of unresolved) {
-			const data = batch.data as unknown[]
+			const data = batch.data as LearnInput[]
 
 			// Try every new neuron — don't stop at first acceptance
 			let anyAccepted = false
@@ -1685,12 +1689,12 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 
 			try {
 				await queryNeuron.learn([
-					{
-						question: query,
-						relevantNeurons,
-						gaps: allGaps,
-						timestamp: now,
-					},
+					[
+						`Question: ${query}`,
+						`Relevant neurons: ${relevantNeurons.join(', ') || 'none'}`,
+						`Gaps: ${allGaps.join('; ') || 'none'}`,
+						`Asked at: ${now}`,
+					].join('\n'),
 				])
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err)
@@ -1708,11 +1712,11 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 				const allGaps = neuronResults.flatMap((r) => r.gaps)
 				try {
 					await gapNeuron.learn([
-						{
-							question: query,
-							gaps: allGaps,
-							timestamp: now,
-						},
+						[
+							`Question: ${query}`,
+							`Gaps: ${allGaps.join('; ')}`,
+							`Asked at: ${now}`,
+						].join('\n'),
 					])
 				} catch (err) {
 					const msg = err instanceof Error ? err.message : String(err)
@@ -1762,12 +1766,11 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			const feedGlobal = (understanding: string) => {
 				globalNeuron
 					.learn([
-						{
-							neuronId: event.neuronId,
-							understanding,
-							significance: event.significance,
-							evolution: event.evolution,
-						},
+						[
+							`Specialist ${event.neuronId} updated its understanding.`,
+							`Change: ${event.evolution}`,
+							`Understanding:\n${understanding}`,
+						].join('\n'),
 					])
 					.catch((err) => {
 						console.error(`[internal-neuron] feed error:`, err?.message ?? err)

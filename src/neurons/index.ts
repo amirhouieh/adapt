@@ -16,6 +16,7 @@ export type {
 	BaseNeuronUpdateInput,
 	BaseResolvedConfig,
 	EventUsage,
+	LearnInput,
 	LearnOptions,
 	LearnOutput,
 	ManagedLearnOutput,

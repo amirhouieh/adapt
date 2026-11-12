@@ -1,3 +1,4 @@
+import type { LearnInput } from './base/class'
 /**
  * Core types for Neurons
  *
@@ -62,7 +63,7 @@ export interface Neuron<TUnderstanding = unknown> {
 	getMetrics(): NeuronMetrics
 
 	// Core operations
-	learn(batch: unknown[]): Promise<unknown>
+	learn(batch: readonly LearnInput[]): Promise<unknown>
 	query(question: string): Promise<unknown>
 
 	// Introspection

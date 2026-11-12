@@ -11,6 +11,7 @@
  */
 
 import { nanoid } from 'nanoid'
+import type { TextInput } from '../../learning/text-state'
 import type {
 	AdaptLLMPlugin,
 	AdaptRepairOptions,
@@ -95,6 +96,9 @@ export interface ManagedLearnOutput {
 	readonly status: 'managed'
 	readonly mode: string
 }
+
+/** What a neuron learns from: plain text, or a TextInput with caller-owned ids and times. */
+export type LearnInput = string | TextInput
 
 /**
  * Options for learn() call
@@ -206,7 +210,11 @@ export abstract class BaseNeuron<
 		avgImportance: number
 		totalTokens: number
 	}>
-	abstract learn(batch: unknown[], options?: LearnOptions): Promise<LearnOutput>
+	/** Learn from a batch: plain text, or TextInput when the caller controls ids and times. */
+	abstract learn(
+		batch: readonly LearnInput[],
+		options?: LearnOptions,
+	): Promise<LearnOutput>
 	abstract update(
 		updates: BaseNeuronUpdateInput & Record<string, unknown>,
 	): Promise<{ changedFields: string[] }>

@@ -6,7 +6,12 @@ import type { AdaptLLMPlugin, LanguageModel } from '../../llm'
 import { resolveRuntimeLLM } from '../../llm'
 import type { NeuronStore } from '../../stores'
 import type { ParentModels } from '../../types/config'
-import type { AdjustResult, LearnOptions, LearnOutput } from '../base/class'
+import type {
+	AdjustResult,
+	LearnInput,
+	LearnOptions,
+	LearnOutput,
+} from '../base/class'
 import { BaseNeuron } from '../base/class'
 import type { QueryMethod } from '../base/query'
 import { DirectMethod } from '../base/query'
@@ -370,7 +375,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 	}
 
 	override async learn(
-		batch: unknown[],
+		batch: readonly LearnInput[],
 		_options?: LearnOptions,
 	): Promise<LearnOutput> {
 		const run = this.#learn(batch)
@@ -382,7 +387,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		}
 	}
 
-	async #learn(batch: unknown[]): Promise<LearnOutput> {
+	async #learn(batch: readonly LearnInput[]): Promise<LearnOutput> {
 		const adaptive = this.#adaptive
 		const adaptiveConfig = this.#adaptiveConfig
 		const inputs = batch.map((item) =>
@@ -393,7 +398,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		const understanding = await this.getUnderstanding()
 		let result: LearnOutput
 		if (learned.nothingRelevant) {
-			result = { status: 'observe:dismissed', output: batch, gaps: [] }
+			result = { status: 'observe:dismissed', output: [...batch], gaps: [] }
 		} else if (understanding !== previousUnderstanding) {
 			result = {
 				status: 'synthesized',
@@ -630,29 +635,14 @@ export function protectedDeveloperInstructions(
 }
 
 function normalizeAdaptiveInput(
-	item: unknown,
+	item: LearnInput,
 	runtime: AdaptiveTextLearningRuntime,
 ): TextInput {
-	const value = (typeof item === 'object' ? item : null) as Partial<TextInput> | null
-	if (
-		value === null ||
-		typeof value.deliveryId !== 'string' ||
-		typeof value.text !== 'string' ||
-		typeof value.observedAt !== 'string'
-	) {
-		// Any other data (as Brain sends) is learned as text.
-		return {
-			deliveryId: runtime.inputIds.next(),
-			text: typeof item === 'string' ? item : JSON.stringify(item),
-			observedAt: runtime.clock.now(),
-		}
-	}
+	if (typeof item !== 'string') return item
 	return {
-		deliveryId: value.deliveryId,
-		text: value.text,
-		observedAt: value.observedAt,
-		...(value.eventId === undefined ? {} : { eventId: value.eventId }),
-		...(value.urgency === undefined ? {} : { urgency: value.urgency }),
+		deliveryId: runtime.inputIds.next(),
+		text: item,
+		observedAt: runtime.clock.now(),
 	}
 }
 
