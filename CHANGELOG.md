@@ -4,16 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-12
+
+Adapt v2. Every change below is breaking unless marked otherwise.
+
+### Upgrading from 0.0.6
+
+0.1.0 does not support 0.0.6 stores. Start with a new store. A v0.0.6 migration exists inside the package (tested, not public yet); Brains with list neurons are refused by it.
+
 ### Changed
 
 - **Breaking:** `TextNeuron` learns in two stages, in plain text: extract what is relevant, then update the memory. The observe/understand engine, observation buffer, thresholds-driven synthesis, cognitive skills, custom schemas, `skipObservation` / `skipUnderstand` and `forceSynthesize` are gone.
-- **Breaking:** `ListNeuron` is removed. Brains with list neurons are refused by the v0.0.6 migration.
+- **Breaking:** `ListNeuron` is removed. A list is written as plain text by a `TextNeuron`.
 - **Breaking:** `learn()` and `Brain.inject()` take `string | TextInput` items only.
 - **Breaking:** `observeInstructions`, `understandInstructions` and `focus` are removed from neuron configs, state and getters, and from the generated-neuron schema. `protectedDeveloperInstructions` is no longer exported. Saved neurons keep any rules these fields already added to their profile.
 - `adjust()` adds the directive as a rule for both stages, with no LLM call. Memory is not edited.
 - Memory strategies (`continuous`, `cumulative`, `decay`) run after each update, before the memory is saved. `getGovernance()` and `update({ governance })` on `TextNeuron`.
 - **Breaking:** the default memory strategy is `cumulative` with `maxTokens` 8000 for every neuron (standalone neurons used `continuous`). `continuous` stops learning once the memory reaches the cap.
 - `cumulative` and `decay` use new plain prompts: shorten, keep current values, add nothing. The old seed / three-section prompts invented facts and advice on small models.
+- Brain applies its `learning` config (`model`, `blueprintModel`, `query`, `governance`) to every neuron it creates: at create, by evolution (split/merge) and by `addNeuron`. `brain.update({ learning })` also applies to neurons created later. Before, `learning` given to `Brain.create` was ignored.
+- Internal neurons use `maxTokens` 8000 (was 16000, silently capped at 8192).
+
+### Fixed
+
+- `brain.ask()` no longer fails when one neuron's query fails; that neuron is skipped and emits `neuron:query:failed`.
+- A neuron query reply without `gaps` is accepted (small models sometimes leave it out). The model is still sent the strict schema.
+- The memory strategy call uses the update step's output limit and rejects cut-off or empty replies, so a half memory is never saved.
 
 ## [0.0.6] - 2026-05-18
 

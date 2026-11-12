@@ -1,6 +1,6 @@
 {
   "name": "@unbody-io/adapt",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "A self-evolving memory layer for AI applications",
   "type": "module",
   "main": "dist-cjs/index.js",
@@ -37,7 +37,6 @@
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
     "format": "biome format --write src",
-    "eval:list-neuron": "npx tsx evals/scripts/list-neuron-semantic-eval.ts",
     "eval:behavior-brain": "npx tsx evals/scripts/usecase-behavior-brain.ts",
     "eval:behavior-brain:bun": "bun run evals/scripts/usecase-behavior-brain.ts",
     "test:store": "vitest run tests/store-standalone.test.ts",

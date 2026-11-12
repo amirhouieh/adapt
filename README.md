@@ -118,7 +118,9 @@ Requires a model with structured output and tool calling.
 
 ## Status
 
-`0.0.x`. In use, changing fast, breaking changes expected. Node, Bun, Electron. ESM and CJS. In-memory or SQLite. MIT.
+`0.1.x`. In use, changing fast, breaking changes expected. Node, Bun, Electron. ESM and CJS. In-memory or SQLite. MIT.
+
+**Upgrading from 0.0.6:** 0.1.0 does not support 0.0.6 stores; start with a new one. See the changelog.
 
 Local models (Ollama, LM Studio) are not fully tested yet.
 
