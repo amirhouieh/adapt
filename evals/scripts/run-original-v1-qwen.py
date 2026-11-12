@@ -28,7 +28,7 @@ def model_command(arguments, label):
 
 try:
     for model in suite["models"]:
-        name = model.split("/")[1]
+        name = model.split("/")[-1]
         loaded = json.loads(subprocess.check_output([lms, "ps", "--json"], text=True))
         if not loaded:
             model_command(["load", model, "--context-length", "8192", "--parallel", "1", "--yes"], f"{name}-load")
