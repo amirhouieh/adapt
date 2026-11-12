@@ -28,6 +28,7 @@ import { estimateTokens, type Strategy } from '../../src/neurons/text/strategies
 
 const MODEL = process.env.MODEL ?? 'liquid/lfm-3-1.7b'
 const MAX_TOKENS = Number(process.env.MAX_TOKENS ?? 300)
+const RUN = process.env.RUN ?? ''
 const BATCH = 4
 const apiKey = process.env.OPENROUTER_API_KEY
 if (!apiKey) throw new Error('OPENROUTER_API_KEY is required')
@@ -68,7 +69,7 @@ const provider = createOpenAICompatible({
 const model = provider(MODEL)
 const baseLLM = createAiSdkLLM({ providers: { openrouter: provider } })
 
-type Kind = 'extract' | 'update' | 'cumulative' | 'decay' | 'other'
+type Kind = 'extract' | 'update' | 'shorten' | 'other'
 interface Call {
 	kind: Kind
 	prompt: string
@@ -81,11 +82,10 @@ function textOf(content: unknown): string {
 	return JSON.stringify(content)
 }
 
-function kindOf(system: string, prompt: string): Kind {
+function kindOf(system: string): Kind {
 	if (system.startsWith('Here is some data')) return 'extract'
 	if (system.startsWith('Here is information extracted')) return 'update'
-	if (prompt.includes('You are distilling')) return 'cumulative'
-	if (prompt.includes('You are compressing')) return 'decay'
+	if (system.startsWith('Here is our understanding of this topic')) return 'shorten'
 	return 'other'
 }
 
@@ -99,7 +99,7 @@ function logged(calls: Call[]): AdaptLLMPlugin {
 			const system = request.system ?? ''
 			const prompt = request.messages.map((m) => textOf(m.content)).join('\n')
 			calls.push({
-				kind: kindOf(system, prompt),
+				kind: kindOf(system),
 				prompt,
 				output: result.text ?? '',
 				seconds: (Date.now() - started) / 1000,
@@ -177,7 +177,7 @@ function report(strategy: Strategy, steps: Step[]): string {
 			const label =
 				c.kind === 'update'
 					? 'Update output (memory before strategy)'
-					: `${c.kind} output (memory after strategy)`
+					: `${strategy} ${c.kind} output (memory after strategy)`
 			lines.push(`### ${label}, ~${estimateTokens(c.output)} tokens, ${c.seconds.toFixed(0)}s\n`)
 			lines.push('```text', c.output.trim(), '```', '')
 		}
@@ -189,7 +189,7 @@ function report(strategy: Strategy, steps: Step[]): string {
 const out = resolve(
 	import.meta.dirname,
 	'../.data/two-step-strategies-lfm3',
-	new Date().toISOString().replaceAll(':', '-'),
+	`${new Date().toISOString().replaceAll(':', '-')}${RUN}`,
 )
 mkdirSync(out, { recursive: true })
 const started = Date.now()

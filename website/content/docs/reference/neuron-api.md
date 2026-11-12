@@ -130,6 +130,6 @@ Accepted by `TextNeuron.create()` (and by Brain explicit-neuron configs). Requir
 |---|---|---|
 | `model` | `LanguageModel` | Default model for learning and queries. |
 | `instructions` | `string` | What the neuron tracks. Used verbatim in the extract and update prompts. |
-| `governance` | `{ strategy?, maxTokens? }` | Optional. Memory strategy: `continuous` (default), `cumulative`, or `decay`. |
+| `governance` | `{ strategy?, maxTokens? }` | Optional. Memory strategy: `cumulative` (default, 8000 tokens), `decay`, or `continuous`. |
 | `query` | `{ model? }` | Optional. Model override for queries. |
 | `onEvent` | `UnifiedHandler<NeuronEvent>` | Optional. Subscribed via `.on(...)` before `init()` runs, so `neuron:init:*` events are observable. Also accepted in `restore()` runtime options. |

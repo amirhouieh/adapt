@@ -65,7 +65,7 @@ async function main() {
 
 	// Memory strategy
 	const gov = textNeuron.getGovernance()
-	assert(gov.strategy === 'continuous' && gov.maxTokens === 4000, 'getGovernance() returns neuron defaults')
+	assert(gov.strategy === 'cumulative' && gov.maxTokens === 8000, 'getGovernance() returns neuron defaults')
 
 	// Verify synthesized fields if we got a synthesized result
 	if (inputResult.status === 'synthesized') {

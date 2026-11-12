@@ -171,20 +171,20 @@ If your model doesn't support tool calling, **TextNeuron in direct mode** still 
 
 `learning.governance` sets the memory strategy for Brain's neurons (default: `cumulative`, 8000 tokens). A neuron's own `governance` in `neurons: [...]` wins per field. The strategy runs after each update, before the memory is saved:
 
-- **`continuous`** — Memory grows. No compression. Use for low-volume topics where you want full detail.
+- **`cumulative`** (default) — Over `maxTokens`, one model call shortens the memory, keeping what matters most and the current value of anything that changed. It adds nothing.
 
-- **`cumulative`** (Brain default) — Over `maxTokens`, one model call summarizes the memory into a seed. The seed starts the next cycle.
+- **`decay`** — At 80% of `maxTokens`, one model call shortens the memory, keeping recent facts in detail and shortening older ones more.
 
-- **`decay`** — At 80% of `maxTokens`, one model call compresses older parts (Current State / Recent Developments / Historical Context) and keeps recent detail.
+- **`continuous`** — Memory is never shortened. Once it reaches the memory cap (about 8192 tokens), updates are refused and the neuron stops learning. Small topics only.
 
 `maxTokens` defaults to 8000 for Brain neurons. Tokens are estimated as characters / 4, and `maxTokens` is capped by the learning setup's memory size (8192 tokens by default).
 
 | Use case | Strategy | Why |
 |---|---|---|
-| High-volume stream (logs, events) | `decay` | Keep recent detail, compress history |
-| Low-volume, high-value (design decisions) | `continuous` | Keep everything |
-| Long-running tracker (feature requests) | `cumulative` | Periodic consolidation, bounded size |
-| Session-scoped (single conversation) | `continuous` | Session ends soon, no need to compress |
+| Most topics | `cumulative` | Bounded size, shortened only when needed |
+| High-volume stream (logs, events) | `decay` | Keep recent detail, shorten history |
+| Small, high-value topic (design decisions) | `continuous` | Keep everything — only while it stays well under the cap |
+| Session-scoped (single conversation) | `continuous` | Session ends before the memory gets large |
 
 ## Health Thresholds
 

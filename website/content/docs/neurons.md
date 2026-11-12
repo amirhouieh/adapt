@@ -63,11 +63,15 @@ await neuron.update({ governance: { strategy: 'cumulative' } })
 
 | Strategy | What happens | Good for |
 |---|---|---|
-| `continuous` (neuron default) | Nothing. The update stage keeps the memory as it is. | Low-volume topics where every detail matters |
-| `cumulative` (Brain default) | Over `maxTokens`, one model call summarizes the memory into a seed that starts the next cycle. | General learning — bounded size, periodic consolidation |
-| `decay` | At 80% of `maxTokens`, one model call compresses older parts and keeps recent detail (Current / Recent / Historical). | Topics where recent data matters most |
+| `cumulative` (default) | Over `maxTokens`, one model call shortens the memory, keeping what matters most. | General learning — bounded size |
+| `decay` | At 80% of `maxTokens`, one model call shortens the memory, keeping recent facts in detail and shortening older ones more. | Topics where recent data matters most |
+| `continuous` | Nothing: the memory is never shortened. | Small topics only — see the warning below |
 
-Tokens are estimated as characters / 4. `maxTokens` defaults to 4000 for a standalone neuron and 8000 for Brain-created neurons. It is capped by the memory size of the learning setup (8192 tokens by default).
+The shorten call uses the same plain style as the update step: it is told the topic and your `adjust` rules, to keep current values where something changed, and to add nothing (no advice, no lessons).
+
+Tokens are estimated as characters / 4. `maxTokens` defaults to 8000, for standalone and Brain neurons alike. It is capped by the memory size of the learning setup (8192 tokens by default).
+
+> **`continuous` stops learning at the cap.** The memory can hold about 8192 tokens. With `continuous`, once an update would go past that, the update is refused, that batch is dropped, and later batches fail the same way. Use it only for topics that stay small.
 
 ### Restore
 

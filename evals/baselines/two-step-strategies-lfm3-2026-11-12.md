@@ -50,3 +50,19 @@ The strategy call now uses the update step's output limit (8192), and, like the 
 - [r3](../.data/two-step-strategies-lfm3/2026-11-12T20-33-35.045Z) (decay + cumulative, 24 inputs): decay replied empty twice (batches 2 and 3). Both were rejected and retried; all 24 inputs were learned and no cut-off memory was saved.
 
 So the limit does not stop LFM3 from sometimes thinking until it runs out. It makes the failure safe: reject, retry, never save a half memory.
+
+## After the fix: new shorten prompt
+
+`cumulative` and `decay` now use one plain prompt in the update step's style: topic and developer rules, "shorten to at most N words", "where something changed, keep the current value", "do not add anything: no advice, no lessons, no next steps". `decay` also says to keep recent facts in detail. Two runs ([a](../.data/two-step-strategies-lfm3/2026-11-12T22-02-07.005Z-a), [b](../.data/two-step-strategies-lfm3/2026-11-12T22-02-07.005Z-b)), same 24 inputs, `maxTokens` 300.
+
+| | old prompts (r1–r3) | new prompt (a, b) |
+|---|---|---|
+| memory after shortening (est. tokens, limit 300) | 296–440 | 189–267 |
+| "Lessons / Insights / Action items", invented rules | in every cumulative run | none |
+| empty or cut-off replies | 4 of 24 decay calls (runs + probes) | 0 of 16 calls |
+
+Fact errors remain, and most first appear in the shorten step: roles mixed up (a: "Ruud Smit (on leave)"; it was Pieter), wrong dates (a: "started 12 Jan under Mo Haddad"), units (b: "60×60 ft tiles"), done items listed as open (a: "sink leak"; b: "need warm-white paint"). Here the memory is halved on every batch (update 324–576 → 189–267 tokens), which is far harsher than real use: with the default `maxTokens` 8000, shortening happens only after about 8k tokens of memory.
+
+## Defaults
+
+`continuous` never shortens, and the memory cap is 8192 tokens: past it, the update is refused (`capacity_exceeded`, not retried), that batch is dropped, and later batches fail the same way (checked with a scripted model). So the default is now `cumulative` with `maxTokens` 8000 for every neuron, standalone and Brain.

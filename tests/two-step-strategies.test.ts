@@ -4,6 +4,7 @@ import type {
 } from '@ai-sdk/provider'
 import { describe, expect, it } from 'vitest'
 import { MemoryNeuronStore, TextNeuron } from '../src'
+import { shortenSystem } from '../src/neurons/text/strategies'
 import type { LanguageModel } from '../src/llm'
 
 // Plain-text model: replies are returned in order, one per call.
@@ -133,18 +134,28 @@ describe('two-step memory strategies', () => {
 		await neuron.dispose()
 	})
 
+	it('the shorten prompt names the topic and rules, a word target, and adds nothing', () => {
+		const prompt = shortenSystem('decay', 'Track my renovation.', ['Keep owner names.'], 300)
+		expect(prompt).toContain('Track my renovation.')
+		expect(prompt).toContain('- Keep owner names.')
+		expect(prompt).toContain('at most 157 words') // 300 × 0.7 × 0.75
+		expect(prompt).toContain('Keep recent facts in detail.')
+		expect(prompt).toContain('Do not add anything')
+		expect(shortenSystem('cumulative', 'T', [], 300)).not.toContain('recent')
+	})
+
 	it('governance can be changed with update()', async () => {
 		const neuron = await TextNeuron.create({
 			model: scriptedModel([]),
 			instructions: 'Track coding preferences.',
 			store: new MemoryNeuronStore(),
 		})
-		expect(neuron.getGovernance().strategy).toBe('continuous')
+		expect(neuron.getGovernance()).toEqual({ strategy: 'cumulative', maxTokens: 8000 })
 		const { changedFields } = await neuron.update({
 			governance: { strategy: 'decay' },
 		})
 		expect(changedFields).toContain('governance.strategy')
-		expect(neuron.getGovernance()).toEqual({ strategy: 'decay', maxTokens: 4000 })
+		expect(neuron.getGovernance()).toEqual({ strategy: 'decay', maxTokens: 8000 })
 		await neuron.dispose()
 	})
 })

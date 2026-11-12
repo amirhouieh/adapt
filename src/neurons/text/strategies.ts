@@ -2,9 +2,10 @@
  * Memory strategies. Run after the two-step update, before the memory is
  * saved (same commit):
  * - continuous: memory grows; nothing happens here.
- * - cumulative: over maxTokens, one call summarizes the memory into a seed.
- * - decay: at 80% of maxTokens, one call compresses older parts and keeps
- *   recent detail.
+ * - cumulative: over maxTokens, one call shortens the memory, keeping what
+ *   matters most.
+ * - decay: at 80% of maxTokens, one call shortens the memory, keeping recent
+ *   detail and shortening older facts more.
  */
 
 import {
@@ -23,9 +24,15 @@ export interface GovernanceConfig {
 	maxTokens?: number
 }
 
+/**
+ * Same as Brain's default. 8000 stays under the two-step memory cap (8192
+ * tokens), so memory is shortened before an update can be refused for size.
+ * `continuous` never shortens: once the memory reaches the cap, updates are
+ * refused and the neuron stops learning.
+ */
 export const DEFAULT_GOVERNANCE: Required<GovernanceConfig> = {
-	strategy: 'continuous',
-	maxTokens: 4000,
+	strategy: 'cumulative',
+	maxTokens: 8000,
 }
 
 export function estimateTokens(text: string): number {
@@ -35,6 +42,10 @@ export function estimateTokens(text: string): number {
 export async function applyStrategy(
 	input: {
 		memory: string
+		/** The neuron's topic (its instructions). */
+		topic: string
+		/** Developer rules (from `adjust`), as the update step sees them. */
+		rules: readonly string[]
 		governance: GovernanceConfig
 		/** The memory cap of the learning setup; limits stay below it. */
 		maxCharacters: number
@@ -54,14 +65,11 @@ export async function applyStrategy(
 	const limit = governance.strategy === 'decay' ? maxTokens * 0.8 : maxTokens
 	if (estimateTokens(memory) <= limit) return memory
 
-	const prompt =
-		governance.strategy === 'cumulative'
-			? cumulativeSeedPrompt(memory, maxTokens)
-			: decayCompressPrompt(memory, maxTokens)
 	const result = await generate({
 		llm: input.llm,
 		model: input.model,
-		prompt,
+		system: shortenSystem(governance.strategy, input.topic, input.rules, maxTokens),
+		prompt: `Understanding:\n${memory}`,
 		maxOutputTokens: input.maxOutputTokens,
 		abortSignal: input.abortSignal,
 		repairWithFeedback: input.repairWithFeedback,
@@ -76,40 +84,32 @@ export async function applyStrategy(
 	return text
 }
 
-function cumulativeSeedPrompt(memory: string, maxTokens: number): string {
-	return `You are distilling a learning agent's understanding into a seed for a new learning cycle.
+/**
+ * Same plain style as the two-step update prompt. Target: 70% of maxTokens,
+ * given in words (about 0.75 words per token) because models follow word
+ * counts better than token counts.
+ */
+export function shortenSystem(
+	strategy: Exclude<Strategy, 'continuous'>,
+	topic: string,
+	rules: readonly string[],
+	maxTokens: number,
+): string {
+	const words = Math.floor(maxTokens * 0.7 * 0.75)
+	const rulesBlock =
+		rules.length === 0
+			? ''
+			: `\n\nRules from the developer:\n${rules.map((rule) => `- ${rule}`).join('\n')}`
+	const keep =
+		strategy === 'decay'
+			? 'Keep recent facts in detail. Shorten older facts more, or drop them if they no longer matter.'
+			: 'Keep the facts that matter most for the topic.'
+	return `Here is our understanding of this topic:
+${topic}${rulesBlock}
 
-CURRENT UNDERSTANDING:
-${memory}
-
-TASK:
-Create a seed (approximately ${Math.floor(maxTokens * 0.7)} tokens) that captures:
-- Core patterns and facts discovered
-- Key insights worth preserving
-- Foundation for continued learning
-
-The seed should be self-contained — a fresh starting point, not a continuation.
-Write it as if beginning a new document that builds on established knowledge.
-
-Output ONLY the seed, nothing else.`
-}
-
-function decayCompressPrompt(memory: string, maxTokens: number): string {
-	return `You are compressing a learning agent's understanding using decay - older information fades while recent stays detailed.
-
-CURRENT UNDERSTANDING:
-${memory}
-
-TASK:
-The understanding should have three temporal sections:
-- Current State: What's true right now (keep detailed)
-- Recent Developments: What changed recently (moderate detail)
-- Historical Context: Long-standing patterns (compress heavily)
-
-Compress the Historical Context section significantly while preserving key patterns.
-Move older items from Recent Developments to Historical Context.
-Keep Current State detailed.
-
-Target approximately ${Math.floor(maxTokens * 0.7)} tokens total.
-Output ONLY the restructured understanding with the three sections clearly labeled.`
+It has grown too long. Shorten it to at most ${words} words.
+${keep}
+Where something changed, keep the current value.
+Do not add anything that is not in the understanding: no advice, no lessons, no next steps.
+Reply with the shorter understanding only, in plain text.`
 }

@@ -50,6 +50,9 @@ export type AfterUpdate = (
 		maxCharacters: number
 		/** Output limit of the learning setup; the update step uses the same. */
 		maxOutputTokens: number
+		/** The neuron's topic and developer rules, as the update step sees them. */
+		topic: string
+		rules: readonly string[]
 		signal: AbortSignal
 	},
 ) => Promise<string>
@@ -242,6 +245,8 @@ export class AdaptiveTextRuntime {
 					maxCharacters: snapshot.configuration.memory.maxCharacters,
 					maxOutputTokens:
 						snapshot.configuration.generation.reservedOutputTokens,
+					topic: snapshot.configuration.lens.purpose,
+					rules: snapshot.configuration.lens.developerInstructions,
 					signal: snapshot.signal,
 				})
 				return { ...result, narrative }

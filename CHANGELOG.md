@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 - **Breaking:** `observeInstructions`, `understandInstructions` and `focus` are removed from neuron configs, state and getters, and from the generated-neuron schema. `protectedDeveloperInstructions` is no longer exported. Saved neurons keep any rules these fields already added to their profile.
 - `adjust()` adds the directive as a rule for both stages, with no LLM call. Memory is not edited.
 - Memory strategies (`continuous`, `cumulative`, `decay`) run after each update, before the memory is saved. `getGovernance()` and `update({ governance })` on `TextNeuron`.
+- **Breaking:** the default memory strategy is `cumulative` with `maxTokens` 8000 for every neuron (standalone neurons used `continuous`). `continuous` stops learning once the memory reaches the cap.
+- `cumulative` and `decay` use new plain prompts: shorten, keep current values, add nothing. The old seed / three-section prompts invented facts and advice on small models.
 
 ## [0.0.6] - 2026-05-18
 

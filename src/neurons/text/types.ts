@@ -67,7 +67,7 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	origin?: NeuronOrigin
 	/** Injected store */
 	store: NeuronStore
-	/** Memory strategy: continuous (default), cumulative or decay. */
+	/** Memory strategy: cumulative (default, 8000 tokens), decay or continuous. */
 	governance?: Partial<GovernanceConfig>
 	/** Thresholds Brain reads for health signals and evolution. */
 	understand?: { thresholds?: UnderstandThresholds }

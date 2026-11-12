@@ -138,9 +138,11 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		this.#adaptive = new AdaptiveTextRuntime(
 			rawConfig.store,
 			learning.runtime,
-			(memory, { maxCharacters, maxOutputTokens, signal }) =>
+			(memory, { maxCharacters, maxOutputTokens, topic, rules, signal }) =>
 				applyStrategy({
 					memory,
+					topic,
+					rules,
 					governance: this.state.governance,
 					maxCharacters,
 					maxOutputTokens,
