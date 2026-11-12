@@ -14,10 +14,6 @@ export const BRAIN_DEFAULTS = {
 				minImportance: 0.5,
 			},
 		},
-		governance: {
-			strategy: 'cumulative' as const,
-			maxTokens: 16000,
-		},
 	},
 	evolution: {
 		enabled: true,

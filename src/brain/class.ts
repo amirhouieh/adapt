@@ -132,10 +132,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				rawConfig.init?.model,
 				rawConfig.query?.model,
 				rawConfig.evolution?.model,
-				rawConfig.learning?.observer?.model,
-				rawConfig.learning?.observer?.blueprintModel,
-				rawConfig.learning?.understand?.model,
-				rawConfig.learning?.understand?.blueprintModel,
 				rawConfig.learning?.query?.model,
 			],
 		})
@@ -584,14 +580,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			const descriptor = this.neuronTypes.get(config.type)
 			if (!descriptor) continue
 
-			const governance =
-				config.type === 'text' && !config.governance
-					? {
-							strategy: BRAIN_DEFAULTS.learning.governance.strategy,
-							maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
-						}
-					: config.governance
-
 			const neuron = descriptor.factory({
 				id: config.id,
 				model: this.state.models.default,
@@ -605,9 +593,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				name: config.name,
 				description: config.description,
 				store: this.store.getNeuronStore(config.id),
-				governance,
-				skipObservation: config.skipObservation,
-				skipUnderstand: config.skipUnderstand,
 				understand: {
 					thresholds: {
 						maxObservations: 3,
@@ -787,23 +772,9 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			throw new Error(`Unknown neuron type: ${config.type}`)
 		}
 
-		// Apply default governance for text neurons if not provided
-		const governance =
-			config.type === 'text' && !config.governance
-				? {
-						strategy: BRAIN_DEFAULTS.learning.governance.strategy,
-						maxTokens: BRAIN_DEFAULTS.learning.governance.maxTokens,
-					}
-				: config.governance
-
 		const neuron = descriptor.factory({
 			...shared,
 			store: this.store.getNeuronStore(config.id),
-			governance,
-			skipObservation: config.skipObservation,
-			skipUnderstand: config.skipUnderstand,
-			observationSchema: config.observationSchema,
-			understandingSchema: config.understandingSchema,
 		})
 
 		// Forward all neuron events through Brain
@@ -2377,22 +2348,13 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		if (updates.learning?.model) neuronUpdate.model ??= updates.learning.model
 		if (updates.learning?.blueprintModel)
 			neuronUpdate.blueprintModel ??= updates.learning.blueprintModel
-		if (updates.learning?.observer) {
-			neuronUpdate.observer = updates.learning.observer
-		}
-		if (updates.learning?.understand) {
-			const s = updates.learning.understand
+		if (updates.learning?.understand?.thresholds) {
 			neuronUpdate.understand = {
-				...(s.model ? { model: s.model } : {}),
-				...(s.blueprintModel ? { blueprintModel: s.blueprintModel } : {}),
-				...(s.thresholds ? { thresholds: s.thresholds } : {}),
+				thresholds: updates.learning.understand.thresholds,
 			}
 		}
 		if (updates.learning?.query) {
 			neuronUpdate.query = updates.learning.query
-		}
-		if (updates.learning?.governance) {
-			neuronUpdate.governance = updates.learning.governance
 		}
 
 		// Forward to all neurons (each ignores fields it doesn't recognize)

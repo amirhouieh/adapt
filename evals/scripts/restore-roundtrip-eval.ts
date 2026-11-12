@@ -75,9 +75,6 @@ async function runForPreset(preset: Preset) {
 					instructions:
 						'Track engineering decisions, runtime tradeoffs, and rationale for technical changes.',
 					focus: null,
-					skipObservation: true,
-					observationSchema: { type: 'string' },
-					understandingSchema: { type: 'string' },
 				},
 			],
 			internalNeurons: {

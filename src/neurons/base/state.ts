@@ -30,10 +30,6 @@ export type StoredModelRef = AdaptModelConfig & {
 export interface ModelSlots {
 	default: LanguageModel
 	blueprint: LanguageModel
-	observer: LanguageModel
-	observer_blueprint: LanguageModel
-	understand: LanguageModel
-	understand_blueprint: LanguageModel
 	query: LanguageModel
 }
 

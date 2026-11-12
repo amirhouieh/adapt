@@ -532,18 +532,6 @@ export abstract class BaseNeuron<
 		const modelUpdates: Array<[string, keyof typeof newModels, unknown]> = [
 			['model', 'default', updates.model],
 			['blueprintModel', 'blueprint', updates.blueprintModel],
-			['observer.model', 'observer', updates.observer?.model],
-			[
-				'observer.blueprintModel',
-				'observer_blueprint',
-				updates.observer?.blueprintModel,
-			],
-			['understand.model', 'understand', updates.understand?.model],
-			[
-				'understand.blueprintModel',
-				'understand_blueprint',
-				updates.understand?.blueprintModel,
-			],
 			['query.model', 'query', updates.query?.model],
 		]
 		let modelsChanged = false

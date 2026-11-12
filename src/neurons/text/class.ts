@@ -35,7 +35,6 @@ const RESTORE_PLACEHOLDER_MODEL =
 /**
  * TextNeuron - A learning agent that maintains understanding as narrative text
  *
- * Strategy application is handled in postProcessUnderstanding.
  * Store is injected — caller must provide it.
  */
 export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
@@ -57,7 +56,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 		const suppliedLearning = rawConfig.learning
 		const preparedConfig =
 			suppliedLearning === undefined
-				? withoutLegacyLearning(rawConfig)
+				? rawConfig
 				: prepareAdaptiveConfig(rawConfig, suppliedLearning)
 		const config = resolveTextNeuronConfig(preparedConfig, parentModels)
 		const llm = resolveRuntimeLLM({
@@ -65,10 +64,6 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 			models: [
 				config.model,
 				config.blueprintModel,
-				config.observer.model,
-				config.observer.blueprintModel,
-				config.understand.model,
-				config.understand.blueprintModel,
 				config.query.model,
 			],
 		})
@@ -93,10 +88,6 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 			models: {
 				default: config.model,
 				blueprint: config.blueprintModel,
-				observer: config.observer.model,
-				observer_blueprint: config.observer.blueprintModel,
-				understand: config.understand.model,
-				understand_blueprint: config.understand.blueprintModel,
 				query: config.query.model,
 			},
 			thresholds: {
@@ -250,10 +241,7 @@ export class TextNeuron extends BaseNeuron<string, TextNeuronState> {
 	async update(
 		updates: Partial<TextNeuronConfig>,
 	): Promise<{ changedFields: string[] }> {
-		// `governance` is accepted and ignored: text maintenance is owned by the
-		// learning profile.
-		const { governance: _governance, ...rest } = updates
-		const settings = rest as Record<string, unknown>
+		const settings = updates as Record<string, unknown>
 		if (settings.id !== undefined && settings.id !== this.id) {
 			throw new Error(
 				'Cannot update immutable field "id". Neuron identity cannot be changed.',
@@ -557,29 +545,6 @@ function prepareAdaptiveConfig(
 	raw: TextNeuronConfig & { llm?: AdaptLLMPlugin },
 	learning: AdaptiveTextLearningConfig,
 ): TextNeuronConfig & { llm?: AdaptLLMPlugin } {
-	if (
-		raw.observationSchema !== undefined ||
-		raw.understandingSchema !== undefined
-	) {
-		throw new Error(
-			'adaptive text mode does not support custom legacy schemas without a registered transform',
-		)
-	}
-	if (raw.governance !== undefined) {
-		throw new Error(
-			'adaptive text mode does not map legacy governance without an evaluated maintenance profile',
-		)
-	}
-	if (raw.skipObservation === true || raw.skipUnderstand === true) {
-		throw new Error(
-			'adaptive text mode does not support legacy skip phase flags',
-		)
-	}
-	if (raw.observer !== undefined || raw.understand !== undefined) {
-		throw new Error(
-			'adaptive text mode requires model profiles instead of legacy phase model overrides',
-		)
-	}
 	const profile = learning.initialProfile
 	const neuronId = raw.id ?? profile.bindings.neuron.id
 	if (profile.bindings.neuron.id !== neuronId)
@@ -600,20 +565,6 @@ function prepareAdaptiveConfig(
 	return {
 		...raw,
 		id: neuronId,
-	}
-}
-
-/** Plain options: drop old-engine fields (governance, phase models); keep thresholds. */
-function withoutLegacyLearning(
-	raw: TextNeuronConfig & { llm?: AdaptLLMPlugin },
-): TextNeuronConfig & { llm?: AdaptLLMPlugin } {
-	return {
-		...raw,
-		governance: undefined,
-		observer: undefined,
-		understand: raw.understand?.thresholds
-			? { thresholds: raw.understand.thresholds }
-			: undefined,
 	}
 }
 

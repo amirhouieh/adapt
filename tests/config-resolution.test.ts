@@ -80,26 +80,6 @@ describe('resolveTextNeuronConfig', () => {
 		expect(result.blueprintModel).toBe(model)
 	})
 
-	it('observer.model cascades to config.model', () => {
-		const result = resolveTextNeuronConfig({ model, instructions: 'test' })
-		expect(result.observer.model).toBe(model)
-	})
-
-	it('observer.model uses override when provided', () => {
-		const obsModel = mockModel('obs', 'obs-model')
-		const result = resolveTextNeuronConfig({
-			model,
-			instructions: 'test',
-			observer: { model: obsModel },
-		})
-		expect(result.observer.model).toBe(obsModel)
-	})
-
-	it('understand.model cascades to config.model', () => {
-		const result = resolveTextNeuronConfig({ model, instructions: 'test' })
-		expect(result.understand.model).toBe(model)
-	})
-
 	it('query.model cascades to config.model', () => {
 		const result = resolveTextNeuronConfig({ model, instructions: 'test' })
 		expect(result.query.model).toBe(model)

@@ -251,7 +251,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns.',
-					skipObservation: true,
 				},
 			],
 			internalNeurons: {
@@ -340,7 +339,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns.',
-					skipObservation: true,
 				},
 			],
 			internalNeurons: {

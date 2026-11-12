@@ -11,11 +11,7 @@ export const textNeuronDescriptor: NeuronTypeDescriptor = {
 	type: 'text',
 
 	description: `TEXT neurons build narrative prose understanding.
-Best for: qualitative patterns, preferences, philosophies, interconnected concepts, nuanced reasoning.
-- governance: { strategy: "continuous" | "cumulative" | "decay" }
-  - continuous: Single growing understanding (default, good for most cases)
-  - cumulative: Summarize when understanding gets large (good for high-volume data)
-  - decay: Weight recent observations higher (good for tracking evolving preferences)`,
+Best for: qualitative patterns, preferences, philosophies, interconnected concepts, nuanced reasoning.`,
 
 	factory(config: Record<string, unknown>) {
 		return new TextNeuron(config as unknown as TextNeuronConfig)

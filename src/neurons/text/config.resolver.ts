@@ -35,16 +35,7 @@ export function resolveTextNeuronConfig(
 		understandInstructions: config.understandInstructions ?? null,
 		id: config.id ?? `neuron_${nanoid()}`,
 		origin: config.origin ?? TEXT_NEURON_DEFAULTS.origin,
-		observer: {
-			model: cascade(config.observer?.model, model),
-			blueprintModel: cascade(config.observer?.blueprintModel, blueprintModel),
-		},
 		understand: {
-			model: cascade(config.understand?.model, model),
-			blueprintModel: cascade(
-				config.understand?.blueprintModel,
-				blueprintModel,
-			),
 			thresholds: {
 				maxObservations:
 					config.understand?.thresholds?.maxObservations ??

@@ -222,9 +222,6 @@ function createBrainConfig(
 				type: 'text' as const,
 				instructions:
 					'Track engineering decisions, runtime tradeoffs, and the rationale behind technical changes.',
-				skipObservation: true,
-				observationSchema: { type: 'string' },
-				understandingSchema: { type: 'string' },
 			},
 		],
 	}

@@ -218,8 +218,6 @@ describe('BRAIN_DEFAULTS', () => {
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.maxObservations).toBe(10)
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.maxTokens).toBe(8000)
 		expect(BRAIN_DEFAULTS.learning.understand.thresholds.minImportance).toBe(0.5)
-		expect(BRAIN_DEFAULTS.learning.governance.strategy).toBe('cumulative')
-		expect(BRAIN_DEFAULTS.learning.governance.maxTokens).toBe(16000)
 	})
 
 	it('has correct evolution defaults', () => {

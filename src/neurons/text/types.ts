@@ -10,7 +10,6 @@ import type {
 } from '../base/types'
 import type { NeuronOrigin, Significance } from '../types'
 import type { AdaptiveTextLearningConfig } from './adaptive-runtime'
-import type { Strategy } from './strategies'
 
 /**
  * TextNeuron event map
@@ -43,15 +42,6 @@ export interface TextNeuronEventMap extends SharedNeuronEventMap {
 
 export type TextNeuronEvent = EventsFromMap<TextNeuronEventMap>
 
-// ── Governance ──────────────────────────────────────────────────────────────
-
-export interface TextGovernanceConfig {
-	/** How understanding evolves over time */
-	strategy: Strategy
-	/** Max tokens before governance kicks in (for cumulative/decay) */
-	maxTokens?: number
-}
-
 // ── Query ───────────────────────────────────────────────────────────────────
 
 export interface QueryConfig {
@@ -82,28 +72,12 @@ export interface TextNeuronConfig extends CascadableConfig, AdaptRepairOptions {
 	origin?: NeuronOrigin
 	/** Injected store */
 	store: NeuronStore
-	/** Ignored. Accepted for config compatibility. */
-	governance?: TextGovernanceConfig
-	/** Ignored. Accepted for config compatibility. */
-	observer?: { model?: LanguageModel; blueprintModel?: LanguageModel }
-	/** Ignored. Accepted for config compatibility. */
-	understand?: {
-		model?: LanguageModel
-		blueprintModel?: LanguageModel
-		thresholds?: UnderstandThresholds
-	}
+	/** Thresholds Brain reads for health signals and evolution. */
+	understand?: { thresholds?: UnderstandThresholds }
 	/** Query phase configuration */
 	query?: QueryConfig
 	/** Health configuration (Living Brain) */
 	health?: Partial<import('../types').NeuronHealth>
-	/** Ignored. Accepted for config compatibility. */
-	skipObservation?: boolean
-	/** Ignored. Accepted for config compatibility. */
-	skipUnderstand?: boolean
-	/** Ignored. Accepted for config compatibility. */
-	observationSchema?: Record<string, unknown>
-	/** Ignored. Accepted for config compatibility. */
-	understandingSchema?: Record<string, unknown>
 	/** Subscribe before initialization starts, so init events can be observed. */
 	onEvent?: UnifiedHandler<EventsFromMap<SharedNeuronEventMap>>
 	/** Supply an explicit adaptive text-learning setup. Omit for the default two-step setup. */

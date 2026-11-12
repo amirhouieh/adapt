@@ -2,7 +2,6 @@ import type { AdaptLLMPlugin, AdaptRepairOptions, LanguageModel } from '../llm'
 import type { LearnOutput } from '../neurons/base/class'
 import type { SharedNeuronEventMap } from '../neurons/base/types'
 import type { GeneratedNeuronConfig } from '../neurons/schema.config'
-import type { Strategy } from '../neurons/text/strategies'
 import type { TokenUsage } from '../neurons/types'
 import type { BrainStore, NeuronStatus } from '../stores'
 import type {
@@ -17,14 +16,9 @@ import type { EvolutionDecision } from './evaluator/types'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Observer phase configuration
+ * Thresholds Brain reads for neuron health signals and evolution
  */
-export interface ObserverPhaseConfig extends CascadableConfig {}
-
-/**
- * Understand phase configuration
- */
-export interface UnderstandPhaseConfig extends CascadableConfig {
+export interface UnderstandPhaseConfig {
 	thresholds?: {
 		maxObservations?: number
 		maxTokens?: number
@@ -40,14 +34,6 @@ export interface QueryPhaseConfig {
 }
 
 /**
- * Governance configuration (text neuron understanding management)
- */
-export interface GovernanceConfig {
-	strategy?: Strategy
-	maxTokens?: number
-}
-
-/**
  * Learning config - applied to all auto-generated neurons
  *
  * Semantic fields (instructions, name, description) go through the evaluator
@@ -60,10 +46,8 @@ export interface LearningConfig extends CascadableConfig {
 	name?: string
 	/** Neuron description (semantic — goes through evaluator) */
 	description?: string
-	observer?: ObserverPhaseConfig
 	understand?: UnderstandPhaseConfig
 	query?: QueryPhaseConfig
-	governance?: GovernanceConfig
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,9 +99,9 @@ export interface EvolutionConfig {
 }
 
 /**
- * Per-internal-neuron config: true = enabled with defaults, object = enabled with overrides, false = disabled
+ * Per-internal-neuron config: true = enabled, false = disabled
  */
-export type InternalNeuronToggle = boolean | Partial<LearningConfig>
+export type InternalNeuronToggle = boolean
 
 /**
  * Configuration for Brain's internal neurons
