@@ -1803,7 +1803,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	 */
 	private async handleDismissedBatch(
 		batchId: string,
-		batch: unknown[],
+		batch: LearnInput[],
 		neuronResults: NeuronBatchResult[],
 	): Promise<void> {
 		const allDismissed = neuronResults.every(
@@ -1846,11 +1846,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		// and signal the evaluator directly with the actual data content
 		if (neuronResults.length === 0) {
 			const summary = batch
-				.map((item) => {
-					if (typeof item === 'string') return item
-					const obj = item as Record<string, unknown>
-					return [obj.title, obj.type, obj.context].filter(Boolean).join(' — ')
-				})
+				.map((item) => (typeof item === 'string' ? item : item.text))
 				.join('; ')
 			this.signal({
 				source: 'system',
@@ -1865,10 +1861,10 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 		if (gapNeuron) {
 			try {
-				const gapText =
-					gaps.length > 0
-						? `Data arrived that no specialist could absorb. Topics identified: ${gaps.join(', ')}. This content has been set aside for now.`
-						: `Data arrived that no specialist could absorb. No topics could be identified from this content. It has been set aside for now.`
+				const items = batch.map((item) =>
+					typeof item === 'string' ? item : item.text,
+				)
+				const gapText = `Data arrived that no specialist could absorb. It has been set aside for now:\n${items.map((item) => `- ${item}`).join('\n')}`
 				await gapNeuron.learn([gapText])
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err)
