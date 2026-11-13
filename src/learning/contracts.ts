@@ -53,7 +53,7 @@ export function schemaAccepts(
 	return consumer === producer || consumer.accepts?.(producer) === true
 }
 
-export type MemoryType = 'text' | 'list' | 'graph' | (string & {})
+export type MemoryType = 'text' | 'list' | (string & {})
 
 export type RootValue = {
 	readonly schema: ValueSchema
