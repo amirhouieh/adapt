@@ -425,11 +425,6 @@ export interface BrainStore {
 	internalNeurons: BrainCollection<BrainNeuronRecord>
 	evolution: BrainCollection<BrainEvolutionRecord>
 	dismissedBatches: BrainCollection<DismissedBatchRecord>
-	registryHeads: BrainCollection<BrainRegistryHeadRecord>
-	registryRevisions: BrainCollection<BrainRegistryRevisionRecord>
-	evolutionActivations: BrainCollection<BrainEvolutionActivationRecord>
-	evolutionStages: BrainCollection<BrainEvolutionStageRecord>
-	memoryMappings: BrainCollection<BrainMemoryMappingRecord>
 	/**
 	 * Resolve the persistence store for a given neuron id. Same code path on
 	 * Brain.create and Brain.restore so the two cannot disagree on where the
@@ -448,11 +443,6 @@ export interface AtomicBrainStore {
 	internalNeurons: AtomicCollection<BrainNeuronRecord>
 	evolution: AtomicCollection<BrainEvolutionRecord>
 	dismissedBatches: AtomicCollection<DismissedBatchRecord>
-	registryHeads: AtomicCollection<BrainRegistryHeadRecord>
-	registryRevisions: AtomicCollection<BrainRegistryRevisionRecord>
-	evolutionActivations: AtomicCollection<BrainEvolutionActivationRecord>
-	evolutionStages: AtomicCollection<BrainEvolutionStageRecord>
-	memoryMappings: AtomicCollection<BrainMemoryMappingRecord>
 }
 
 // ── Record Types ─────────────────────────────────────────────────────────────
@@ -498,114 +488,4 @@ export interface DismissedBatchRecord {
 	timestamp: string
 	retryCount: number
 	status: string // 'pending' | 'retried'
-}
-
-export interface BrainRegistryLensRecord {
-	id: string
-	physical_store_id: string
-	type: string
-	config: unknown
-	dependencies: string[]
-}
-
-export interface BrainRegistryHeadRecord {
-	id: 'current'
-	revision_id: string
-	revision: number
-	updated_at: string
-}
-
-export interface BrainRegistryRevisionRecord {
-	id: string
-	revision: number
-	parent_id?: string
-	activation_id?: string
-	lenses: BrainRegistryLensRecord[]
-	created_at: string
-}
-
-export type BrainEvolutionActivationStatus =
-	| 'preparing'
-	| 'staged'
-	| 'activated'
-	| 'abandoning'
-	| 'completed'
-	| 'abandoned'
-	| 'failed'
-
-export interface BrainEvolutionSourcePin {
-	lens_id: string
-	physical_store_id: string
-	memory_revision: number
-	config_revision: number
-	/** Digest of every namespace in the atomically captured neuron snapshot. */
-	state_digest: string
-}
-
-export interface NeuronStoreSnapshot {
-	observations: ObservationRecord[]
-	understanding: UnderstandingRecord[]
-	evolution: EvolutionRecord[]
-	state: StateRecord[]
-	learningHistory: LearningHistoryRecord[]
-	memoryChanges: MemoryChangeRecord[]
-	pendingWork: PendingWorkRecord[]
-	pendingInputs: PendingInputRecord[]
-	processedInputs: ProcessedInputRecord[]
-	outbox: OutboxRecord[]
-	learningAttempts: LearningAttemptRecord[]
-	learningRevisions: LearningRevisionRecord[]
-}
-
-export interface BrainEvolutionActivationRecord {
-	id: string
-	proposal_id: string
-	action: 'create' | 'update' | 'merge' | 'split' | 'delete'
-	/** Binds an activation id to the complete immutable activation request. */
-	intent_digest: string
-	mode: 'evolution' | 'rollback'
-	base_registry_revision_id: string
-	target_registry: BrainRegistryRevisionRecord
-	source_pins: BrainEvolutionSourcePin[]
-	affected_lens_ids: string[]
-	staging_policy: {
-		max_targets: number
-		max_snapshot_records: number
-		max_snapshot_chars: number
-	}
-	transformation_ref?: { id: string; version: string }
-	deletion_mode?: 'lens-only' | 'lens-and-retained-knowledge'
-	status: BrainEvolutionActivationStatus
-	error?: string
-	created_at: string
-	updated_at: string
-}
-
-export interface BrainEvolutionStageRecord {
-	id: string
-	activation_id: string
-	lens_id: string
-	physical_store_id: string
-	lens: BrainRegistryLensRecord
-	snapshot?: NeuronStoreSnapshot
-	status: 'pending' | 'writing' | 'ready' | 'consumed' | 'abandoned'
-	created_at: string
-	updated_at: string
-}
-
-export interface BrainHistoryIdentityMapping {
-	source_history_id: string
-	target_history_id: string
-}
-
-export interface BrainMemoryMappingRecord {
-	id: string
-	activation_id: string
-	source_lens_id: string
-	source_memory_id: string
-	target_lens_id?: string
-	target_memory_id?: string
-	disposition: 'transferred' | 'retained' | 'deleted'
-	history: BrainHistoryIdentityMapping[]
-	created_at: string
 }

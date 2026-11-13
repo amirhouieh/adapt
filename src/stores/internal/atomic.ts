@@ -75,11 +75,6 @@ export function guardBrainStore(
 		internalNeurons: guardCollection(store.internalNeurons, scope),
 		evolution: guardCollection(store.evolution, scope),
 		dismissedBatches: guardCollection(store.dismissedBatches, scope),
-		registryHeads: guardCollection(store.registryHeads, scope),
-		registryRevisions: guardCollection(store.registryRevisions, scope),
-		evolutionActivations: guardCollection(store.evolutionActivations, scope),
-		evolutionStages: guardCollection(store.evolutionStages, scope),
-		memoryMappings: guardCollection(store.memoryMappings, scope),
 	}
 }
 

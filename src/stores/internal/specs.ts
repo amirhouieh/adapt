@@ -1,11 +1,6 @@
 import type {
-	BrainEvolutionActivationRecord,
 	BrainEvolutionRecord,
-	BrainEvolutionStageRecord,
-	BrainMemoryMappingRecord,
 	BrainNeuronRecord,
-	BrainRegistryHeadRecord,
-	BrainRegistryRevisionRecord,
 	BrainStateRecord,
 	DismissedBatchRecord,
 	EvolutionRecord,
@@ -283,93 +278,4 @@ export const dismissedBatchCollectionSpec: StoreCollectionSpec<DismissedBatchRec
 			{ name: 'status', kind: 'text', defaultSql: "'pending'" },
 		],
 		indexes: ['status', 'timestamp'],
-	}
-
-export const brainRegistryHeadCollectionSpec: StoreCollectionSpec<BrainRegistryHeadRecord> =
-	{
-		table: 'registry_heads',
-		fields: [
-			{ name: 'id', kind: 'text' },
-			{ name: 'revision_id', kind: 'text' },
-			{ name: 'revision', kind: 'integer' },
-			{ name: 'updated_at', kind: 'text' },
-		],
-		indexes: ['revision_id'],
-	}
-
-export const brainRegistryRevisionCollectionSpec: StoreCollectionSpec<BrainRegistryRevisionRecord> =
-	{
-		table: 'registry_revisions',
-		fields: [
-			{ name: 'id', kind: 'text' },
-			{ name: 'revision', kind: 'integer' },
-			{ name: 'parent_id', kind: 'text', nullable: true },
-			{ name: 'activation_id', kind: 'text', nullable: true },
-			{ name: 'lenses', kind: 'json' },
-			{ name: 'created_at', kind: 'text' },
-		],
-		indexes: ['revision', 'activation_id'],
-	}
-
-export const brainEvolutionActivationCollectionSpec: StoreCollectionSpec<BrainEvolutionActivationRecord> =
-	{
-		table: 'evolution_activations',
-		fields: [
-			{ name: 'id', kind: 'text' },
-			{ name: 'proposal_id', kind: 'text' },
-			{ name: 'action', kind: 'text' },
-			{ name: 'intent_digest', kind: 'text' },
-			{ name: 'mode', kind: 'text' },
-			{ name: 'base_registry_revision_id', kind: 'text' },
-			{ name: 'target_registry', kind: 'json' },
-			{ name: 'source_pins', kind: 'json' },
-			{ name: 'affected_lens_ids', kind: 'json' },
-			{ name: 'staging_policy', kind: 'json' },
-			{ name: 'transformation_ref', kind: 'json', nullable: true },
-			{ name: 'deletion_mode', kind: 'text', nullable: true },
-			{ name: 'status', kind: 'text' },
-			{ name: 'error', kind: 'text', nullable: true },
-			{ name: 'created_at', kind: 'text' },
-			{ name: 'updated_at', kind: 'text' },
-		],
-		indexes: ['proposal_id', 'status', 'target_registry'],
-	}
-
-export const brainEvolutionStageCollectionSpec: StoreCollectionSpec<BrainEvolutionStageRecord> =
-	{
-		table: 'evolution_stages',
-		fields: [
-			{ name: 'id', kind: 'text' },
-			{ name: 'activation_id', kind: 'text' },
-			{ name: 'lens_id', kind: 'text' },
-			{ name: 'physical_store_id', kind: 'text' },
-			{ name: 'lens', kind: 'json' },
-			{ name: 'snapshot', kind: 'json', nullable: true },
-			{ name: 'status', kind: 'text' },
-			{ name: 'created_at', kind: 'text' },
-			{ name: 'updated_at', kind: 'text' },
-		],
-		indexes: ['activation_id', 'lens_id', 'physical_store_id', 'status'],
-	}
-
-export const brainMemoryMappingCollectionSpec: StoreCollectionSpec<BrainMemoryMappingRecord> =
-	{
-		table: 'evolution_memory_mappings',
-		fields: [
-			{ name: 'id', kind: 'text' },
-			{ name: 'activation_id', kind: 'text' },
-			{ name: 'source_lens_id', kind: 'text' },
-			{ name: 'source_memory_id', kind: 'text' },
-			{ name: 'target_lens_id', kind: 'text', nullable: true },
-			{ name: 'target_memory_id', kind: 'text', nullable: true },
-			{ name: 'disposition', kind: 'text' },
-			{ name: 'history', kind: 'json' },
-			{ name: 'created_at', kind: 'text' },
-		],
-		indexes: [
-			'activation_id',
-			'source_lens_id',
-			'target_lens_id',
-			'disposition',
-		],
 	}

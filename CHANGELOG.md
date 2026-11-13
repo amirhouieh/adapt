@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Breaking:** the unused 0.0.6 migration code is removed, with the store collections only it used. `BrainStore` no longer has `registryHeads`, `registryRevisions`, `evolutionActivations`, `evolutionStages` or `memoryMappings`. Old SQLite files that have these tables still open; the tables are ignored.
 - **Breaking:** the `@unbody-io/adapt/memgraph` export and the `neo4j-driver` peer dependency are removed. The unused graph neuron code is gone too. A test of graph on LFM3 showed no gain (`evals/baselines/graph-arms-all-lfm3-2026-11-13.md`).
 - **Breaking:** there is one neuron class, `Neuron` (was `TextNeuron` extending `BaseNeuron`). Types are renamed to match: `NeuronConfig`, `NeuronState`, `NeuronEvent`, `NeuronEventMap`, `ResolvedNeuronConfig`. The neuron `type` field, `neuron.type`, `Brain.neuronTypes`, `textNeuronDescriptor`, `NeuronTypeDescriptor`, `BaseNeuronUpdateInput`, `ManagedLearnOutput` and `TextNeuronUpdateResult` are removed. Neuron configs no longer take `type`. Saved 0.1.0 brains still load; the stored `type` is ignored.
 - **Breaking:** `ToolBasedMethod`, `ToolBasedConfig`, `QueryMode` and the neuron `QueryOptions.mode` are removed. Neurons always answer with one direct call. `brain.ask(..., { mode })` is unchanged.
