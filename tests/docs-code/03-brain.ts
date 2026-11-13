@@ -294,38 +294,32 @@ tags: architecture, sync`,
 			neurons: [
 				{ id: 'react-neuron', name: 'React', description: 'React patterns', instructions: 'Track React patterns.' },
 				{ id: 'vue-neuron', name: 'Vue', description: 'Vue patterns', instructions: 'Track Vue patterns.' },
-				{ id: 'broad-neuron', name: 'Broad', description: 'Broad patterns', instructions: 'Track broad patterns.' },
-				{ id: 'neuron-x', name: 'X', description: 'X patterns', instructions: 'Track X patterns.' },
-				{ id: 'neuron-y', name: 'Y', description: 'Y patterns', instructions: 'Track Y patterns.' },
+				{ id: 'ui-patterns', name: 'UI', description: 'UI patterns', instructions: 'Track UI patterns.' },
 			],
 		})
 
-		// LLM designs the neuron from guidance
-		const created = await evoBrain.createNeuron('Track emerging frontend frameworks')
-		assert(typeof created.id === 'string', 'createNeuron() returns neuron with id')
-
-		// Merge overlapping neurons
-		const merged = await evoBrain.mergeNeurons(
-			['react-neuron', 'vue-neuron'],
-			'Combine into unified frontend framework tracker',
+		// Change what a neuron tracks; its memory is kept
+		await evoBrain.updateNeuron('ui-patterns', {
+			instructions: 'Track UI patterns, with a focus on accessibility.',
+		})
+		assert(
+			evoBrain.getNeuron('ui-patterns')?.instructions === 'Track UI patterns, with a focus on accessibility.',
+			'updateNeuron() changes instructions',
 		)
-		assert(typeof merged.id === 'string', 'mergeNeurons() returns merged neuron with id')
 
-		// Split overloaded neuron
-		const parts = await evoBrain.splitNeuron(
-			'broad-neuron',
-			'Separate into technical patterns vs team dynamics',
-		)
-		assert(Array.isArray(parts), 'splitNeuron() returns array')
-		assert(parts.length >= 2, 'splitNeuron() creates 2+ neurons')
+		// Merge overlapping neurons; the new neuron starts with their memories joined
+		const merged = await evoBrain.mergeNeurons(['react-neuron', 'vue-neuron'], {
+			id: 'frontend-frameworks',
+			name: 'Frontend Frameworks',
+			description: 'Frontend frameworks the team uses and why',
+			instructions: 'Track which frontend frameworks are used, where, and why.',
+		})
+		assert(merged.id === 'frontend-frameworks', 'mergeNeurons() returns merged neuron')
+		assert(evoBrain.getNeuron('react-neuron') === undefined, 'mergeNeurons() removes sources')
 
-		// LLM-driven update
-		await evoBrain.updateNeuron('neuron-x', 'Narrow scope to React hooks only')
-		assert(true, 'updateNeuron() succeeds')
-
-		// Delete via evolution
-		await evoBrain.deleteNeuron('neuron-y')
-		assert(evoBrain.getNeuron('neuron-y') === undefined, 'deleteNeuron() removes neuron')
+		// Let evolution decide now
+		const { changes } = await evoBrain.evolve()
+		assert(Array.isArray(changes), 'evolve() returns changes')
 
 		await evoBrain.dispose()
 

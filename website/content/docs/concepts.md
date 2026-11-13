@@ -14,16 +14,14 @@ Adapt has two building blocks: **Brain** (an orchestrator) and **Neurons** (spec
 │                              Brain                                   │
 │  Routes data · Synthesizes answers · Evolves structure                │
 │                                                                       │
-│  ┌────────────────┐  ┌──────────────────────┐  ┌──────────────────┐  │
-│  │   Evaluator     │  │  Evolution            │  │  Internal        │  │
-│  │  Watches for    │  │  Orchestrator         │  │  Neurons         │  │
-│  │  structural     │  │  Acts on evaluator    │  │  Track meta-     │  │
-│  │  problems and   │  │  decisions: create,   │  │  knowledge:      │  │
-│  │  suggests       │  │  merge, split,        │  │  gaps, query     │  │
-│  │  changes        │  │  update, delete       │  │  patterns,       │  │
-│  │                 │  │  neurons              │  │  cross-domain    │  │
-│  │                 │  │                       │  │  understanding   │  │
-│  └────────────────┘  └──────────────────────┘  └──────────────────┘  │
+│  ┌─────────────────────────────────────┐  ┌──────────────────────┐  │
+│  │  Evolution                           │  │  Internal Neurons    │  │
+│  │  One agent loop: looks at neurons,   │  │  Track meta-         │  │
+│  │  their memories and the gaps; then   │  │  knowledge: gaps,    │  │
+│  │  creates, updates, merges or         │  │  query patterns,     │  │
+│  │  removes neurons                     │  │  cross-domain        │  │
+│  │                                      │  │  understanding       │  │
+│  └─────────────────────────────────────┘  └──────────────────────┘  │
 └───────────────────────────────┬────────────────────────────────────────┘
                                 │
                 ┌───────────────┼───────────────┐
@@ -72,13 +70,13 @@ Every neuron has one plain-text memory, learned in two stages (extract, then upd
 
 ## Evolution
 
-The neuron structure isn't static. As data arrives and queries flow in, neurons can become overloaded, overlap, or leave gaps. Evolution is the loop that lets a Brain reshape itself: **signal → evaluate → act**.
+The neuron structure isn't static. As data arrives and queries flow in, neurons can become overloaded, overlap, or leave gaps. Evolution is the loop that lets a Brain reshape itself.
 
-- **Signals** flag that something might need to change. Three sources: automatic (neuron health — high dismissal, low confidence, stagnation), coverage gaps (no neuron could process / answer), and developer-injected via `brain.signal({ source, description })`.
-- **Evaluator** is an LLM agent that triggers when signals accumulate (default threshold: 5). It inspects neurons, queries their knowledge, and consults internal neurons before deciding what to do.
-- **Actions** the evaluator can take: **create**, **merge**, **split**, **update**, or **delete** neurons.
+- **Gaps** are inputs no neuron took. Brain keeps them and shows them to evolution.
+- **Signals** flag that something might need to change: gaps, questions no neuron could answer, neuron health (high dismissal, low relevance or confidence), and your own `brain.signal({ source, description })`.
+- **The evolution loop** is one LLM agent that runs when signals accumulate (default threshold: 5) or when you call `brain.evolve()`. It reads neurons and their memories, then **creates**, **updates**, **merges** or **removes** neurons. Each change is a plain neuron config: name, description, instructions.
 
-Brain also runs four **internal neurons** that track meta-knowledge about the system itself — cross-domain patterns (Global Understanding), query topics (Global Query Understanding), data nothing could process (Injection Gaps), questions nothing could answer (Query Gaps). The evaluator consults them; you can too via `brain.consult()`.
+Brain also runs four **internal neurons** that track meta-knowledge about the system itself — cross-domain patterns (Global Understanding), query topics (Global Query Understanding), data nothing could process (Injection Gaps), questions nothing could answer (Query Gaps). You can query them via `brain.consult()`.
 
 ## Steering
 
@@ -87,7 +85,7 @@ Three distinct verbs cover the steering surface. They are not interchangeable:
 | Verb | What it feeds | When to use |
 |---|---|---|
 | `inject(data)` | Data — runs through extract → update | Routine — you have new information |
-| `signal({ source, description })` | Metadata — feeds the evolution evaluator | "We need a neuron for X" / "These two overlap" / "Restructure now" |
+| `signal({ source, description })` | Metadata — feeds evolution | "We need a neuron for X" / "These two overlap" / "Restructure now" |
 | `adjustNeuron(id, directive)` / `neuron.adjust()` | Natural-language steering for one neuron | "Stop tracking desktop" / "Be stricter about distinct topics" |
 | `update(config)` | Mechanical config replacement (models, thresholds, prompt) | Threshold tuning, model swap, semantic prompt change |
 

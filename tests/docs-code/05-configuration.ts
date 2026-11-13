@@ -69,8 +69,6 @@ async function main() {
 			autoEvaluate: true,
 			coverageGap: {
 				relevanceThreshold: 0.3,
-				gapCountThreshold: 5,
-				windowSize: 20,
 			},
 		},
 

@@ -53,12 +53,8 @@ N = number of neurons, B = number of batches.
 | Operation | LLM Calls | Model Slot | Notes |
 |---|---|---|---|
 | **`signal()`** | `0` | — | Buffers only. No immediate LLM call |
-| **Evaluator trigger** | `1–12` | `evolution` | Agentic — inspects neurons, reviews gaps, makes decisions |
-| → Create N neurons | `1 + N` | `blueprintModel` | 1 generation + 1 per neuron init |
-| → Merge neurons | `1` | `blueprintModel` | Single generation call |
-| → Split into N | `1 + (N-1)` | `blueprintModel` | 1 generation + 1 init per new neuron |
-| → Update neuron | `1–15` | `blueprintModel` | 1 guidance + optional adjust cascade |
-| → Delete neuron | `0` | — | Mechanical removal |
+| **Evolution run** | `1–12` | `evolution` | One agent loop; each tool call (read, create, update, merge, remove) is applied without another LLM call |
+| → Gap retry | `1–2` per batch per changed neuron | `learning.model` | Set-aside batches are retried on created, updated and merged neurons |
 
 ## Where to spend the smarter model
 
@@ -67,7 +63,7 @@ Routing the right model to the right slot is the cheapest performance win. Some 
 - **`learning.model`** — extract and update run on every batch, every neuron. Plain text, no schema: a small model works. This is where most calls go.
 - **`learning.query`** — runs once per ask per neuron. Smart model recommended; the answer the user sees is shaped here.
 - **`query` (brain ask synthesis)** — final integration step. Smart model.
-- **`init` / `blueprintModel`** — one-time and rare (decomposition, neuron config generation). Smart model. Cost is amortized.
+- **`init` / `blueprintModel`** — one-time and rare (neuron generation, prompt context). Smart model. Cost is amortized.
 - **`evolution`** — runs when signals accumulate. Smart model with tool-calling support is required.
 
 See [Configuration — Model Cascade](./configuration#model-cascade) for the full cascade and the `Cost-optimized setup` example.

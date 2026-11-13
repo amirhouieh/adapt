@@ -19,7 +19,7 @@ const brain = await Brain.create({
 })
 ```
 
-With just these two fields, the Brain will auto-decompose the prompt into neurons, store everything in memory, and enable evolution — all with sensible defaults. When you need more control, you can configure persistence, the memory strategy, and evolution behavior:
+With just these two fields, the Brain will generate neurons from the prompt, store everything in memory, and enable evolution — all with sensible defaults. When you need more control, you can configure persistence, the memory strategy, and evolution behavior:
 
 ```typescript
 import { Brain } from '@unbody-io/adapt'
@@ -48,7 +48,7 @@ See [Configuration](./configuration) for the full config reference.
 Brain has two construction verbs that map to two distinct intents:
 
 ```typescript
-// Fresh — runs LLM decomposition, persists to the store.
+// Fresh — generates neurons from the prompt, persists to the store.
 // Throws if the store already contains a brain.
 const brain = await Brain.create({ prompt, model, store })
 
@@ -177,7 +177,7 @@ const result = await brain.ask('...', { model: openai('gpt-4o') })
 
 ## Streaming
 
-All query and evaluation methods have streaming variants that return an Adapt-shaped `AdaptStreamResult` — the same surface area regardless of which LLM plugin is active.
+Query methods have streaming variants that return an Adapt-shaped `AdaptStreamResult` — the same surface area regardless of which LLM plugin is active.
 
 ```typescript
 // Stream a brain query
@@ -278,29 +278,24 @@ brain.getNeurons()              // all external neurons
 brain.getNeuron('ui-patterns')  // specific neuron
 ```
 
-**Evolution management** — the LLM designs neurons from natural language guidance. Use this when you know *what* you want but want the system to figure out the specifics (name, instructions, type, schema):
+**Reshaping** — change what neurons track. No LLM call; works with or without evolution enabled. Evolution uses the same methods when it reshapes the Brain itself (see [Evolution](./evolution)).
 
 ```typescript
-// LLM designs the neuron from guidance
-const neuron = await brain.createNeuron('Track emerging frontend frameworks')
+// Change what a neuron tracks; its memory is kept
+await brain.updateNeuron('ui-patterns', {
+  instructions: 'Track UI patterns, with a focus on accessibility.',
+})
 
-// Merge overlapping neurons
-const merged = await brain.mergeNeurons(
-  ['react-neuron', 'vue-neuron'],
-  'Combine into unified frontend framework tracker'
-)
+// Merge overlapping neurons; the new neuron starts with their memories joined
+const merged = await brain.mergeNeurons(['react-neuron', 'vue-neuron'], {
+  id: 'frontend-frameworks',
+  name: 'Frontend Frameworks',
+  description: 'Frontend frameworks the team uses and why',
+  instructions: 'Track which frontend frameworks are used, where, and why.',
+})
 
-// Split overloaded neuron
-const parts = await brain.splitNeuron(
-  'broad-neuron',
-  'Separate into technical patterns vs team dynamics'
-)
-
-// LLM-driven update
-await brain.updateNeuron('neuron-x', 'Narrow scope to React hooks only')
-
-// Delete via evolution
-await brain.deleteNeuron('neuron-y')
+// Let evolution decide now
+const { changes } = await brain.evolve()
 ```
 
 ## Pausing Neurons
@@ -328,7 +323,7 @@ await brain.adjustNeuron('topics', 'Be stricter about what counts as a distinct 
 await brain.adjustNeuron('patterns', 'Also track testing patterns going forward')
 ```
 
-**`brain.update(config)`** — Config replacement. Changes to mechanical fields (like models, thresholds, governance) take effect immediately across all neurons. Changes to semantic fields (like `prompt`) trigger an evolution evaluation, because changing the Brain's purpose may require restructuring its neurons.
+**`brain.update(config)`** — Config replacement. Changes to mechanical fields (like models, thresholds, governance) take effect immediately across all neurons. Changes to semantic fields (like `prompt`) run evolution, because changing the Brain's purpose may require reshaping its neurons.
 
 ```typescript
 // Mechanical: cascades immediately to all neurons
@@ -336,7 +331,7 @@ await brain.update({
   learning: { governance: { strategy: 'decay' } },
 })
 
-// Semantic: triggers evolution evaluation
+// Semantic: runs evolution
 await brain.update({ prompt: 'Track design systems instead of coding patterns.' })
 ```
 

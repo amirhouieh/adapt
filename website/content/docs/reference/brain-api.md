@@ -74,26 +74,19 @@ const brain = await Brain.create({
 
 ## Evolution
 
-Requires `evolution.enabled` (default: `true`).
-
 | Method | Returns | Description |
 |---|---|---|
-| `createNeuron(guidance)` | `Promise<Neuron>` | Create neuron from natural language |
-| `deleteNeuron(id)` | `Promise<void>` | Delete neuron via evolution |
-| `mergeNeurons(ids, guidance)` | `Promise<Neuron>` | Merge 2+ neurons into one |
-| `splitNeuron(id, guidance)` | `Promise<Neuron[]>` | Split neuron into multiple |
-| `updateNeuron(id, guidance)` | `Promise<Neuron>` | LLM-driven config update |
-| `evaluateEvolution(options?)` | `Promise<{ decisions, results }>` | Trigger evolution evaluation |
-| `evaluateEvolutionStream(options?)` | `Promise<{ stream, decisions }>` | Streaming variant |
+| `evolve()` | `Promise<EvolutionResult>` | Run evolution now. Requires `evolution.enabled` (default: `true`). Runs are queued, never parallel. |
+| `updateNeuron(id, { name?, description?, instructions? })` | `Promise<Neuron>` | Change what a neuron tracks; memory is kept |
+| `mergeNeurons(ids, config)` | `Promise<Neuron>` | Replace 2+ neurons with one; memories are joined |
 
-**`evaluateEvolution()` options:** `{ dryRun?: boolean }`
+`EvolutionResult` is `{ changes: EvolutionChange[]; reasoning: string }`. A change is `{ action: 'create' | 'update' | 'remove', neuronId }` or `{ action: 'merge', neuronId, mergedIds }`.
 
 ## Signals & Config
 
 | Method | Returns | Description |
 |---|---|---|
-| `signal({ source, description, bypass? })` | `void` | Inject signal for evolution |
-| `triggerEvolution({ source, description })` | `Promise<void>` | Trigger evolution directly, bypassing signal buffer |
+| `signal({ source, description })` | `void` | Add a signal for evolution |
 | `update(updates)` | `Promise<BrainUpdateResult>` | Update brain config |
 | `on(type, handler)` | `this` | Subscribe to specific event |
 | `on(handler)` | `this` | Subscribe to all events |
@@ -104,7 +97,6 @@ Requires `evolution.enabled` (default: `true`).
 |---|---|---|
 | `prompt` | `string` | Brain's purpose prompt |
 | `promptContext` | `object \| undefined` | Decomposed prompt context |
-| `evolutionContext` | `string \| null` | Evolution guidance from prompt decomposition |
 | `config` | `ResolvedBrainConfig` | Current resolved config (computed view) |
 | `neurons` | `Map<string, Neuron>` | Map of external neurons |
 | `internalNeurons` | `Map<string, Neuron>` | Map of internal neurons |
@@ -153,13 +145,6 @@ Requires `evolution.enabled` (default: `true`).
     neuronId: string
     changedFields: string[]
   }>
-  evolutionResults?: {                     // Present when semantic changes trigger evaluation
-    decisions: EvolutionDecision[]
-    created: string[]
-    updated: string[]
-    deleted: string[]
-    merged: string[]
-    split: string[]
-  }
+  evolution?: EvolutionResult              // Present when semantic changes ran evolution
 }
 ```

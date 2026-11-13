@@ -104,11 +104,16 @@ async function main() {
 			],
 		})
 
-		await taxonomyBrain.mergeNeurons(['eink', 'paper-displays'], 'Combine under hardware')
+		await taxonomyBrain.mergeNeurons(['eink', 'paper-displays'], {
+			id: 'hardware',
+			name: 'Hardware',
+			description: 'Display hardware the user follows',
+			instructions: 'Track e-ink and paper-like display hardware the user follows.',
+		})
 		assert(true, 'mergeNeurons() in taxonomy context works')
 
-		await taxonomyBrain.splitNeuron('ai-neuron', 'Separate into AI tools vs AI research')
-		assert(true, 'splitNeuron() in taxonomy context works')
+		await taxonomyBrain.updateNeuron('ai-neuron', { instructions: 'Track AI tools the user tries. Leave AI research out.' })
+		assert(true, 'updateNeuron() in taxonomy context works')
 
 		await taxonomyBrain.adjustNeuron('categories', 'Stop categorizing things as inspiration')
 		assert(true, 'adjustNeuron() in taxonomy context works')

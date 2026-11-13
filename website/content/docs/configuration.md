@@ -13,7 +13,7 @@ interface BrainConfig {
   model: LanguageModel                      // Default model for all operations
   blueprintModel?: LanguageModel            // Neuron config generation (falls back to model)
   llm?: AdaptLLMPlugin                      // BYO LLM runtime (default: AI SDK plugin)
-  autoSetup?: boolean                       // LLM decomposition on init (default: true)
+  autoSetup?: boolean                       // Generate neurons from the prompt on init (default: true)
   neurons?: GeneratedNeuronConfig[]         // Explicit neuron definitions
   store?: BrainStore                        // Brain persistence (default: MemoryBrainStore)
   onEvent?: UnifiedHandler<BrainEvent>      // Pre-init event subscription (catches init events)
@@ -43,13 +43,11 @@ interface BrainConfig {
 
   evolution?: {
     enabled?: boolean                       // default: true
-    model?: LanguageModel                   // Evolution evaluation model
-    evaluatorSignalThreshold?: number       // Signals before auto-eval (default: 5)
-    autoEvaluate?: boolean                  // Auto-trigger on threshold (default: true)
+    model?: LanguageModel                   // Model for the evolution loop
+    evaluatorSignalThreshold?: number       // Signals before a run starts by itself (default: 5)
+    autoEvaluate?: boolean                  // Start runs by itself (default: true)
     coverageGap?: {
-      relevanceThreshold?: number           // Below this = "not relevant" (default: 0.3)
-      gapCountThreshold?: number            // Gaps before signaling (default: 5)
-      windowSize?: number                   // Rolling window (default: 20)
+      relevanceThreshold?: number           // Below this on every neuron, a question is a gap (default: 0.3)
     }
   }
 
@@ -75,7 +73,7 @@ brain.model (default for everything)
 ├── brain.blueprintModel (neuron config generation, falls back to model)
 ├── brain.init.model (decomposition, falls back to blueprintModel)
 ├── brain.query.model (ask synthesis, falls back to model)
-├── brain.evolution.model (evolution evaluation, falls back to model)
+├── brain.evolution.model (evolution loop, falls back to model)
 └── learning.* (applied to all neurons):
     ├── learning.model → extract + update (and memory strategy)
     ├── learning.blueprintModel → neuron config generation
@@ -158,9 +156,8 @@ Adapt requires models that support **structured output** and **tool calling**. N
 | Agentic query (`ask` deep mode) | No | **Yes** (cognitive tools + done tool) |
 | Brain synthesis (direct) | Yes | No |
 | Brain synthesis (deep) | No | **Yes** (specialist query tools) |
-| Evaluator | No | **Yes** (inspect, query, review tools) |
+| Evolution loop | No | **Yes** (read, create, update, merge, remove tools) |
 | Brain inspect | No | **Yes** (introspection tools) |
-| Evolution handlers | Yes | No |
 | Memory strategy compression | No | No (plain text) |
 
 If your model doesn't support tool calling, **Neuron in direct mode** still works end-to-end. Deep mode, evolution, and inspect require tool-calling models.

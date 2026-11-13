@@ -5,7 +5,7 @@ description: Tested models and providers.
 
 Adapt requires models that support tool calling and structured JSON output. The table below lists models we've tested. The list will be updated as we go.
 
-The **Compatible** column reflects the non-streaming path (`brain.ask`, `neuron.query`, `brain.evaluateEvolution`). Streaming (`brain.askStream`, `neuron.queryStream`, `brain.evaluateEvolutionStream`) has its own caveats — see the **Streaming** column. Where the two diverge it usually comes down to weaker structured-output enforcement on the provider's streaming endpoint.
+The **Compatible** column reflects the non-streaming path (`brain.ask`, `neuron.query`, `brain.evolve`). Streaming (`brain.askStream`, `neuron.queryStream`) has its own caveats — see the **Streaming** column. Where the two diverge it usually comes down to weaker structured-output enforcement on the provider's streaming endpoint.
 
 | Provider    | Model                                                | Compatible | Streaming   | Notes                                                                                                          |
 |-------------|------------------------------------------------------|------------|-------------|----------------------------------------------------------------------------------------------------------------|

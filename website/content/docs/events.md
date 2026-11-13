@@ -68,7 +68,7 @@ Birth happens once. Learning repeats every time you call `inject()`.
 
 `Brain.create()` runs three stages (skipped on `Brain.restore()`, which loads from the store with no LLM calls):
 
-**1. Config generation** — the Brain decomposes your prompt into neuron configurations. Skipped if you provide explicit `neurons`.
+**1. Config generation** — the Brain generates neuron configurations from your prompt in one call. Skipped when `autoSetup` is `false`.
 
 ```text
 brain:init:started
@@ -156,7 +156,7 @@ brain:signal:received                ← evolution signal
 neuron:health:updated
 ```
 
-Signals accumulate. When enough build up (default threshold: 5), the evaluator triggers automatically and may restructure the brain. See [Evolution](./evolution).
+Signals accumulate. When enough build up (default threshold: 5), an evolution run starts by itself and may reshape the neurons. See [Evolution](./evolution).
 
 ## Timing expectations
 
@@ -176,7 +176,7 @@ The largest variance comes from the update step — rewriting a large memory tak
 
 ## Event Reference
 
-Events are grouped by phase. The most-used ones are `neuron:synthesized` (a neuron updated its knowledge), `brain:ask:completed` (a query finished), and `evaluator:evaluation:completed` (the evolution system made decisions).
+Events are grouped by phase. The most-used ones are `neuron:synthesized` (a neuron updated its knowledge), `brain:ask:completed` (a query finished), and `evolution:completed` (an evolution run finished).
 
 ### Brain Events
 
@@ -187,8 +187,7 @@ Events are grouped by phase. The most-used ones are `neuron:synthesized` (a neur
 | **Ask** | `brain:ask:started`, `brain:ask:synthesis:started`, `brain:ask:completed`, `brain:ask:failed` | `queryId`, `query`, `insight`, `sources[]`, `gaps[]`, `usage` |
 | **Neuron Mgmt** | `brain:neuron:added`, `brain:neuron:removed`, `brain:neuron:status:changed` | `neuronId`, `name`, `instructions`, `previousStatus`, `newStatus` |
 | **Signals** | `brain:signal:received` | `source`, `description`, `timestamp` |
-| **Evaluator** | `evaluator:evaluation:started`, `evaluator:evaluation:completed`, `evaluator:evaluation:failed` | `signalCount`, `decisions[]`, `reasoning` |
-| **Evolution** | `evolution:action:started`, `evolution:action:executed`, `evolution:action:failed` | `action`, `targets[]`, `reasoning`, `result` |
+| **Evolution** | `evolution:started`, `evolution:change`, `evolution:completed`, `evolution:failed` | `signalCount`; a change is `{ action, neuronId, mergedIds? }`; `changes[]`, `reasoning`; `error` |
 | **Config** | `brain:config:updated` | `updates`, `changedFields[]` |
 
 ### Neuron Events

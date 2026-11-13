@@ -40,7 +40,7 @@ Be a good brain that learns stuff.
 
 ### Guide the decomposition
 
-The decomposition LLM decides how many neurons to create. Its built-in heuristic says "start with the minimum number that provides meaningful separation" — which means without guidance, it often collapses a multi-dimensional domain into a single broad neuron.
+The setup call decides how many neurons to create. It is told to use as few as cover the request — which means without guidance, it often collapses a multi-dimensional domain into a single broad neuron.
 
 If your domain has separable concerns, tell the brain to specialize:
 

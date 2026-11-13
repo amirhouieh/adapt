@@ -49,11 +49,16 @@ const result = await brain.ask('What connects my interest in calm tech with my w
 
 **Problem:** Your users may want to control how knowledge is organized — merging categories that feel redundant, splitting broad ones that are too noisy, or adjusting what a neuron pays attention to.
 
-**Solution:** Expose the evolution management API to your users, letting them reshape the Brain's structure at runtime:
+**Solution:** Expose the neuron methods to your users, letting them reshape the Brain at runtime:
 
 ```typescript
-await brain.mergeNeurons(['eink', 'paper-displays'], 'Combine under hardware')
-await brain.splitNeuron('ai-neuron', 'Separate into AI tools vs AI research')
+await brain.mergeNeurons(['eink', 'paper-displays'], {
+  id: 'hardware',
+  name: 'Hardware',
+  description: 'Display hardware the user follows',
+  instructions: 'Track e-ink and paper-like display hardware the user follows.',
+})
+await brain.updateNeuron('ai-neuron', { instructions: 'Track AI tools the user tries. Leave AI research out.' })
 await brain.adjustNeuron('categories', 'Stop categorizing things as inspiration')
 ```
 
