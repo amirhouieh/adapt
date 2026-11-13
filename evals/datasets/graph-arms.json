@@ -4,7 +4,7 @@
   "id": "graph-arms",
   "title": "Where should graph live? Fixed inputs and answer key for arms 0-3",
   "source": "Synthetic. Kitchen inputs adapted from evals/scripts/two-step-strategies-lfm3.ts; same-name idea from evals/datasets/adaptive-text-learning/stream-project-commitments.json. Written before any arm was run.",
-  "howToCheck": "Feed every input to its topic's neuron, in order. Then ask each question once. Read each answer against `expected` and `wrong` by hand: correct, wrong, or missing. No LLM judge.",
+  "howToCheck": "Inject every input in order through Brain (topic only says which neuron should keep it). Then ask each question once. Read each answer against `expected` and `wrong` by hand: correct, wrong, or missing. No LLM judge.",
   "scenarios": {
     "1": "Same name, different people",
     "2": "Who did what, and changes over time",
