@@ -31,11 +31,15 @@ const provider = createOpenAICompatible({
 })
 const baseLLM = createAiSdkLLM({ providers: { openrouter: provider } })
 let calls = 0
+const log: unknown[] = []
 const llm = {
 	...baseLLM,
 	async call(request: Parameters<typeof baseLLM.call>[0]) {
 		calls++
-		return baseLLM.call(request)
+		const result = await baseLLM.call(request)
+		const { raw: _raw, ...rest } = result as typeof result & { raw?: unknown }
+		log.push({ system: request.system, messages: request.messages, result: rest })
+		return result
 	},
 } as AdaptLLMPlugin
 
@@ -91,7 +95,8 @@ async function scenario(
 	await brain.dispose()
 }
 
-await scenario(
+const only = process.env.SCENARIO
+if (!only || only === 'A') await scenario(
 	'A-create-from-gaps',
 	[{ id: 'coding', name: 'Coding', description: 'Coding preferences and tools', instructions: 'Track my coding preferences, tools and practices.' }],
 	[
@@ -107,7 +112,7 @@ await scenario(
 	],
 )
 
-await scenario(
+if (!only || only === 'B') await scenario(
 	'B-overlap',
 	[
 		{ id: 'coding', name: 'Coding', description: 'Coding preferences and tools', instructions: 'Track my coding preferences, tools and practices.' },
@@ -126,5 +131,6 @@ await scenario(
 
 report.seconds = (Date.now() - started) / 1000
 report.calls = calls
+writeFileSync(resolve(out, 'calls.json'), `${JSON.stringify(log, null, 2)}\n`)
 writeFileSync(resolve(out, 'result.json'), `${JSON.stringify(report, null, 2)}\n`)
 console.log(`\nSaved: ${out}  (${t()}s, ${calls} calls)`)
