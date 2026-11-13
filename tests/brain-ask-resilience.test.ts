@@ -24,7 +24,7 @@ function routedModel(): LanguageModel {
 		if (system.includes('Likes coffee.')) return { relevant: true }
 		if (system.includes('Likes tea.'))
 			return { relevant: true, relevance: 1, confidence: 1, response: 'Likes tea.', gaps: [] }
-		return { purpose: 'Track drinks.', evolutionGuidance: null, synthesisDirective: null }
+		return { purpose: 'Track drinks.', synthesisDirective: null }
 	}
 	const model: LanguageModelV3 = {
 		specificationVersion: 'v3',

@@ -157,10 +157,3 @@ export function getInternalNeuronConfigs(
 
 	return configs
 }
-
-/**
- * Check if an ID belongs to an internal neuron
- */
-export function isInternalNeuronId(id: string): boolean {
-	return id.startsWith('__internal_')
-}

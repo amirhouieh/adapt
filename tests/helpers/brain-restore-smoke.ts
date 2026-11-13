@@ -137,7 +137,6 @@ function createScriptedBrainModel(): ScriptedModelHandle {
 			if (promptText.includes('You are analyzing a user-authored prompt for a living knowledge network')) {
 				return createJsonResult({
 					purpose: 'Track engineering decisions and remember their rationale.',
-					evolutionGuidance: null,
 					synthesisDirective: 'Answer concretely from stored engineering evidence.',
 				})
 			}

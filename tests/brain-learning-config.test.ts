@@ -5,7 +5,6 @@ import type {
 import type { LanguageModel } from 'ai'
 import { describe, expect, it } from 'vitest'
 import { Brain } from '../src/brain'
-import { createCompleteConfig } from '../src/brain/evolution/utils'
 import type { Neuron } from '../src/neurons'
 import { MemoryBrainStore } from '../src/stores'
 
@@ -50,7 +49,7 @@ const neuron = (id: string, governance?: { strategy?: 'continuous' | 'cumulative
 })
 
 async function createBrain(calls: string[], learning: Parameters<typeof Brain.create>[0]['learning']) {
-	const prompt = JSON.stringify({ purpose: 'Track things.', evolutionGuidance: null, synthesisDirective: null })
+	const prompt = JSON.stringify({ purpose: 'Track things.', synthesisDirective: null })
 	return Brain.create({
 		prompt: 'Track things.',
 		model: scriptedModel('brain', [prompt], calls),
@@ -89,11 +88,10 @@ describe('Brain applies learning config to the neurons it creates', () => {
 		await brain.dispose()
 	})
 
-	it('neurons from split/merge configs follow learning.governance', async () => {
+	it('neurons from a merge follow learning.governance', async () => {
 		const brain = await createBrain([], { governance: { strategy: 'decay', maxTokens: 6000 } })
-		const config = createCompleteConfig({ name: 'Split part', description: 'd', instructions: 'Track x.' })
-		const created = (await brain.addNeuron(config)) as unknown as Neuron
-		expect(created.getGovernance()).toEqual({ strategy: 'decay', maxTokens: 6000 })
+		const merged = await brain.mergeNeurons(['plain', 'own'], neuron('merged'))
+		expect(merged.getGovernance()).toEqual({ strategy: 'decay', maxTokens: 6000 })
 		await brain.dispose()
 	})
 

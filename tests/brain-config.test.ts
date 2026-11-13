@@ -96,8 +96,6 @@ describe('createInitialBrainState', () => {
 				autoEvaluate: true,
 				coverageGap: {
 					relevanceThreshold: 0.3,
-					gapCountThreshold: 3,
-					windowSize: 50,
 				},
 			},
 		})
@@ -124,8 +122,6 @@ describe('createInitialBrainState', () => {
 				autoEvaluate: true,
 				coverageGap: {
 					relevanceThreshold: 0.3,
-					gapCountThreshold: 3,
-					windowSize: 50,
 				},
 			},
 		})
@@ -148,8 +144,6 @@ describe('createInitialBrainState', () => {
 				autoEvaluate: false,
 				coverageGap: {
 					relevanceThreshold: 0.3,
-					gapCountThreshold: 3,
-					windowSize: 50,
 				},
 			},
 		})
@@ -172,8 +166,6 @@ describe('createInitialBrainState', () => {
 				autoEvaluate: true,
 				coverageGap: {
 					relevanceThreshold: 0.3,
-					gapCountThreshold: 3,
-					windowSize: 50,
 				},
 			},
 		})
@@ -188,8 +180,6 @@ describe('createInitialBrainState', () => {
 			autoEvaluate: false,
 			coverageGap: {
 				relevanceThreshold: 0.5,
-				gapCountThreshold: 5,
-				windowSize: 100,
 			},
 		}
 

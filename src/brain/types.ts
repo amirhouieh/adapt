@@ -8,7 +8,7 @@ import type {
 	ResolvedCascadableConfig,
 } from '../types/config'
 import type { EventsFromMap, UnifiedHandler } from '../types/events'
-import type { EvolutionDecision } from './evaluator/types'
+import type { EvolutionChange, EvolutionResult } from './evolution'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Learning Config (passed to neurons)
@@ -43,15 +43,15 @@ export interface GovernanceConfig {
 /**
  * Learning config - applied to all auto-generated neurons
  *
- * Semantic fields (instructions, name, description) go through the evaluator
- * when used in brain.update(). Mechanical fields cascade directly to neurons.
+ * Semantic fields (instructions, name, description) run evolution when used
+ * in brain.update(). Mechanical fields cascade directly to neurons.
  */
 export interface LearningConfig extends CascadableConfig {
-	/** Neuron instructions (semantic — goes through evaluator) */
+	/** Neuron instructions (semantic — runs evolution) */
 	instructions?: string
-	/** Neuron name (semantic — goes through evaluator) */
+	/** Neuron name (semantic — runs evolution) */
 	name?: string
-	/** Neuron description (semantic — goes through evaluator) */
+	/** Neuron description (semantic — runs evolution) */
 	description?: string
 	understand?: UnderstandPhaseConfig
 	query?: QueryPhaseConfig
@@ -89,20 +89,15 @@ export interface IngestConfig {
 export interface EvolutionConfig {
 	/** Whether evolution is enabled */
 	enabled?: boolean
-	/** Model used for evolution evaluation (runtime, recurring). Falls back to default model. */
+	/** Model for the evolution loop. Falls back to the default model. */
 	model?: LanguageModel
-	/** Number of signals before auto-evaluation */
+	/** Buffered signals that start an evolution run (default: 5) */
 	evaluatorSignalThreshold?: number
-	/** Whether to auto-evaluate when threshold reached */
+	/** Run evolution by itself when the threshold is reached (default: true) */
 	autoEvaluate?: boolean
-	/** Coverage gap detection config */
 	coverageGap?: {
-		/** Relevance below this counts as "not relevant" (default: 0.3) */
+		/** When every neuron answers a question below this relevance, the question is a gap (default: 0.3) */
 		relevanceThreshold?: number
-		/** Number of gap queries before signaling (default: 5) */
-		gapCountThreshold?: number
-		/** Window size for counting (default: 20) */
-		windowSize?: number
 	}
 }
 
@@ -154,7 +149,7 @@ export interface BrainConfig extends CascadableConfig, AdaptRepairOptions {
 	evolution?: EvolutionConfig
 	/** Brain's own persistence store. Defaults to MemoryBrainStore. */
 	store?: BrainStore
-	/** Explicit neuron definitions (uses existing text/list types). Created on init. */
+	/** Explicit neuron definitions. Created on init. */
 	neurons?: GeneratedNeuronConfig[]
 	/**
 	 * When true (default), Brain auto-generates neurons from the prompt via LLM.
@@ -205,8 +200,7 @@ export interface BrainRuntimeOptions extends AdaptRepairOptions {
  * Computed view of BrainState in the traditional config shape.
  *
  * Returned by `brain.config` getter. NOT a stored value — it's derived
- * from `this.state` on every access. External readers (evaluator, evolution
- * handlers, evals) consume this shape.
+ * from `this.state` on every access.
  */
 export interface ResolvedBrainConfig extends ResolvedCascadableConfig {
 	prompt: string
@@ -220,8 +214,6 @@ export interface ResolvedBrainConfig extends ResolvedCascadableConfig {
 		autoEvaluate: boolean
 		coverageGap: {
 			relevanceThreshold: number
-			gapCountThreshold: number
-			windowSize: number
 		}
 	}
 }
@@ -316,15 +308,8 @@ export interface BrainUpdateResult {
 		neuronId: string
 		changedFields: string[]
 	}>
-	/** Present only when signal-driven evaluation was triggered */
-	evolutionResults?: {
-		decisions: EvolutionDecision[]
-		created: string[]
-		updated: string[]
-		deleted: string[]
-		merged: string[]
-		split: string[]
-	}
+	/** Present only when the update ran evolution */
+	evolution?: EvolutionResult
 }
 
 /**
@@ -405,56 +390,16 @@ export interface BrainOwnEventMap {
 		newStatus: NeuronStatus
 	}
 
-	// Signal events (Living Brain)
+	// Evolution
 	'brain:signal:received': {
 		source: string
 		description: string
 		timestamp: Date
 	}
-
-	// Evaluator events (Living Brain)
-	'evaluator:evaluation:started': {
-		signalCount: number
-	}
-	'evaluator:evaluation:completed': {
-		source: 'auto' | 'manual'
-		decisionCount: number
-		decisions: Array<{
-			action: 'create' | 'merge' | 'split' | 'update' | 'delete'
-			reasoning: string
-			guidance: string
-			targets: string[]
-		}>
-		reasoning: string
-	}
-	'evaluator:evaluation:failed': {
-		error: string
-	}
-
-	// Evolution action events (Living Brain)
-	'evolution:action:started': {
-		action: string
-		targets: string[]
-		timestamp: Date
-	}
-	'evolution:action:executed': {
-		action: 'create' | 'merge' | 'split' | 'update' | 'delete'
-		reasoning: string
-		guidance: string
-		targets: string[]
-		timestamp: Date
-		result: {
-			newNeuronIds?: string[]
-			deletedNeuronIds?: string[]
-			updatedNeuronIds?: string[]
-		}
-	}
-	'evolution:action:failed': {
-		action: string
-		targets: string[]
-		error: string
-		timestamp: Date
-	}
+	'evolution:started': { signalCount: number }
+	'evolution:change': EvolutionChange
+	'evolution:completed': EvolutionResult
+	'evolution:failed': { error: string }
 
 	// Brain config update events
 	'brain:config:updated': {

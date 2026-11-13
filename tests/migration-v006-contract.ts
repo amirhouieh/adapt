@@ -1,4 +1,4 @@
-import type { EvolutionLensDefinition } from '../src/brain/evolution/contracts'
+import type { EvolutionLensDefinition } from '../src/brain/migration/contracts'
 import {
 	createLegacyV006BrainSource,
 	createLegacyV006NeuronSource,

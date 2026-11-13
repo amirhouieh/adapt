@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { inspect } from 'node:util'
-import type { EvolutionLensDefinition } from '../../src/brain/evolution/contracts'
+import type { EvolutionLensDefinition } from '../../src/brain/migration/contracts'
 import {
 	createLegacyV006BrainSource,
 	createLegacyV006NeuronSource,

@@ -76,8 +76,6 @@ export interface BrainState {
 		autoEvaluate: boolean
 		coverageGap: {
 			relevanceThreshold: number
-			gapCountThreshold: number
-			windowSize: number
 		}
 	}
 }

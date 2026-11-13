@@ -1,3 +1,4 @@
+import type { MemoryType, VersionRef } from '../../learning'
 import type {
 	BrainEvolutionRecord,
 	BrainNeuronRecord,
@@ -11,7 +12,24 @@ import type {
 	StateRecord,
 	UnderstandingRecord,
 } from '../../stores'
-import type { EvolutionLensDefinition } from '../evolution/contracts'
+
+/** The lens a migrated 0.0.6 neuron becomes in the registry revision. */
+export interface EvolutionLensDefinition {
+	id: string
+	name: string
+	description: string
+	type: MemoryType
+	memory_schema: VersionRef
+	recipe: VersionRef
+	recipe_composition: VersionRef[]
+	dependencies: string[]
+	settings: { [key: string]: string | number | boolean | null }
+	developer_constraints: {
+		instructions: string[]
+		local_only: boolean
+		provider_permissions: string[]
+	}
+}
 
 export type LegacyV006StoreKind = 'memory' | 'sqlite-node' | 'sqlite-bun'
 

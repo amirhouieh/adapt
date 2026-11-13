@@ -49,7 +49,6 @@ function createQueuedJsonModel(responses: unknown[]) {
 const initResponses = () => [
 	{
 		purpose: 'Track coding preferences and patterns.',
-		evolutionGuidance: null,
 		synthesisDirective: null,
 	},
 ]
@@ -206,7 +205,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					) {
 						body = {
 							purpose: 'Track coding preferences and patterns.',
-							evolutionGuidance: null,
 							synthesisDirective: null,
 						}
 						phase = 'prompt-decomposition'
@@ -301,7 +299,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 					) {
 						body = {
 							purpose: 'p',
-							evolutionGuidance: null,
 							synthesisDirective: null,
 						}
 					}

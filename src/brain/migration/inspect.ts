@@ -5,8 +5,8 @@ import type {
 	StateRecord,
 	UnderstandingRecord,
 } from '../../stores'
-import type { EvolutionLensDefinition } from '../evolution/contracts'
 import type {
+	EvolutionLensDefinition,
 	LegacyMigrationInspectInput,
 	LegacyMigrationInspectionResult,
 	LegacyMigrationIssue,

@@ -41,7 +41,7 @@ function createQueuedJsonModel(responses: unknown[]) {
 
 const initResponses = [
 	// brain prompt decomposition
-	{ purpose: 'Track coding.', evolutionGuidance: null, synthesisDirective: null },
+	{ purpose: 'Track coding.', synthesisDirective: null },
 ]
 
 async function makeBrain(
