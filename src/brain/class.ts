@@ -731,11 +731,11 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	}
 
 	/**
-	 * Remove a neuron and its memory.
+	 * Remove a neuron and everything it stored. The id can be created again.
 	 */
 	async removeNeuron(id: string): Promise<void> {
 		const neuron = this.#neuronOrThrow(id)
-		await neuron.dispose()
+		await neuron.erase()
 		this.neurons.delete(id)
 		this.neuronStatus.delete(id)
 		await this.store.neurons.delete(id)

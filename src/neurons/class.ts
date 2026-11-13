@@ -1103,6 +1103,32 @@ export class Neuron extends TypedEmitter<NeuronEventMap> {
 	}
 
 	/**
+	 * Clear everything this neuron stored and stop it, so the id can be created
+	 * again. The store stays open: its owner (the brain store) closes it.
+	 * Waits for in-flight learning first.
+	 */
+	async erase(): Promise<void> {
+		await Promise.allSettled([...this.#learning])
+		const s = this.store
+		for (const collection of [
+			s.observations,
+			s.understanding,
+			s.evolution,
+			s.state,
+			s.learningHistory,
+			s.memoryChanges,
+			s.pendingWork,
+			s.pendingInputs,
+			s.processedInputs,
+			s.outbox,
+			s.learningAttempts,
+			s.learningRevisions,
+		])
+			await collection.clear()
+		await this.#adaptive.dispose()
+	}
+
+	/**
 	 * Dispose of the neuron and its store. Waits for in-flight learning first.
 	 */
 	async dispose(): Promise<void> {

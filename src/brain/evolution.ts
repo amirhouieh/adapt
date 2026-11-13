@@ -160,6 +160,9 @@ export function leftoverIsEmpty(reply: string, entryCount: number): boolean {
 		.every((line) => line === '' || empty.has(line))
 }
 
+const NEW_NEURON_NOTE =
+	'This neuron is new. It has no memory yet. When this run ends it will learn the stored gap inputs.'
+
 const neuronIdSchema = z.object({ id: z.string().describe('The neuron id') })
 const mergeSchema = neuronConfigSchema.extend({
 	ids: z
@@ -186,6 +189,8 @@ export function evolutionTools(
 	brain: Brain,
 	onChange: (change: EvolutionChange) => void,
 ) {
+	// Neurons made in this run: their memory is empty until the run ends
+	const madeThisRun = new Set<string>()
 	return {
 		readMemory: tool({
 			description: "Read a neuron's memory.",
@@ -194,7 +199,9 @@ export function evolutionTools(
 				attempt(async () => {
 					const neuron = brain.getNeuron(id)
 					if (!neuron) throw new Error(`Neuron ${id} not found`)
-					return { memory: (await neuron.getUnderstanding()) || '(empty)' }
+					const memory = await neuron.getUnderstanding()
+					if (memory) return { memory }
+					return { memory: madeThisRun.has(id) ? NEW_NEURON_NOTE : '(empty)' }
 				}),
 		}),
 		createNeuron: tool({
@@ -203,8 +210,9 @@ export function evolutionTools(
 			execute: (config: z.infer<typeof neuronConfigSchema>) =>
 				attempt(async () => {
 					await brain.addNeuron(config)
+					madeThisRun.add(config.id)
 					onChange({ action: 'create', neuronId: config.id })
-					return { created: config.id }
+					return { created: config.id, note: NEW_NEURON_NOTE }
 				}),
 		}),
 		updateNeuron: tool({
@@ -238,6 +246,7 @@ export function evolutionTools(
 			execute: ({ ids, ...config }: z.infer<typeof mergeSchema>) =>
 				attempt(async () => {
 					await brain.mergeNeurons(ids, config)
+					madeThisRun.add(config.id)
 					onChange({ action: 'merge', neuronId: config.id, mergedIds: ids })
 					return { merged: ids, into: config.id }
 				}),
@@ -248,6 +257,7 @@ export function evolutionTools(
 			execute: ({ id }: z.infer<typeof neuronIdSchema>) =>
 				attempt(async () => {
 					await brain.removeNeuron(id)
+					madeThisRun.delete(id)
 					onChange({ action: 'remove', neuronId: id })
 					return { removed: id }
 				}),

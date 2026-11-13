@@ -4,10 +4,14 @@ import type {
 	LanguageModelV3Content,
 	LanguageModelV3GenerateResult,
 } from '@ai-sdk/provider'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Brain } from '../src/brain'
 import { leftoverEntry } from '../src/brain/evolution'
 import type { LanguageModel } from '../src/llm'
+import { SQLiteBrainStore } from '../src/sqlite'
 import { MemoryBrainStore } from '../src/stores'
 
 const usage: LanguageModelV3GenerateResult['usage'] = {
@@ -314,6 +318,36 @@ describe('Brain gaps in batches some neuron took', () => {
 		await brain.dispose()
 	})
 
+	it('tells the model a just-created neuron is new, and fills it from the gaps after the run', async () => {
+		const evolutionPrompts: string[] = []
+		const food = { id: 'food', name: 'Food', description: 'Food habits', instructions: 'Track food.' }
+		const brain = await Brain.create({
+			prompt: 'Track my coding and my food.',
+			model: scriptedModel(
+				[
+					[{ tool: 'createNeuron', input: food }],
+					[{ tool: 'readMemory', input: { id: 'food' } }],
+					'Done.',
+				],
+				learnScript({ coding: 'Uses strict TypeScript.', food: 'Eats vegetarian ramen.' }, () => `Entry 1:\n${ramen}`, []),
+				evolutionPrompts,
+			),
+			autoSetup: false,
+			store: new MemoryBrainStore(),
+			neurons: [neuron('coding')],
+			internalNeurons: noInternalNeurons,
+			evolution: { enabled: true, autoEvaluate: false },
+		})
+		await brain.inject([coding, ramen])
+		await brain.evolve()
+
+		expect(evolutionPrompts[1]).toContain('it will learn the stored gap inputs')
+		expect(evolutionPrompts[2]).toContain('This neuron is new. It has no memory yet.')
+		expect(evolutionPrompts[2]).not.toContain('(empty)')
+		expect(await brain.getNeuron('food')?.getUnderstanding()).toBe('Eats vegetarian ramen.')
+		await brain.dispose()
+	})
+
 	it.each(['', 'Entry 1: NONE', 'Entry 1:\nNONE'])('is no gap when the leftover reply is %j', async (reply) => {
 		const calls: string[] = []
 		const store = new MemoryBrainStore()
@@ -390,5 +424,42 @@ describe('Brain gaps in batches some neuron took', () => {
 		expect(record.data).toEqual([ramen])
 		expect(record.gaps).toEqual([])
 		await brain.dispose()
+	})
+})
+
+describe('Brain removeNeuron', () => {
+	it('clears the neuron data so the same id can be created again', async () => {
+		const brain = await Brain.create({
+			prompt: 'Track things.',
+			model: scriptedModel([], () => 'NONE', []),
+			autoSetup: false,
+			store: new MemoryBrainStore(),
+			neurons: [neuron('a')],
+			internalNeurons: noInternalNeurons,
+		})
+		await brain.removeNeuron('a')
+		const again = await brain.addNeuron(neuron('a'))
+		expect(await again.getUnderstanding()).toBe('')
+		await brain.dispose()
+	})
+
+	it('does the same on a SQLite store', async () => {
+		const dir = mkdtempSync(join(tmpdir(), 'adapt-remove-neuron-'))
+		const brain = await Brain.create({
+			prompt: 'Track things.',
+			model: scriptedModel([], () => 'NONE', []),
+			autoSetup: false,
+			store: new SQLiteBrainStore(join(dir, 'brain.db')),
+			neurons: [neuron('a')],
+			internalNeurons: noInternalNeurons,
+		})
+		try {
+			await brain.removeNeuron('a')
+			const again = await brain.addNeuron(neuron('a'))
+			expect(await again.getUnderstanding()).toBe('')
+		} finally {
+			await brain.dispose()
+			rmSync(dir, { recursive: true, force: true })
+		}
 	})
 })
