@@ -1,16 +1,16 @@
 ---
 title: Neuron API Reference
-description: API for TextNeuron.
+description: API for Neuron.
 ---
 
-API for `TextNeuron` (extends `BaseNeuron`).
+API for `Neuron`.
 
 ## Lifecycle
 
 | Method | Returns | Description |
 |---|---|---|
-| `TextNeuron.create(config, parentModels?)` | `Promise<TextNeuron>` | Construct a fresh TextNeuron and persist its config. Throws if the store already contains a neuron. |
-| `TextNeuron.restore(pathOrStore, runtime?)` | `Promise<TextNeuron>` | Restore a previously persisted TextNeuron. Path-string sugar uses Node SQLite via dynamic import. Throws if the store is empty. |
+| `Neuron.create(config, parentModels?)` | `Promise<Neuron>` | Construct a fresh Neuron and persist its config. Throws if the store already contains a neuron. |
+| `Neuron.restore(pathOrStore, runtime?)` | `Promise<Neuron>` | Restore a previously persisted Neuron. Path-string sugar uses Node SQLite via dynamic import. Throws if the store is empty. |
 | `dispose()` | `Promise<void>` | Close the neuron's own store. |
 | `isInitialized()` | `boolean` | True once `init` has completed. |
 
@@ -116,7 +116,6 @@ See [Neurons — Memory strategies](../neurons#memory-strategies).
 | Property | Type | Description |
 |---|---|---|
 | `id` | `string` | Neuron ID |
-| `type` | `string` | `'text'` |
 | `name` | `string` | Display name |
 | `description` | `string` | What this neuron tracks |
 | `instructions` | `string` | What the neuron tracks. Used verbatim in both stages. |
@@ -124,7 +123,7 @@ See [Neurons — Memory strategies](../neurons#memory-strategies).
 
 ## Config Fields
 
-Accepted by `TextNeuron.create()` (and by Brain explicit-neuron configs). Required: `model`, `instructions`, `store`.
+Accepted by `Neuron.create()` (and by Brain explicit-neuron configs). Required: `model`, `instructions`, `store`.
 
 | Field | Type | Description |
 |---|---|---|

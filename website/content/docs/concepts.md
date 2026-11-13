@@ -62,13 +62,13 @@ A **memory strategy** (`continuous`, `cumulative`, `decay`) then decides whether
 | | Use this when |
 |---|---|
 | **Brain** (`Brain.create`) | You want auto-decomposition into multiple specialists, parallel routing, multi-neuron synthesis, and evolution. |
-| **Standalone neuron** (`TextNeuron.create`) | You only need one domain and want direct control. No orchestration, no evolution. |
+| **Standalone neuron** (`Neuron.create`) | You only need one domain and want direct control. No orchestration, no evolution. |
 
 Standalone neurons are first-class — they expose the same `learn` / `query` / `update` / `adjust` surface a Brain calls into. Most examples on this site use a Brain because that's the more common starting point.
 
 ## Neurons
 
-Every neuron is a `TextNeuron`: one plain-text memory, learned in two stages (extract, then update), kept in size by a memory strategy (`continuous`, `cumulative`, `decay` + a token limit). See [Neurons](./neurons).
+Every neuron has one plain-text memory, learned in two stages (extract, then update), kept in size by a memory strategy (`continuous`, `cumulative`, `decay` + a token limit). See [Neurons](./neurons).
 
 ## Evolution
 

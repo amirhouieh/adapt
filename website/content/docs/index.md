@@ -50,10 +50,10 @@ console.log(result.insight)
 If you don't need multi-domain orchestration, neurons work independently without a Brain. You get direct control over a single learning domain:
 
 ```typescript
-import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { Neuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { openai } from '@ai-sdk/openai'
 
-const neuron = await TextNeuron.create({
+const neuron = await Neuron.create({
   model: openai('gpt-4o'),
   instructions: 'Track product design principles and philosophy.',
   store: new MemoryNeuronStore(),
@@ -81,14 +81,12 @@ const brain = await Brain.create({
     {
       id: 'techniques',
       name: 'Cooking Techniques',
-      type: 'text',
       description: 'Culinary methods and approaches',
       instructions: 'Track cooking techniques, methods, and principles.',
     },
     {
       id: 'recipes',
       name: 'Recipe Collection',
-      type: 'text',
       description: 'Tracked recipes and ingredients',
       instructions: 'Track recipes with cuisine type, ingredients, and difficulty level.',
     },
@@ -153,5 +151,5 @@ The path-string sugar `Brain.restore('./brain.db', ...)` always uses the Node SQ
 
 - [Concepts](./concepts) — architecture and mental model
 - [Brain](./brain) — full Brain API guide
-- [Neurons](./neurons) — TextNeuron in depth: two-stage learning and memory strategies
+- [Neurons](./neurons) — Neuron in depth: two-stage learning and memory strategies
 - [Prompt Design](./prompt-design) — the most important input to a neuron

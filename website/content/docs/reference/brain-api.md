@@ -62,12 +62,12 @@ const brain = await Brain.create({
 
 | Method | Returns | Description |
 |---|---|---|
-| `addNeuron(config)` | `Promise<BaseNeuron>` | Add neuron with explicit config |
+| `addNeuron(config)` | `Promise<Neuron>` | Add neuron with explicit config |
 | `removeNeuron(id)` | `Promise<void>` | Remove neuron and dispose store |
 | `adjustNeuron(id, directive)` | `Promise<{ neuron, result }>` | Natural language steering (preserves knowledge) |
-| `getNeuron(id)` | `BaseNeuron \| undefined` | Get neuron by ID |
-| `getNeurons()` | `BaseNeuron[]` | Get all external neurons |
-| `getInternalNeuron(id)` | `BaseNeuron \| undefined` | Get internal neuron by ID |
+| `getNeuron(id)` | `Neuron \| undefined` | Get neuron by ID |
+| `getNeurons()` | `Neuron[]` | Get all external neurons |
+| `getInternalNeuron(id)` | `Neuron \| undefined` | Get internal neuron by ID |
 | `pauseNeuron(id)` | `Promise<void>` | Set neuron status to `'inactive'`. Inject fan-out skips paused neurons; query path is unaffected. |
 | `resumeNeuron(id)` | `Promise<void>` | Set neuron status to `'active'`. |
 | `getNeuronStatus(id)` | `NeuronStatus \| undefined` | Returns `'active'` / `'inactive'`, or `undefined` if neuron not found. Defaults to `'active'` for records that predate the status field. |
@@ -78,11 +78,11 @@ Requires `evolution.enabled` (default: `true`).
 
 | Method | Returns | Description |
 |---|---|---|
-| `createNeuron(guidance)` | `Promise<BaseNeuron>` | Create neuron from natural language |
+| `createNeuron(guidance)` | `Promise<Neuron>` | Create neuron from natural language |
 | `deleteNeuron(id)` | `Promise<void>` | Delete neuron via evolution |
-| `mergeNeurons(ids, guidance)` | `Promise<BaseNeuron>` | Merge 2+ neurons into one |
-| `splitNeuron(id, guidance)` | `Promise<BaseNeuron[]>` | Split neuron into multiple |
-| `updateNeuron(id, guidance)` | `Promise<BaseNeuron>` | LLM-driven config update |
+| `mergeNeurons(ids, guidance)` | `Promise<Neuron>` | Merge 2+ neurons into one |
+| `splitNeuron(id, guidance)` | `Promise<Neuron[]>` | Split neuron into multiple |
+| `updateNeuron(id, guidance)` | `Promise<Neuron>` | LLM-driven config update |
 | `evaluateEvolution(options?)` | `Promise<{ decisions, results }>` | Trigger evolution evaluation |
 | `evaluateEvolutionStream(options?)` | `Promise<{ stream, decisions }>` | Streaming variant |
 
@@ -106,8 +106,8 @@ Requires `evolution.enabled` (default: `true`).
 | `promptContext` | `object \| undefined` | Decomposed prompt context |
 | `evolutionContext` | `string \| null` | Evolution guidance from prompt decomposition |
 | `config` | `ResolvedBrainConfig` | Current resolved config (computed view) |
-| `neurons` | `Map<string, BaseNeuron>` | Map of external neurons |
-| `internalNeurons` | `Map<string, BaseNeuron>` | Map of internal neurons |
+| `neurons` | `Map<string, Neuron>` | Map of external neurons |
+| `internalNeurons` | `Map<string, Neuron>` | Map of internal neurons |
 | `store` | `BrainStore` | Persistence layer |
 
 ## Result Types

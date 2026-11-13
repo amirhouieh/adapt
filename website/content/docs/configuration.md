@@ -129,7 +129,7 @@ Any `LanguageModel` from any `@ai-sdk/*` provider works. See [Vercel AI SDK prov
 
 ### Custom LLM Runtimes
 
-If you need a runtime outside the AI SDK — Effect, an in-house client, or anything implementing the `AdaptLLMPlugin` contract — pass `llm` in `BrainConfig` (or to `Brain.restore` / `TextNeuron.create`):
+If you need a runtime outside the AI SDK — Effect, an in-house client, or anything implementing the `AdaptLLMPlugin` contract — pass `llm` in `BrainConfig` (or to `Brain.restore` / `Neuron.create`):
 
 ```typescript
 import { Brain, createAiSdkLLM } from '@unbody-io/adapt'
@@ -163,7 +163,7 @@ Adapt requires models that support **structured output** and **tool calling**. N
 | Evolution handlers | Yes | No |
 | Memory strategy compression | No | No (plain text) |
 
-If your model doesn't support tool calling, **TextNeuron in direct mode** still works end-to-end. Deep mode, evolution, and inspect require tool-calling models.
+If your model doesn't support tool calling, **Neuron in direct mode** still works end-to-end. Deep mode, evolution, and inspect require tool-calling models.
 
 > **Practical tip:** Use a tool-calling model (GPT-4o, Claude Sonnet, Gemini Flash) as the default `model`. If you want a cheaper/local model for learning, set it on `learning.model` only — learning is plain text and needs neither structured output nor tool calling.
 
