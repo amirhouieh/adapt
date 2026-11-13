@@ -1,61 +1,6 @@
 import type { ZodType } from 'zod'
 import type { AdaptFinishReason, AdaptUsage, JsonValue } from '../../llm'
 
-export interface LearningObservation {
-	readonly id: string
-	readonly text: string
-	readonly observedAt: string
-	readonly eventAt?: string
-}
-
-export interface LearningLens {
-	readonly purpose: string
-	readonly memoryType: string
-	readonly schema: JsonValue
-	/** Verbatim developer-owned constraints. */
-	readonly developerConstraints: string
-	readonly identityRules?: string
-}
-
-export interface TextMemorySnapshot {
-	readonly id: string
-	readonly revision: number
-	readonly text: string
-	readonly processedInputIds: readonly string[]
-}
-
-export interface ListMemoryItem {
-	readonly id: string
-	readonly data: Readonly<Record<string, JsonValue>>
-}
-
-export interface ListMemorySnapshot {
-	readonly id: string
-	readonly revision: number
-	readonly items: readonly ListMemoryItem[]
-	readonly processedInputIds: readonly string[]
-	readonly candidateContextTruncated: boolean
-}
-
-export type ListPatchAction =
-	| {
-			readonly kind: 'add'
-			readonly item: ListMemoryItem
-	  }
-	| {
-			readonly kind: 'update'
-			readonly itemId: string
-			readonly data: Readonly<Record<string, JsonValue>>
-	  }
-	| {
-			readonly kind: 'remove'
-			readonly itemId: string
-	  }
-
-export interface ListPatch {
-	readonly actions: readonly ListPatchAction[]
-}
-
 export type SemanticStage<T> = {
 	readonly value: T
 	readonly raw: unknown
@@ -123,24 +68,6 @@ export interface LearningModelCapability {
 	): Promise<LearningDecisionResult<TAnswer>>
 }
 
-export interface LearningIdCapability {
-	next(kind: string): string
-}
-
 export interface LearningClockCapability {
 	now(): string
 }
-
-export interface LearningItemValidatorCapability {
-	parse(value: unknown): Readonly<Record<string, JsonValue>>
-	validateTransition?(
-		previous: Readonly<Record<string, JsonValue>>,
-		next: Readonly<Record<string, JsonValue>>,
-	): void
-}
-
-export const LEARNING_MODEL_CAPABILITY = 'adapt.learning.model'
-export const LEARNING_ID_CAPABILITY = 'adapt.learning.id'
-export const LEARNING_CLOCK_CAPABILITY = 'adapt.learning.clock'
-export const LEARNING_ITEM_VALIDATOR_CAPABILITY =
-	'adapt.learning.item-validator'
