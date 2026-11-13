@@ -401,6 +401,15 @@ const directAnswerSchema = z.object({
 })
 
 /**
+ * What a reply is checked against: a missing `gaps` counts as none. Small
+ * models sometimes leave it out. The model is still sent `directAnswerSchema`,
+ * where `gaps` is required (OpenAI strict mode needs that).
+ */
+const acceptedAnswerSchema = directAnswerSchema.extend({
+	gaps: z.array(z.string()).default([]),
+})
+
+/**
  * Single-shot synthesis — all specialist results already collected.
  * One LLM call, no tools, no agentic loop.
  */
@@ -455,11 +464,11 @@ ${specialistSections}${globalSection}`
 		system,
 		prompt: query,
 		output: Output.object({ schema: directAnswerSchema }),
-		repairSchema: directAnswerSchema,
+		repairSchema: acceptedAnswerSchema,
 		...generateOptions,
 	})
 
-	const output = result.output as z.infer<typeof directAnswerSchema>
+	const output = result.output as z.infer<typeof acceptedAnswerSchema>
 	const usage: TokenUsage = {
 		inputTokens: result.usage?.inputTokens ?? 0,
 		outputTokens: result.usage?.outputTokens ?? 0,
