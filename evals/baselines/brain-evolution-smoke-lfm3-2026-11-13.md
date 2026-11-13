@@ -52,3 +52,19 @@ Raw: `evals/.data/brain-evolution-smoke/2026-11-13T16-48-33.320Z/` (`calls.json`
    - **A ✓** `food_habits` created and kept; instructions name the topic; memory holds oats, ramen, sushi, less meat; no weather or train. Coding unchanged.
    - **B ✓** no change.
    One run each.
+
+## 3 more runs at edd3079
+
+Raw: `evals/.data/brain-evolution-smoke/2026-11-13T17-22-05.591Z/`, `…17-25-07.439Z/`, `…17-27-22.460Z/`.
+
+| Run | A (create from gaps) | B (overlap) |
+|---|---|---|
+| 1 | ✓ `food` created, 4 food facts, no noise neurons | ✓ no change |
+| 2 | ✓ `food` created, 4 food facts | ✓ no change |
+| 3 | ✓ `food-habits` created, 4 food facts | ~ `typescript-style` removed (not merged); `coding` already held its facts, so nothing lost |
+
+- Evolution itself held up: 3/3 A, 3/3 B with no data loss. No neuron for weather, trains or movies.
+- Run 2: `food` instructions copied facts again ("breakfast (oats with banana), dinner (vegetarian ramen)…"). The topic-only rule is not always followed.
+- Run 3 B: the model's reasoning says "merged" but it called `removeNeuron`, and claims `food` holds the integration-tests fact (it does not). Its reasoning text can't be trusted; read `changes`.
+- Learn step adds things not said, every run: "avoids any other languages, frameworks" (runs 1, 3), "full type annotations" (run 2), "you previously mentioned wanting to try sushi with salmon" (run 2).
+- Kebab-case ids in all 3 runs (`food`, `food-habits`).
