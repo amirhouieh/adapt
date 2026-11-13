@@ -15,7 +15,7 @@ export const neuronConfigSchema = z.object({
 	instructions: z
 		.string()
 		.describe(
-			'What this neuron tracks and keeps in its memory, in plain sentences',
+			"The topic this neuron tracks, in one or two sentences, like 'Track my food habits and diet.' Name the topic only: never copy facts, inputs or memory into it. The neuron learns the facts itself.",
 		),
 })
 

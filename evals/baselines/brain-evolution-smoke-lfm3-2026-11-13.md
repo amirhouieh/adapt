@@ -42,3 +42,13 @@ Raw: `evals/.data/brain-evolution-smoke/2026-11-13T16-48-33.320Z/` (`calls.json`
 - **A ✗: the food neuron is created, then removed in the same run.** Inside the run, `readMemory` on the new neuron says "(empty)", because gap inputs are fed only after the run. LFM3 then removes it as useless. Seen in 2 of 2 runs.
 - **Bug:** after `removeNeuron`, creating the same id fails with "Neuron already exists in this store" (its store is not cleared).
 - **B ✓:** no change, and no fake updates reported.
+
+## After fixes (2144e46 + instructions wording)
+
+1. 2144e46: `readMemory`/`createNeuron` tell the model a new neuron learns the gap inputs when the run ends; `removeNeuron` clears the neuron's data.
+   Rerun: food neuron kept and filled, but its `instructions` held the gap lines word for word (weather, train), so it learned them too. In B the model pasted facts into all three neurons' instructions.
+2. Instructions wording (schema + evolution prompt): "name the topic only, never copy facts, inputs or memory into it".
+   Rerun `evals/.data/brain-evolution-smoke/2026-11-13T16-54-43.391Z/`:
+   - **A ✓** `food_habits` created and kept; instructions name the topic; memory holds oats, ramen, sushi, less meat; no weather or train. Coding unchanged.
+   - **B ✓** no change.
+   One run each.

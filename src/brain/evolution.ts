@@ -32,7 +32,7 @@ Decide which neurons the system needs. Use as few as cover the request; give a t
 - id: kebab-case, unique
 - name: a short display name
 - description: one sentence on what it knows, used to pick it for questions
-- instructions: what it tracks and keeps in memory, in plain sentences`
+- instructions: the topic it tracks, in one or two sentences, like "Track my food habits and diet." Name the topic only, never facts`
 }
 
 // ── Evolution ───────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ Look at the neurons, the inputs no neuron took (gaps) and the signals. Change ne
 - removeNeuron: a neuron does not serve what the user wants. Its memory is lost.
 To split a neuron, update it to the narrower topic and create neurons for the rest.
 
-Use readMemory to see what a neuron has learned before you change or remove it. Gaps that the user does not want tracked are noise: leave them. Doing nothing is a good answer when the shape already fits. Stop when you are done.`
+Use readMemory to see what a neuron has learned before you change or remove it. Instructions name a topic only: never copy gap inputs or memory into them; the neuron learns those itself. Gaps that the user does not want tracked are noise: leave them. Doing nothing is a good answer when the shape already fits. Stop when you are done.`
 
 export function evolutionPrompt(view: EvolutionView): string {
 	const neurons = view.neurons.length
