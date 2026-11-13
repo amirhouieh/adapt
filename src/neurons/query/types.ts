@@ -16,10 +16,7 @@ import type { TokenUsage } from '../types'
 /**
  * Options passed through to generateText from ai-sdk
  */
-export type QueryMode = 'direct' | 'tool-based'
-
 export interface QueryOptions extends AdaptGenerateOptions {
-	mode?: QueryMode
 	model?: LanguageModel
 }
 

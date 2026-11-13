@@ -19,7 +19,6 @@ export type {
 // Neuron
 export { Neuron } from './class'
 export type { QueryOptions, QueryResult } from './query'
-export { ToolBasedMethod } from './query'
 // Schemas
 export {
 	type GeneratedNeuronConfig,

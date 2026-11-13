@@ -2,7 +2,7 @@
  * DirectMethod — single-shot query method
  *
  * Dumps raw understanding into context, single LLM call, no tools.
- * Fast path: one call vs ToolBasedMethod's agentic loop.
+ * The only query method a neuron uses.
  */
 
 import { z } from 'zod'

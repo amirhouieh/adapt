@@ -1137,10 +1137,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
 				try {
-					const result = await neuron.query(query, {
-						mode: 'direct',
-						...generateOptions,
-					})
+					const result = await neuron.query(query, generateOptions)
 					return { id: neuron.id, ...result }
 				} catch {
 					return null
@@ -1295,10 +1292,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
 				try {
-					const result = await neuron.query(query, {
-						mode: 'direct',
-						...generateOptions,
-					})
+					const result = await neuron.query(query, generateOptions)
 					return { id: neuron.id, ...result }
 				} catch {
 					return null
