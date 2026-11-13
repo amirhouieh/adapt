@@ -6,7 +6,7 @@
  *   2. Brain.create on a populated path — must throw "already exists".
  *   3. Brain.restore("path") + ask works WITHOUT re-passing a model.
  *   4. Brain.restore on an empty path — must throw "no brain found".
- *   5. TextNeuron standalone create → dispose → restore → query.
+ *   5. Neuron standalone create → dispose → restore → query.
  *
  * Run:
  *   export $(cat .env.local | xargs) && npx tsx evals/scripts/restore-roundtrip-eval.ts
@@ -18,7 +18,7 @@
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Brain, TextNeuron, createAiSdkLLM } from '../../src'
+import { Brain, Neuron, createAiSdkLLM } from '../../src'
 import { SQLiteBrainStore, SQLiteNeuronStore } from '../../src/sqlite'
 import { type Preset, handleListMode, selectPresets } from './_presets'
 
@@ -69,7 +69,6 @@ async function runForPreset(preset: Preset) {
 			neurons: [
 				{
 					id: 'engineering-decisions',
-					type: 'text',
 					name: 'Engineering Decisions',
 					description: 'Tracks technical decisions and tradeoffs.',
 					instructions:
@@ -166,8 +165,8 @@ async function runForPreset(preset: Preset) {
 		check(restoreOnEmptyThrew, 'Brain.restore on empty store throws "no brain found"')
 
 		// ── 5. Standalone neuron restore round-trip ───────────────────────
-		console.log('\n[5] TextNeuron.create → restore')
-		const neuron = await TextNeuron.create({
+		console.log('\n[5] Neuron.create → restore')
+		const neuron = await Neuron.create({
 			id: 'sqlite-decisions',
 			name: 'SQLite Decisions',
 			instructions: 'Track engineering decisions about SQLite usage.',
@@ -190,7 +189,7 @@ async function runForPreset(preset: Preset) {
 
 		await neuron.dispose()
 
-		const restoredNeuron = await TextNeuron.restore(neuronPath, {
+		const restoredNeuron = await Neuron.restore(neuronPath, {
 			id: 'sqlite-decisions',
 			llm,
 		})

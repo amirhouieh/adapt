@@ -3,7 +3,7 @@
  *
  * The state object is the single source of truth for all persisted Brain data.
  * Cached in memory as `this.state`, backed by `store.state`.
- * Same pattern as BaseNeuronState — everything persisted, stateTransforms
+ * Same pattern as NeuronState — everything persisted, stateTransforms
  * handle the serialization boundary for non-serializable types (models).
  *
  * What lives in state (persisted):

@@ -4,7 +4,7 @@
  * Formats neuron data for LLM to synthesize into a unified neuron
  */
 
-import type { BaseNeuron } from '../../neurons/base/class'
+import type { Neuron } from '../../neurons'
 import { stringifyUnderstanding } from './utils'
 
 /**
@@ -12,7 +12,7 @@ import { stringifyUnderstanding } from './utils'
  */
 export async function mergePromptTemplate(
 	guidance: string,
-	neurons: BaseNeuron<unknown>[],
+	neurons: Neuron[],
 	purpose: string,
 ): Promise<string> {
 	const neuronSections = await Promise.all(

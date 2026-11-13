@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/01-getting-started.ts
  */
 
-import { Brain, TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { Brain, Neuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -62,7 +62,7 @@ async function main() {
 		// ── 01-getting-started.md: Standalone Neuron ─────────────────────────
 		section('Standalone Neuron')
 
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			model,
 			instructions: 'Track product design principles and philosophy.',
 			store: new MemoryNeuronStore(),
@@ -90,14 +90,12 @@ async function main() {
 				{
 					id: 'techniques',
 					name: 'Cooking Techniques',
-					type: 'text',
 					description: 'Culinary methods and approaches',
 					instructions: 'Track cooking techniques, methods, and principles.',
 				},
 				{
 					id: 'recipes',
 					name: 'Recipe Collection',
-					type: 'text',
 					description: 'Tracked recipes and ingredients',
 					instructions: 'Track recipes with cuisine type, ingredients, and difficulty level.',
 				},

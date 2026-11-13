@@ -1,10 +1,10 @@
 /**
- * Default values for TextNeuron configuration
+ * Default values for Neuron configuration
  */
 
-import type { UnderstandThresholds } from '../base/types'
+import type { UnderstandThresholds } from './types'
 
-export const TEXT_NEURON_DEFAULTS = {
+export const NEURON_DEFAULTS = {
 	origin: 'developer' as const,
 	understand: {
 		thresholds: {

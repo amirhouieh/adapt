@@ -376,7 +376,6 @@ export class Evaluator extends TypedEmitter<EvaluatorEventMap> {
 				return {
 					id: neuron.id,
 					name: neuron.name,
-					type: neuron.type,
 					instructions: neuron.instructions,
 					health: {
 						activation: health.activation,

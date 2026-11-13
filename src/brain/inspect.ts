@@ -34,14 +34,13 @@ export interface InspectResult {
 function createInspectTools(brain: Brain) {
 	const listNeurons = tool({
 		description:
-			'List all neurons with their name, type, description, instructions, and health status.',
+			'List all neurons with their name, description, instructions, and health status.',
 		inputSchema: z.object({}),
 		execute: async () => {
 			const neurons = brain.getNeurons()
 			return neurons.map((l) => ({
 				id: l.id,
 				name: l.name,
-				type: l.type,
 				description: l.description,
 				instructions: l.instructions,
 				health: l.getHealth(),

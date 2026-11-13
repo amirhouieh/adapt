@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/03-brain.ts
  */
 
-import { Brain, MemoryNeuronStore, TextNeuron, createAiSdkLLM } from '@unbody-io/adapt'
+import { Brain, MemoryNeuronStore, Neuron, createAiSdkLLM } from '@unbody-io/adapt'
 import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -101,7 +101,7 @@ async function main() {
 			llm,
 			autoSetup: false,
 			neurons: [
-				{ id: 'byo', type: 'text', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
+				{ id: 'byo', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
 			],
 			evolution: { enabled: false },
 		})
@@ -117,7 +117,7 @@ async function main() {
 			store: new SQLiteBrainStore(byoPath),
 			autoSetup: false,
 			neurons: [
-				{ id: 'byo', type: 'text', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
+				{ id: 'byo', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
 			],
 			evolution: { enabled: false },
 		})
@@ -137,7 +137,7 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'coding', type: 'text', name: 'Coding', description: 'Coding patterns', instructions: 'Track coding patterns and development philosophy.' },
+				{ id: 'coding', name: 'Coding', description: 'Coding patterns', instructions: 'Track coding patterns and development philosophy.' },
 			],
 		})
 
@@ -256,7 +256,6 @@ tags: architecture, sync`,
 		// Add with explicit config
 		const neuron = await brain.addNeuron({
 			id: 'ui-patterns',
-			type: 'text',
 			name: 'UI Patterns',
 			description: 'Tracks UI/UX design patterns',
 			instructions: 'Track user interface patterns, component choices, and design decisions.',
@@ -293,11 +292,11 @@ tags: architecture, sync`,
 			evolution: { enabled: true },
 			autoSetup: false,
 			neurons: [
-				{ id: 'react-neuron', type: 'text', name: 'React', description: 'React patterns', instructions: 'Track React patterns.' },
-				{ id: 'vue-neuron', type: 'text', name: 'Vue', description: 'Vue patterns', instructions: 'Track Vue patterns.' },
-				{ id: 'broad-neuron', type: 'text', name: 'Broad', description: 'Broad patterns', instructions: 'Track broad patterns.' },
-				{ id: 'neuron-x', type: 'text', name: 'X', description: 'X patterns', instructions: 'Track X patterns.' },
-				{ id: 'neuron-y', type: 'text', name: 'Y', description: 'Y patterns', instructions: 'Track Y patterns.' },
+				{ id: 'react-neuron', name: 'React', description: 'React patterns', instructions: 'Track React patterns.' },
+				{ id: 'vue-neuron', name: 'Vue', description: 'Vue patterns', instructions: 'Track Vue patterns.' },
+				{ id: 'broad-neuron', name: 'Broad', description: 'Broad patterns', instructions: 'Track broad patterns.' },
+				{ id: 'neuron-x', name: 'X', description: 'X patterns', instructions: 'Track X patterns.' },
+				{ id: 'neuron-y', name: 'Y', description: 'Y patterns', instructions: 'Track Y patterns.' },
 			],
 		})
 
@@ -361,7 +360,7 @@ tags: architecture, sync`,
 		// ── Standalone neuron equivalents ─────────────────────────────────────
 		section('Standalone Neuron — adjust and update')
 
-		const standaloneNeuron = await TextNeuron.create({
+		const standaloneNeuron = await Neuron.create({
 			model,
 			instructions: 'Track coding patterns.',
 			store: new MemoryNeuronStore(),

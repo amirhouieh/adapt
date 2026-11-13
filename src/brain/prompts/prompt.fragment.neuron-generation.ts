@@ -2,14 +2,10 @@
  * Reusable prompt fragment for neuron configuration generation
  *
  * Contains the 7 principles playbook and output format guidance.
- * Embedded by both the root decomposition prompt and evolution create prompt.
- *
- * Type section is built dynamically from registered descriptors.
+ * Embedded by the root decomposition prompt.
  */
 
-import type { NeuronTypeDescriptor } from '../../neurons/types'
-
-const principlesSection = `Follow these principles when generating neuron configurations:
+export const neuronGenerationFragment = `Follow these principles when generating neuron configurations:
 
 PRINCIPLE 1: UNDERSTAND BEFORE DECOMPOSING
 
@@ -108,32 +104,3 @@ For each neuron, provide:
   Track answers to:
   - [Concrete question 1]
   - [Concrete question 2]`
-
-function buildTypeSection(descriptors: NeuronTypeDescriptor[]): string {
-	const typeNames = descriptors.map((d) => `"${d.type}"`).join(' or ')
-	const typeDescriptions = descriptors
-		.map(
-			(d) =>
-				`  ${d.type.toUpperCase()} neurons (type: "${d.type}") — ${d.description}`,
-		)
-		.join('\n\n')
-
-	return `
-- type: ${typeNames}
-
-${typeDescriptions}
-
-  How to choose:
-  - If the neuron builds understanding by synthesizing patterns across observations → text
-  - If the neuron tracks a growing/changing set of distinct things → list
-  - When in doubt, prefer text — it's more flexible`
-}
-
-/**
- * Build the neuron generation prompt fragment dynamically from descriptors.
- */
-export function neuronGenerationFragment(
-	descriptors: NeuronTypeDescriptor[],
-): string {
-	return principlesSection + buildTypeSection(descriptors)
-}

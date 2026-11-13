@@ -1,13 +1,10 @@
 /**
  * Merge action handler - combines multiple neurons into one
- *
- * Type-aware: validates all source neurons are same type,
- * uses descriptor's mergeUnderstandingSchema for LLM output.
  */
 
 import { z } from 'zod'
 import { generate, Output } from '../../../llm'
-import type { BaseNeuron } from '../../../neurons/base/class'
+import type { Neuron } from '../../../neurons'
 import type { EvolutionDecision } from '../../evaluator/types'
 import { EvolutionActionHandler } from '../base-handler'
 import { mergeSystemPrompt } from '../prompt.system.merge'
@@ -28,7 +25,7 @@ export class MergeHandler extends EvolutionActionHandler<MergeActionResult> {
 					throw new Error('Merge requires at least 2 neurons')
 				}
 
-				const neurons: BaseNeuron<unknown>[] = []
+				const neurons: Neuron[] = []
 				for (const neuronId of decision.targets) {
 					const neuron = this.brain.neurons.get(neuronId)
 					if (!neuron) {
@@ -37,21 +34,6 @@ export class MergeHandler extends EvolutionActionHandler<MergeActionResult> {
 					neurons.push(neuron)
 				}
 
-				// All source neurons must be the same type
-				const neuronType = neurons[0].type
-				if (!neurons.every((l) => l.type === neuronType)) {
-					throw new Error(
-						'Cross-type merge is not supported. All source neurons must be the same type.',
-					)
-				}
-
-				// Get type descriptor for understanding schema
-				const descriptor = this.brain.neuronTypes.get(neuronType)
-				if (!descriptor) {
-					throw new Error(`Unknown neuron type: ${neuronType}`)
-				}
-
-				// Build dynamic schema with type-specific understanding
 				const mergeSchema = z.object({
 					config: z.object({
 						name: z.string().describe('Name for the merged neuron'),
@@ -64,7 +46,11 @@ export class MergeHandler extends EvolutionActionHandler<MergeActionResult> {
 								'Combined instructions defining scope and responsibilities',
 							),
 					}),
-					understanding: descriptor.mergeUnderstandingSchema,
+					understanding: z
+						.string()
+						.describe(
+							'Merged understanding text combining knowledge from all source neurons',
+						),
 				})
 
 				const result = await generate({
@@ -83,10 +69,7 @@ export class MergeHandler extends EvolutionActionHandler<MergeActionResult> {
 
 				const { config, understanding } = result.output
 
-				const completeConfig = createCompleteConfig({
-					...config,
-					type: neuronType as 'text',
-				})
+				const completeConfig = createCompleteConfig(config)
 				const newNeuron =
 					await this.brain.createNeuronFromConfig(completeConfig)
 

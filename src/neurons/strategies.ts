@@ -13,7 +13,7 @@ import {
 	type AdaptRepairOptions,
 	generate,
 	type LanguageModel,
-} from '../../llm'
+} from '../llm'
 
 export const STRATEGIES = ['continuous', 'cumulative', 'decay'] as const
 export type Strategy = (typeof STRATEGIES)[number]

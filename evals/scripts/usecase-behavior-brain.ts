@@ -163,10 +163,10 @@ async function main() {
 	brain.on((event) => {
 		switch (event.type) {
 			case 'brain:init:config:generated': {
-				const p = event.payload as { configs: Array<{ id: string; name: string; description: string; type: string }> }
+				const p = event.payload as { configs: Array<{ id: string; name: string; description: string }> }
 				console.log(`  [${elapsed()}s] Decomposition generated ${p.configs.length} neurons:`)
 				for (const c of p.configs) {
-					console.log(`    - ${c.id} (${c.type}): ${c.name}`)
+					console.log(`    - ${c.id}: ${c.name}`)
 					console.log(`      ${c.description}`)
 				}
 				break

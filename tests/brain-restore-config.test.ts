@@ -105,7 +105,6 @@ const baseConfig = (
 	neurons: [
 		{
 			id: 'coding',
-			type: 'text' as const,
 			name: 'Coding',
 			description: 'Tracks coding patterns',
 			instructions: 'Track coding patterns and preferences.',
@@ -247,7 +246,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 			neurons: [
 				{
 					id: 'coding',
-					type: 'text' as const,
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns.',
@@ -335,7 +333,6 @@ describe.each(scenarios)('Brain restore config precedence ($name)', ({ factory }
 			neurons: [
 				{
 					id: 'coding',
-					type: 'text' as const,
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns.',

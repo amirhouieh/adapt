@@ -478,7 +478,7 @@ export type NeuronStatus = 'active' | 'inactive'
 /** One record per neuron — minimal ref, neuron's own store has everything else */
 export interface BrainNeuronRecord {
 	id: string // neuron ID
-	type: string // 'text' | future types
+	type: string // legacy: always 'text', never read by Brain
 	status?: NeuronStatus // defaults to 'active' when missing
 }
 

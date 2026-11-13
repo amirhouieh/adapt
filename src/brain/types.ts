@@ -1,9 +1,7 @@
 import type { AdaptLLMPlugin, AdaptRepairOptions, LanguageModel } from '../llm'
-import type { LearnOutput } from '../neurons/base/class'
-import type { SharedNeuronEventMap } from '../neurons/base/types'
 import type { GeneratedNeuronConfig } from '../neurons/schema.config'
-import type { Strategy } from '../neurons/text/strategies'
-import type { TokenUsage } from '../neurons/types'
+import type { Strategy } from '../neurons/strategies'
+import type { LearnOutput, NeuronEventMap, TokenUsage } from '../neurons/types'
 import type { BrainStore, NeuronStatus } from '../stores'
 import type {
 	CascadableConfig,
@@ -35,7 +33,7 @@ export interface QueryPhaseConfig {
 }
 
 /**
- * Governance configuration (text neuron memory strategy)
+ * Governance configuration (neuron memory strategy)
  */
 export interface GovernanceConfig {
 	strategy?: Strategy
@@ -468,7 +466,7 @@ export interface BrainOwnEventMap {
 /**
  * Combined Brain event map (Brain's own events + forwarded neuron events)
  */
-export type BrainEventMap = BrainOwnEventMap & SharedNeuronEventMap
+export type BrainEventMap = BrainOwnEventMap & NeuronEventMap
 
 /**
  * Union type of all Brain events

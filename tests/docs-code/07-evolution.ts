@@ -117,7 +117,7 @@ async function main() {
 		evolution: { enabled: false },
 		autoSetup: false,
 		neurons: [
-			{ id: 'n1', type: 'text', name: 'N1', description: 'Test', instructions: 'Test neuron.' },
+			{ id: 'n1', name: 'N1', description: 'Test', instructions: 'Test neuron.' },
 		],
 	})
 	assert(sessionBrain instanceof Brain, 'Brain with evolution disabled created')

@@ -1,5 +1,5 @@
 /**
- * Default two-step learning setup for a TextNeuron created from plain options
+ * Default two-step learning setup for a Neuron created from plain options
  * (model + instructions), as Brain and most callers do.
  *
  * Values follow the tested LFM3 runs: 32k loaded context, 8192 output tokens
@@ -12,10 +12,10 @@ import {
 	createConservativeByteTokenCounter,
 	type TextLearningConfig,
 	twoStepRecipeRef,
-} from '../../learning/text-procedures'
-import type { TextProfileSnapshot } from '../../learning/text-state'
-import type { AdaptLLMPlugin, LanguageModel } from '../../llm'
-import { createBoundedDeviceScheduler } from '../../llm/local/scheduler'
+} from '../learning/text-procedures'
+import type { TextProfileSnapshot } from '../learning/text-state'
+import type { AdaptLLMPlugin, LanguageModel } from '../llm'
+import { createBoundedDeviceScheduler } from '../llm/local/scheduler'
 import type {
 	AdaptiveTextLearningConfig,
 	AdaptiveTextLearningRuntime,

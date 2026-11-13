@@ -36,7 +36,7 @@ async function main() {
 		evolution: { enabled: false },
 		autoSetup: false,
 		neurons: [
-			{ id: 'events', type: 'text', name: 'Events', description: 'Event patterns', instructions: 'Track event patterns.' },
+			{ id: 'events', name: 'Events', description: 'Event patterns', instructions: 'Track event patterns.' },
 		],
 	})
 
@@ -124,7 +124,7 @@ async function main() {
 		evolution: { enabled: false },
 		autoSetup: false,
 		neurons: [
-			{ id: 'init-events', type: 'text', name: 'Init Events', description: 'Init event patterns', instructions: 'Track init event patterns.' },
+			{ id: 'init-events', name: 'Init Events', description: 'Init event patterns', instructions: 'Track init event patterns.' },
 		],
 		onEvent: (event) => { initEvents.push(event.type) },
 	})

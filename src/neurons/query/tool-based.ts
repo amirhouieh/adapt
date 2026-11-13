@@ -15,8 +15,8 @@ import {
 	streamText,
 	type Tool,
 	tool,
-} from '../../../llm'
-import type { TokenUsage } from '../../types'
+} from '../../llm'
+import type { TokenUsage } from '../types'
 import type {
 	QueryCallbacks,
 	QueryContext,

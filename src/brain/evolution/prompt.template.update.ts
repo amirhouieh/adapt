@@ -4,7 +4,7 @@
  * Formats neuron data for LLM to generate config updates
  */
 
-import type { BaseNeuron } from '../../neurons/base/class'
+import type { Neuron } from '../../neurons'
 import { stringifyUnderstanding } from './utils'
 
 /**
@@ -12,7 +12,7 @@ import { stringifyUnderstanding } from './utils'
  */
 export async function updatePromptTemplate(
 	guidance: string,
-	neuron: BaseNeuron<unknown>,
+	neuron: Neuron,
 	purpose: string,
 ): Promise<string> {
 	const health = neuron.getHealth()

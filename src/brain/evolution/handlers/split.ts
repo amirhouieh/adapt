@@ -1,8 +1,5 @@
 /**
  * Split action handler - divides one neuron into multiple focused neurons
- *
- * Type-aware: preserves source neuron type in split results,
- * uses descriptor's splitUnderstandingSchema for LLM output.
  */
 
 import { z } from 'zod'
@@ -34,14 +31,6 @@ export class SplitHandler extends EvolutionActionHandler<SplitActionResult> {
 					throw new Error(`Neuron ${neuronId} not found`)
 				}
 
-				// Get type descriptor for understanding schema
-				const neuronType = neuron.type
-				const descriptor = this.brain.neuronTypes.get(neuronType)
-				if (!descriptor) {
-					throw new Error(`Unknown neuron type: ${neuronType}`)
-				}
-
-				// Build dynamic schema with type-specific understanding
 				const splitSchema = z.object({
 					neurons: z
 						.array(
@@ -55,7 +44,9 @@ export class SplitHandler extends EvolutionActionHandler<SplitActionResult> {
 									.describe(
 										'Focused instructions defining scope and responsibilities',
 									),
-								understanding: descriptor.splitUnderstandingSchema,
+								understanding: z
+									.string()
+									.describe('Understanding text for this split neuron'),
 							}),
 						)
 						.min(2)
@@ -85,7 +76,6 @@ export class SplitHandler extends EvolutionActionHandler<SplitActionResult> {
 						name: config.name,
 						description: config.description,
 						instructions: config.instructions,
-						type: neuronType as 'text',
 					})
 					const newNeuron =
 						await this.brain.createNeuronFromConfig(completeConfig)

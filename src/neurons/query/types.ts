@@ -10,8 +10,8 @@ import type {
 	AdaptLLMPlugin,
 	AdaptStreamResult,
 	LanguageModel,
-} from '../../../llm'
-import type { TokenUsage } from '../../types'
+} from '../../llm'
+import type { TokenUsage } from '../types'
 
 /**
  * Options passed through to generateText from ai-sdk

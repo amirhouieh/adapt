@@ -109,7 +109,7 @@ async function runForPreset(preset: Preset, apiKey: string) {
 		const neuronList = brain.getNeurons()
 		console.log(`  [t=${elapsed()}s] blueprint produced ${neuronList.length} neuron(s):`)
 		for (const n of neuronList) {
-			console.log(`    - ${n.id}  type=${n.type}  name="${n.name}"`)
+			console.log(`    - ${n.id}  name="${n.name}"`)
 		}
 
 		const events: Array<{ t: string; payload: unknown }> = []

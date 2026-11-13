@@ -88,21 +88,18 @@ function wrapWithFailureOnCall(failOnCall: number): {
 const neuronConfigs = [
 	{
 		id: 'coffee',
-		type: 'text' as const,
 		name: 'Coffee Knowledge',
 		description: 'Tracks coffee brewing and origin knowledge',
 		instructions: 'Track coffee brewing methods, bean origins, and flavor notes.',
 	},
 	{
 		id: 'cooking',
-		type: 'text' as const,
 		name: 'Cooking Knowledge',
 		description: 'Tracks cooking techniques and recipes',
 		instructions: 'Track cooking techniques, recipes, and ingredient pairings.',
 	},
 	{
 		id: 'baking',
-		type: 'text' as const,
 		name: 'Baking Knowledge',
 		description: 'Tracks baking techniques and dough chemistry',
 		instructions: 'Track baking techniques, dough chemistry, and oven methods.',
