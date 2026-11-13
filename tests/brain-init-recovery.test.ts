@@ -69,7 +69,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 			neurons: [
 				{
 					id: 'coding',
-					type: 'text',
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns and preferences.',
@@ -119,7 +118,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 			neurons: [
 				{
 					id: 'coding',
-					type: 'text',
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns and preferences.',

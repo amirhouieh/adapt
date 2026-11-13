@@ -1,5 +1,5 @@
 /**
- * Smoke: Brain end to end with two-step TextNeurons on a real model.
+ * Smoke: Brain end to end with two-step Neurons on a real model.
  *
  * Two explicit neurons (coding, food). Batches of 3; batch 2 is off-topic, so every
  * neuron should dismiss it and Brain should store a dismissed batch and feed the gap
@@ -56,8 +56,8 @@ const brain = await Brain.create({
 	store,
 	autoSetup: false,
 	neurons: [
-		{ id: 'coding', type: 'text', name: 'Coding', description: 'Coding preferences and tools', instructions: 'Track my coding preferences, tools and practices.' },
-		{ id: 'food', type: 'text', name: 'Food', description: 'Food habits', instructions: 'Track my food habits and diet.' },
+		{ id: 'coding', name: 'Coding', description: 'Coding preferences and tools', instructions: 'Track my coding preferences, tools and practices.' },
+		{ id: 'food', name: 'Food', description: 'Food habits', instructions: 'Track my food habits and diet.' },
 	],
 	evolution: { enabled: false },
 	ingest: { batchSize: 3 },

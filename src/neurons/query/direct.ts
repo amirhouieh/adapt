@@ -13,8 +13,8 @@ import {
 	type LanguageModel,
 	Output,
 	streamText,
-} from '../../../llm'
-import type { TokenUsage } from '../../types'
+} from '../../llm'
+import type { TokenUsage } from '../types'
 import type {
 	QueryContext,
 	QueryMethod,

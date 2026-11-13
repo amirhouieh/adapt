@@ -1,5 +1,5 @@
-import type { VersionRef } from '../../learning/contracts'
-import { LearningRegistry } from '../../learning/registry'
+import type { VersionRef } from '../learning/contracts'
+import { LearningRegistry } from '../learning/registry'
 import {
 	fitTextProcedureRequest,
 	type ProcedurePorts,
@@ -9,7 +9,7 @@ import {
 	type TextLearningConfig,
 	TWO_STEP_NOTHING_RELEVANT_REASON,
 	validateTextLearningConfig,
-} from '../../learning/text-procedures'
+} from '../learning/text-procedures'
 import {
 	LearningCoordinator,
 	type TextActivationResult,
@@ -24,8 +24,8 @@ import {
 	type TextStateIds,
 	type TextStatePolicy,
 	type TextStateScheduler,
-} from '../../learning/text-state'
-import type { NeuronStore } from '../../stores'
+} from '../learning/text-state'
+import type { NeuronStore } from '../stores'
 
 export interface AdaptiveTextModelProfile {
 	readonly ref: VersionRef

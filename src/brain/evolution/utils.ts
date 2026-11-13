@@ -9,21 +9,19 @@ import type { GeneratedNeuronConfig } from '../../neurons'
  * Create a complete GeneratedNeuronConfig from partial config
  *
  * Handlers only generate name, description, and instructions.
- * This fills in the required fields (id, type). Governance comes from
+ * This fills in the id. Governance comes from
  * Brain (`learning.governance`, then Brain defaults).
  */
 export function createCompleteConfig(partial: {
 	name: string
 	description: string
 	instructions: string
-	type?: 'text'
 }): GeneratedNeuronConfig {
 	return {
 		id: nanoid(),
 		name: partial.name,
 		description: partial.description,
 		instructions: partial.instructions,
-		type: 'text',
 	}
 }
 

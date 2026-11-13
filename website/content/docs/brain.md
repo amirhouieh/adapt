@@ -262,7 +262,6 @@ There are two ways to manage neurons: **basic management** (you provide explicit
 // Add with explicit config
 const neuron = await brain.addNeuron({
   id: 'ui-patterns',
-  type: 'text',
   name: 'UI Patterns',
   description: 'Tracks UI/UX design patterns',
   instructions: 'Track user interface patterns, component choices, and design decisions.',

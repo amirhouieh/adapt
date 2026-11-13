@@ -50,7 +50,7 @@ async function main() {
 		autoSetup: false,
 		evolution: { enabled: false },
 		neurons: [
-			{ id: 'oe', type: 'text', name: 'OE', description: 'onEvent test', instructions: 'Track onEvent patterns.' },
+			{ id: 'oe', name: 'OE', description: 'onEvent test', instructions: 'Track onEvent patterns.' },
 		],
 		onEvent: (event) => { onEventTypes.push(event.type) },
 	})

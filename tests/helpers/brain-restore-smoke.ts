@@ -219,7 +219,6 @@ function createBrainConfig(
 				id: 'engineering-decisions',
 				name: 'Engineering Decisions',
 				description: 'Tracks project decisions and technical tradeoffs.',
-				type: 'text' as const,
 				instructions:
 					'Track engineering decisions, runtime tradeoffs, and the rationale behind technical changes.',
 			},

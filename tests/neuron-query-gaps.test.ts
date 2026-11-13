@@ -5,7 +5,7 @@ import type {
 } from '@ai-sdk/provider'
 import type { LanguageModel } from 'ai'
 import { expect, it } from 'vitest'
-import { MemoryNeuronStore, TextNeuron } from '../src'
+import { MemoryNeuronStore, Neuron } from '../src'
 
 // One JSON reply; records the response format the model was sent.
 function replyModel(reply: unknown, sent: LanguageModelV3CallOptions['responseFormat'][]): LanguageModel {
@@ -38,7 +38,7 @@ function replyModel(reply: unknown, sent: LanguageModelV3CallOptions['responseFo
 
 it('a query reply without gaps is accepted; gaps is still required in what the model is sent', async () => {
 	const sent: LanguageModelV3CallOptions['responseFormat'][] = []
-	const neuron = await TextNeuron.create({
+	const neuron = await Neuron.create({
 		model: replyModel({ relevant: true, relevance: 0.9, confidence: 1, response: 'Mostly vegetarian.' }, sent),
 		instructions: 'Track my food habits.',
 		store: new MemoryNeuronStore(),

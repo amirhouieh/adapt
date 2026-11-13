@@ -169,12 +169,12 @@ async function writeNodeCjsSmoke(dir) {
 		join(dir, 'smoke.cjs'),
 		`const assert = require('node:assert/strict')
 const { SQLiteBrainStore, SQLiteNeuronStore } = require('@unbody-io/adapt/sqlite')
-const { Brain, MemoryBrainStore, MemoryNeuronStore, TextNeuron } = require('@unbody-io/adapt')
+const { Brain, MemoryBrainStore, MemoryNeuronStore, Neuron } = require('@unbody-io/adapt')
 
 assert.equal(typeof Brain, 'function')
 assert.equal(typeof MemoryBrainStore, 'function')
 assert.equal(typeof MemoryNeuronStore, 'function')
-assert.equal(typeof TextNeuron, 'function')
+assert.equal(typeof Neuron, 'function')
 
 const brainPath = './brain.db'
 const neuronPath = './neuron.db'

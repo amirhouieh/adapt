@@ -22,7 +22,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { type AdaptLLMPlugin, Brain, createAiSdkLLM, MemoryBrainStore } from '../../src'
-import { estimateTokens } from '../../src/neurons/text/strategies'
+import { estimateTokens } from '../../src/neurons/strategies'
 
 interface Dataset {
 	neurons: Array<{ topic: string; purpose: string }>
@@ -155,7 +155,6 @@ const brain = await Brain.create({
 	autoSetup: false,
 	neurons: dataset.neurons.map((n) => ({
 		id: n.topic,
-		type: 'text' as const,
 		name: n.topic,
 		description: n.purpose,
 		instructions: `Track: ${n.purpose}`,

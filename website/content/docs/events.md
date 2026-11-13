@@ -45,7 +45,7 @@ const brain = await Brain.create({
 })
 ```
 
-`onEvent` is also accepted by `Brain.restore()` runtime options, and by `TextNeuron.create` configs and `restore` options for standalone-neuron `neuron:init:*` events.
+`onEvent` is also accepted by `Brain.restore()` runtime options, and by `Neuron.create` configs and `restore` options for standalone-neuron `neuron:init:*` events.
 
 ## Lifecycle
 

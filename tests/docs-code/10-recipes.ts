@@ -49,7 +49,7 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'patterns', type: 'text', name: 'Patterns', description: 'Pattern tracking', instructions: 'Track patterns.' },
+				{ id: 'patterns', name: 'Patterns', description: 'Pattern tracking', instructions: 'Track patterns.' },
 			],
 		})
 
@@ -97,10 +97,10 @@ async function main() {
 			evolution: { enabled: true },
 			autoSetup: false,
 			neurons: [
-				{ id: 'eink', type: 'text', name: 'eink', description: 'eink', instructions: 'Track eink.' },
-				{ id: 'paper-displays', type: 'text', name: 'paper-displays', description: 'paper displays', instructions: 'Track paper displays.' },
-				{ id: 'ai-neuron', type: 'text', name: 'AI', description: 'AI tracking', instructions: 'Track AI.' },
-				{ id: 'categories', type: 'text', name: 'Categories', description: 'Categories', instructions: 'Track categories.' },
+				{ id: 'eink', name: 'eink', description: 'eink', instructions: 'Track eink.' },
+				{ id: 'paper-displays', name: 'paper-displays', description: 'paper displays', instructions: 'Track paper displays.' },
+				{ id: 'ai-neuron', name: 'AI', description: 'AI tracking', instructions: 'Track AI.' },
+				{ id: 'categories', name: 'Categories', description: 'Categories', instructions: 'Track categories.' },
 			],
 		})
 
@@ -126,13 +126,13 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'long-term', type: 'text', name: 'Long Term', description: 'Long-term patterns', instructions: 'Track patterns across all interactions.' },
+				{ id: 'long-term', name: 'Long Term', description: 'Long-term patterns', instructions: 'Track patterns across all interactions.' },
 			],
 		})
 
 		// Session brain: fixed structure, short-lived
 		const sessionNeuronDefs = [
-			{ id: 'obs', type: 'text' as const, name: 'Session', description: 'What happened in the session', instructions: 'Extract what happened in this session.' },
+			{ id: 'obs', name: 'Session', description: 'What happened in the session', instructions: 'Extract what happened in this session.' },
 		]
 		const sessionBrain = await Brain.create({
 			prompt: 'Extract what happened in this session.',
@@ -168,7 +168,7 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'sync', type: 'text', name: 'Sync', description: 'Sync test', instructions: 'Track sync patterns.' },
+				{ id: 'sync', name: 'Sync', description: 'Sync test', instructions: 'Track sync patterns.' },
 			],
 		})
 

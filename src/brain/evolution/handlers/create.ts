@@ -30,7 +30,6 @@ export class CreateHandler extends EvolutionActionHandler<CreateActionResult> {
 				prompt: createPromptTemplate(
 					guidance,
 					this.brain.promptContext?.purpose ?? this.brain.prompt,
-					Array.from(this.brain.neuronTypes.values()),
 				),
 				output: Output.object({ schema: neuronConfigsSchema }),
 				repairSchema: neuronConfigsSchema,

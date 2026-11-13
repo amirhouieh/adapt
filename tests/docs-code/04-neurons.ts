@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/04-neurons.ts
  */
 
-import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { Neuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { SQLiteNeuronStore } from '@unbody-io/adapt/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -39,10 +39,10 @@ async function main() {
 	rmSync(tmpDir, { recursive: true, force: true })
 	mkdirSync(tmpDir, { recursive: true })
 	try {
-	// ── TextNeuron — Basic ────────────────────────────────────────────────
-	section('TextNeuron — Basic')
+	// ── Neuron — Basic ────────────────────────────────────────────────
+	section('Neuron — Basic')
 
-	const textNeuron = await TextNeuron.create({
+	const textNeuron = await Neuron.create({
 		model,
 		instructions: 'Track product design principles and user research insights.',
 		store: new MemoryNeuronStore(),
@@ -54,21 +54,21 @@ async function main() {
 	])
 
 	const understanding = await textNeuron.getUnderstanding()
-	assert(typeof understanding === 'string', 'TextNeuron getUnderstanding() returns string')
+	assert(typeof understanding === 'string', 'Neuron getUnderstanding() returns string')
 
 	const textResult = await textNeuron.query('What are the key design principles?')
-	assert(typeof textResult.insight === 'string', 'TextNeuron query returns insight')
+	assert(typeof textResult.insight === 'string', 'Neuron query returns insight')
 
-	// ── TextNeuron — Governance Config ────────────────────────────────────
-	section('TextNeuron — Governance Config')
+	// ── Neuron — Governance Config ────────────────────────────────────
+	section('Neuron — Governance Config')
 
-	const govNeuron = await TextNeuron.create({
+	const govNeuron = await Neuron.create({
 		model,
 		instructions: 'Track product design principles and user research insights.',
 		store: new MemoryNeuronStore(),
 		governance: { strategy: 'decay', maxTokens: 8000 },
 	})
-	assert(govNeuron instanceof TextNeuron, 'TextNeuron with governance config created')
+	assert(govNeuron instanceof Neuron, 'Neuron with governance config created')
 	const gov = govNeuron.getGovernance()
 	assert(gov.strategy === 'decay' && gov.maxTokens === 8000, 'getGovernance() returns config')
 	await govNeuron.update({ governance: { strategy: 'cumulative' } })
@@ -76,7 +76,7 @@ async function main() {
 	await govNeuron.dispose()
 
 	// TextInput items (caller-owned ids and times)
-	const inputNeuron = await TextNeuron.create({
+	const inputNeuron = await Neuron.create({
 		model,
 		instructions: 'Track product launch dates.',
 		store: new MemoryNeuronStore(),
@@ -87,13 +87,13 @@ async function main() {
 	assert(inputResult.status !== undefined, 'learn() accepts TextInput')
 	await inputNeuron.dispose()
 
-	// ── TextNeuron — Restore ──────────────────────────────────────────────
-	section('TextNeuron — Restore')
+	// ── Neuron — Restore ──────────────────────────────────────────────
+	section('Neuron — Restore')
 
 	const restorePath = join(tmpDir, 'text-neuron.db')
 
 	// Persist a neuron first
-	const seed = await TextNeuron.create({
+	const seed = await Neuron.create({
 		model,
 		instructions: 'Track restore-roundtrip patterns.',
 		store: new SQLiteNeuronStore(restorePath),
@@ -101,30 +101,30 @@ async function main() {
 	await seed.dispose()
 
 	// Restore via path string with runtime model
-	const restoredFromPath = await TextNeuron.restore(restorePath, { model })
-	assert(restoredFromPath instanceof TextNeuron, 'TextNeuron.restore(path, { model }) succeeds')
+	const restoredFromPath = await Neuron.restore(restorePath, { model })
+	assert(restoredFromPath instanceof Neuron, 'Neuron.restore(path, { model }) succeeds')
 	await restoredFromPath.dispose()
 
 	// Restore via explicit store with runtime model
-	const restoredFromStore = await TextNeuron.restore(
+	const restoredFromStore = await Neuron.restore(
 		new SQLiteNeuronStore(restorePath),
 		{ model },
 	)
-	assert(restoredFromStore instanceof TextNeuron, 'TextNeuron.restore(store, { model }) succeeds')
+	assert(restoredFromStore instanceof Neuron, 'Neuron.restore(store, { model }) succeeds')
 	await restoredFromStore.dispose()
 
 	// Restore with id pinning (matches doc example)
-	const restoredWithId = await TextNeuron.restore(restorePath, {
+	const restoredWithId = await Neuron.restore(restorePath, {
 		id: 'design-principles',
 		model,
 	})
-	assert(restoredWithId instanceof TextNeuron, 'TextNeuron.restore(path, { id, model }) succeeds')
+	assert(restoredWithId instanceof Neuron, 'Neuron.restore(path, { id, model }) succeeds')
 	await restoredWithId.dispose()
 
 	// ── Common Neuron API ────────────────────────────────────────────────
 	section('Common Neuron API')
 
-	const apiNeuron = await TextNeuron.create({
+	const apiNeuron = await Neuron.create({
 		model,
 		instructions: 'Track coding patterns.',
 		store: new MemoryNeuronStore(),
@@ -181,13 +181,12 @@ async function main() {
 	assert(typeof apiNeuron.name === 'string', 'neuron.name is string')
 	assert(typeof apiNeuron.instructions === 'string', 'neuron.instructions is string')
 	assert(typeof apiNeuron.description === 'string', 'neuron.description is string')
-	assert(apiNeuron.type === 'text', 'neuron.type is text')
 	assert(apiNeuron.origin === 'prompt' || apiNeuron.origin === 'developer' || apiNeuron.origin === 'emergent', 'neuron.origin is valid')
 
 	// ── Learn Output — Discriminated Union ────────────────────────────────
 	section('Learn Output — Discriminated Union')
 
-	const learnNeuron = await TextNeuron.create({
+	const learnNeuron = await Neuron.create({
 		model,
 		instructions: 'Track test patterns.',
 		store: new MemoryNeuronStore(),

@@ -1,23 +1,23 @@
 /**
- * TextNeuron config resolver
+ * Neuron config resolver
  *
- * Resolves TextNeuronConfig to ResolvedTextNeuronConfig by applying
+ * Resolves NeuronConfig to ResolvedNeuronConfig by applying
  * cascade logic for models and defaults for other values.
  */
 
 import { nanoid } from 'nanoid'
-import type { ParentModels } from '../../types/config'
-import { cascade } from '../../utils/cascade'
-import { TEXT_NEURON_DEFAULTS } from './config.defaults'
-import type { ResolvedTextNeuronConfig, TextNeuronConfig } from './types'
+import type { ParentModels } from '../types/config'
+import { cascade } from '../utils/cascade'
+import { NEURON_DEFAULTS } from './config.defaults'
+import type { NeuronConfig, ResolvedNeuronConfig } from './types'
 
-export function resolveTextNeuronConfig(
-	config: TextNeuronConfig,
+export function resolveNeuronConfig(
+	config: NeuronConfig,
 	parentModels?: ParentModels,
-): ResolvedTextNeuronConfig {
+): ResolvedNeuronConfig {
 	const model = config.model ?? parentModels?.model
 	if (!model) {
-		throw new Error('TextNeuron requires a model')
+		throw new Error('Neuron requires a model')
 	}
 
 	const blueprintModel = cascade(
@@ -32,18 +32,18 @@ export function resolveTextNeuronConfig(
 		blueprintModel,
 		instructions: config.instructions,
 		id: config.id ?? `neuron_${nanoid()}`,
-		origin: config.origin ?? TEXT_NEURON_DEFAULTS.origin,
+		origin: config.origin ?? NEURON_DEFAULTS.origin,
 		understand: {
 			thresholds: {
 				maxObservations:
 					config.understand?.thresholds?.maxObservations ??
-					TEXT_NEURON_DEFAULTS.understand.thresholds.maxObservations,
+					NEURON_DEFAULTS.understand.thresholds.maxObservations,
 				maxTokens:
 					config.understand?.thresholds?.maxTokens ??
-					TEXT_NEURON_DEFAULTS.understand.thresholds.maxTokens,
+					NEURON_DEFAULTS.understand.thresholds.maxTokens,
 				minImportance:
 					config.understand?.thresholds?.minImportance ??
-					TEXT_NEURON_DEFAULTS.understand.thresholds.minImportance,
+					NEURON_DEFAULTS.understand.thresholds.minImportance,
 			},
 		},
 		query: {

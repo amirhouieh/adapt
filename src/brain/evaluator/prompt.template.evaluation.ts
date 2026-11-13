@@ -33,7 +33,6 @@ ${context.neurons
 	.map(
 		(l) => `### ${l.id}
 - **Name**: ${l.name}
-- **Type**: ${l.type}
 - **Instructions**: ${l.instructions}
 - **Observations**: ${l.metrics.observationCount}, **Syntheses**: ${l.metrics.synthesisCount}
 - **Dismissal Rate**: ${(l.metrics.dismissalRate * 100).toFixed(0)}%, **Queries**: ${l.metrics.queryCount}

@@ -56,7 +56,6 @@ async function makeBrain(
 		neurons: [
 			{
 				id: 'coding',
-				type: 'text',
 				name: 'Coding',
 				description: 'Tracks coding patterns',
 				instructions: 'Track coding.',

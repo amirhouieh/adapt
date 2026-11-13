@@ -45,7 +45,6 @@ export interface EvolutionDecision {
 export interface NeuronContext {
 	id: string
 	name: string
-	type: string
 	instructions: string
 	health: {
 		activation: number

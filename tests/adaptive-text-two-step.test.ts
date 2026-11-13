@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { TextNeuron, type AdaptiveTextLearningRuntime, type AdaptLLMPlugin } from '../src'
+import { Neuron, type AdaptiveTextLearningRuntime, type AdaptLLMPlugin } from '../src'
 import { LearningRegistry } from '../src/learning/registry'
 import {
 	fitTextProcedureRequest,
@@ -237,7 +237,7 @@ describe('two-step procedure', () => {
 	})
 })
 
-describe('two-step in the adaptive TextNeuron pipeline', () => {
+describe('two-step in the adaptive Neuron pipeline', () => {
 	class Clock {
 		value = at
 		now(): string { return this.value }
@@ -306,7 +306,7 @@ describe('two-step in the adaptive TextNeuron pipeline', () => {
 		const path = join(directory, 'neuron.sqlite')
 		const clock = new Clock()
 		const seen: ProseRequest[] = []
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			id: 'preferences', model: queryModel, llm: legacyLlm, store: new SQLiteNeuronStore(path),
 			instructions: purpose,
 			learning: {
@@ -332,7 +332,7 @@ describe('two-step in the adaptive TextNeuron pipeline', () => {
 		expect((await neuron.getLearningState()).pendingDeliveryIds).toEqual([])
 		await neuron.dispose()
 
-		const restored = await TextNeuron.restore(path, {
+		const restored = await Neuron.restore(path, {
 			model: queryModel, llm: legacyLlm,
 			learning: { mode: 'adaptive', runtime: runtime([], [], clock) },
 		})

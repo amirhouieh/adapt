@@ -79,7 +79,7 @@ const brain = await Brain.restore(new SQLiteBrainStore('./brain.db'))
 
 (The path-string sugar `Brain.restore('./brain.db')` always uses the Node SQLite adapter via dynamic import, so Bun callers must pass an explicit store instance.)
 
-Standalone neurons follow the same shape: `TextNeuron.create(config)` writes to the configured store; `TextNeuron.restore(pathOrStore)` reads it back. See [Neuron API → Lifecycle](./reference/neuron-api#lifecycle).
+Standalone neurons follow the same shape: `Neuron.create(config)` writes to the configured store; `Neuron.restore(pathOrStore)` reads it back. See [Neuron API → Lifecycle](./reference/neuron-api#lifecycle).
 
 ### Hierarchical Persistence
 
@@ -133,7 +133,7 @@ interface NeuronStore {
 }
 ```
 
-The full interface also has the collections two-step learning writes to (`learningHistory`, `memoryChanges`, `pendingInputs`, `processedInputs`, and others) — see `NeuronStore` in `src/stores/types.ts`. The `observations` collection is kept for older stores; TextNeuron learning does not write to it.
+The full interface also has the collections two-step learning writes to (`learningHistory`, `memoryChanges`, `pendingInputs`, `processedInputs`, and others) — see `NeuronStore` in `src/stores/types.ts`. The `observations` collection is kept for older stores; Neuron learning does not write to it.
 
 **BrainStore** — one per brain, holds the brain's state, neuron registry, internal neuron registry, evolution history, and dismissed batches. Also resolves per-neuron stores via `getNeuronStore(id)`:
 

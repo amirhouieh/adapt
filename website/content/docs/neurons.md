@@ -1,19 +1,19 @@
 ---
 title: Neurons
-description: TextNeuron — two-stage learning, querying, and memory strategies.
+description: Neuron — two-stage learning, querying, and memory strategies.
 ---
 
-API guide for `TextNeuron`, the neuron Adapt uses to learn. For the mental model, see [Concepts](./concepts).
+API guide for `Neuron`, the neuron Adapt uses to learn. For the mental model, see [Concepts](./concepts).
 
-## TextNeuron
+## Neuron
 
 Only `model`, `instructions`, and `store` are required:
 
 ```typescript
-import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { Neuron, MemoryNeuronStore } from '@unbody-io/adapt'
 import { openai } from '@ai-sdk/openai'
 
-const neuron = await TextNeuron.create({
+const neuron = await Neuron.create({
   model: openai('gpt-4o'),
   instructions: 'Track product design principles and user research insights.',
   store: new MemoryNeuronStore(),
@@ -50,7 +50,7 @@ await neuron.learn([
 `governance` controls what happens when the memory grows. The strategy runs right after the update stage, before the memory is saved.
 
 ```typescript
-const neuron = await TextNeuron.create({
+const neuron = await Neuron.create({
   model: openai('gpt-4o'),
   instructions: 'Track product design principles and user research insights.',
   store: new MemoryNeuronStore(),
@@ -75,22 +75,22 @@ Tokens are estimated as characters / 4. `maxTokens` defaults to 8000, for standa
 
 ### Restore
 
-To restore a persisted neuron, use `TextNeuron.restore`:
+To restore a persisted neuron, use `Neuron.restore`:
 
 ```typescript
 import { SQLiteNeuronStore } from '@unbody-io/adapt/sqlite'
 
 // Path-string sugar (Node SQLite)
-const neuron = await TextNeuron.restore('./neuron.db', { model: openai('gpt-4o') })
+const neuron = await Neuron.restore('./neuron.db', { model: openai('gpt-4o') })
 
 // Or pass an explicit NeuronStore instance
-const neuron = await TextNeuron.restore(
+const neuron = await Neuron.restore(
   new SQLiteNeuronStore('./neuron.db'),
   { model: openai('gpt-4o') },
 )
 
 // Standalone neurons can carry their own id when restoring from a shared store
-const neuron = await TextNeuron.restore('./neuron.db', {
+const neuron = await Neuron.restore('./neuron.db', {
   id: 'design-principles',
   model: openai('gpt-4o'),
 })
@@ -134,7 +134,6 @@ neuron.id                                    // string
 neuron.name                                  // string
 neuron.instructions                          // string
 neuron.description                           // string
-neuron.type                                  // 'text'
 neuron.origin                                // 'prompt' | 'developer' | 'emergent'
 ```
 

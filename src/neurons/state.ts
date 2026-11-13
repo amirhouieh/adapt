@@ -8,9 +8,10 @@
  * configs when an LLM call is made.
  */
 
-import type { AdaptLLMPlugin, AdaptModelConfig, LanguageModel } from '../../llm'
-import { toModelConfig } from '../../llm'
-import type { NeuronHealth, NeuronMetrics, NeuronOrigin } from '../types'
+import type { AdaptLLMPlugin, AdaptModelConfig, LanguageModel } from '../llm'
+import { toModelConfig } from '../llm'
+import type { GovernanceConfig } from './strategies'
+import type { NeuronHealth, NeuronMetrics, NeuronOrigin } from './types'
 
 // ── Model types ─────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ export interface ModelSlots {
 // ── State types ─────────────────────────────────────────────────────────────
 
 /**
- * Base neuron state — shared across all neuron types.
+ * Neuron state.
  *
  * Everything that gets cached in `this.state` and persisted to `store.state`.
  * Understanding is NOT here — it lives in `store.understanding` (not cached).
@@ -47,7 +48,7 @@ export interface ModelSlots {
  * - `initPromise` — internal lazy-init promise
  * - `queryMethod` — runtime query method instance
  */
-export interface BaseNeuronState {
+export interface NeuronState {
 	// Semantic identity
 	instructions: string
 	name: string
@@ -68,6 +69,9 @@ export interface BaseNeuronState {
 	health: NeuronHealth
 	metrics: NeuronMetrics
 	dismissal_signal_fired: boolean
+
+	// Memory strategy
+	governance: Required<GovernanceConfig>
 }
 
 // ── Transform types ─────────────────────────────────────────────────────────

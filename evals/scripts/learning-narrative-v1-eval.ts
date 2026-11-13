@@ -1,5 +1,5 @@
 /**
- * Runs the fixed Narrative cases through the detached v1 TextNeuron path with
+ * Runs the fixed Narrative cases through the detached v1 Neuron path with
  * the supplied local model settings. It records raw evidence and performs no
  * grading or semantic assertions.
  *
@@ -89,7 +89,7 @@ interface BaselineNeuron {
 }
 
 interface BaselineModule {
-	TextNeuron: {
+	Neuron: {
 		create(config: Readonly<Record<string, unknown>>): Promise<BaselineNeuron>
 	}
 	MemoryNeuronStore: new () => unknown
@@ -238,7 +238,7 @@ async function main(): Promise<void> {
 		})
 		let neuron: BaselineNeuron | undefined
 		try {
-			neuron = await baseline.TextNeuron.create(neuronInput)
+			neuron = await baseline.Neuron.create(neuronInput)
 			await neuron.setUnderstanding(suppliedCase.currentMemory)
 			const prompts = {
 				observe: neuron.getObserveSystemPrompt(), understand: neuron.getUnderstandSystemPrompt(),
@@ -274,7 +274,7 @@ async function main(): Promise<void> {
 		limitsComparison: {
 			appliedByV1: ['maxObservations', 'maxObservationTokens', 'minImportance', 'maxMemoryTokens'],
 			recordedButNotAppliedByV1: ['maxObservationCharacters', 'maxMemoryCharacters'],
-			schemaPolicy: 'the original v1 TextNeuron generates and uses its standard text observation and understand schemas',
+			schemaPolicy: 'the original v1 Neuron generates and uses its standard text observation and understand schemas',
 		},
 		grading: null,
 	})

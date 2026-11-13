@@ -5,20 +5,13 @@
  * focuses on generating ONE well-scoped specialist.
  */
 
-import type { NeuronTypeDescriptor } from '../../neurons/types'
-
 /**
  * Format create prompt with joined guidance and Brain context
  */
 export function createPromptTemplate(
 	guidance: string,
 	purpose: string,
-	descriptors: NeuronTypeDescriptor[],
 ): string {
-	const typeList = descriptors
-		.map((d) => `- "${d.type}": ${d.description}`)
-		.join('\n')
-
 	return `You are adding a new specialist to a living knowledge network.
 
 # Network Purpose
@@ -36,7 +29,5 @@ Provide:
 - id: kebab-case identifier
 - name: human-readable display name
 - description: brief description for routing (what questions this specialist answers)
-- instructions: structured instructions with a core directive, watch conditions, and questions to track
-- type: one of:
-${typeList}`
+- instructions: structured instructions with a core directive, watch conditions, and questions to track`
 }
