@@ -22,8 +22,9 @@ import { modelOperationInputValueSchema } from './schemas'
  * makes at most two model calls: extract what the batch says about the topic,
  * then update the understanding with that extract. No schema, no line
  * selection, no capacity rejection: the update step keeps the understanding
- * small on its own. Prompts are the eval arm `twostep` in
- * evals/scripts/bare-text-arm.ts, unchanged.
+ * small on its own. Prompts start from the eval arm `twostep` in
+ * evals/scripts/bare-text-arm.ts, plus wording that stops LFM3 from adding
+ * claims nobody said (evals/baselines/learn-invention-lfm3-2026-11-13.md).
  */
 
 /** Capability under which a run's provider and token counter reach the operation. */
@@ -56,14 +57,14 @@ export const twoStepPrompts = Object.freeze({
 		`Here is some data. Our job is to extract whatever valuable and relevant pieces of information it has related to this topic:
 ${lens.purpose}${rulesBlock(lens)}
 
-Reply with the extracted information only, in plain text. If nothing in the data is relevant, reply with exactly: ${TWO_STEP_NOTHING_RELEVANT}`,
+Reply with the extracted information only, in plain text, keeping what the data says about each piece. If nothing in the data is relevant, reply with exactly: ${TWO_STEP_NOTHING_RELEVANT}`,
 	extractPrompt: (inputs: readonly TextInput[]) =>
 		`Data:\n${inputs.map(({ text }) => text).join('\n\n')}`,
 	updateSystem: (lens: TextLearningLens) =>
 		`Here is information extracted about this topic:
 ${lens.purpose}${rulesBlock(lens)}
 
-and here is our existing understanding of it. Update the understanding accordingly.
+and here is our existing understanding of it. Update the understanding accordingly, keeping their wording. Add nothing that neither of them says.
 Reply with the updated understanding only, in plain text.`,
 	updatePrompt: (understanding: string, extracted: string) =>
 		`Existing understanding:\n${understanding.length > 0 ? understanding : '(none yet)'}\n\nExtracted information:\n${extracted}`,
