@@ -11,7 +11,7 @@ One agent loop. The model sees:
 
 - the Brain prompt (what you want tracked),
 - every active neuron: id, name, description, instructions and memory size,
-- the inputs no neuron took (gaps), newest 20 batches,
+- the inputs no neuron took (gaps), newest 20 gap records,
 - the buffered signals,
 - the last few evolution runs.
 
@@ -25,13 +25,14 @@ It can call five tools. Each change is applied at once:
 | `mergeNeurons(ids, config)` | Replaces 2+ neurons with one; their memories are joined |
 | `removeNeuron(id)` | Removes a neuron and its memory |
 
-There is no split: the model narrows a neuron with `updateNeuron` and creates neurons for the rest. When the run ends, set-aside gap batches are retried on every neuron that was created, updated or merged; a batch a neuron takes leaves the gap buffer.
+There is no split: the model narrows a neuron with `updateNeuron` and creates neurons for the rest. When the run ends, stored gaps are retried as raw inputs: a batch no neuron took goes to every neuron that was created, updated or merged; a leftover gap goes only to neurons created or merged after it was stored, never to the neurons that took its batches. A gap a neuron takes is removed.
 
 ## Signals
 
 Signals are short notes that something may need a change. They are buffered; when `evaluatorSignalThreshold` are waiting and `autoEvaluate` is on, a run starts by itself.
 
-- **Gaps** — an injected batch no neuron took. Brain keeps it in the dismissed batch buffer and sends a signal.
+- **Gaps** — an injected batch no neuron took. Brain stores it and sends a signal.
+- **Leftovers** — lines no neuron kept in a batch some neuron took. Brain collects such batches with the notes the neurons kept, and when they reach `gaps.chunkChars` characters, one model call copies what no neuron kept. If anything is left, Brain stores the batches with that text and sends it as one signal; evolution sees the leftover text, not the kept lines. `brain.evolve()` checks a part-full buffer first. The buffer lives in memory only: `dispose()` drops it and it is not saved.
 - **Unanswered questions** — an `ask` where every neuron scored below `coverageGap.relevanceThreshold`.
 - **Neuron health** — a neuron with a high dismissal rate, or low query relevance or confidence.
 - **Yours** — `brain.signal({ source, description })` from application logic.
@@ -47,6 +48,11 @@ evolution: {
   coverageGap: {
     relevanceThreshold: 0.3,        // Below this on every neuron, a question is a gap (default: 0.3)
   },
+}
+
+gaps: {
+  maxStored: 100,                   // Gap records kept for evolution (default: 100)
+  chunkChars: 4000,                 // Characters of mixed batches per leftover call (default: 4000)
 }
 ```
 

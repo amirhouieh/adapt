@@ -79,8 +79,9 @@ async function main() {
 			queryGaps: true,
 		},
 
-		dismissedBatchBuffer: {
-			maxSize: 100,
+		gaps: {
+			maxStored: 100,
+			chunkChars: 4000,
 		},
 	})
 

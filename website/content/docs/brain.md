@@ -127,7 +127,7 @@ await brain.inject([
 await brain.inject(data, { id: 'session-42' })
 ```
 
-Items are batched by `ingest.batchSize` (default: 20). Routing is parallel — every neuron sees every item. Batches dismissed by *all* neurons get tracked as coverage gaps for [evolution](./evolution).
+Items are batched by `ingest.batchSize` (default: 20). Routing is parallel — every neuron sees every item. Batches dismissed by *all* neurons get tracked as coverage gaps for [evolution](./evolution). In batches some neuron took, lines no neuron kept are found by a leftover call and tracked the same way.
 
 ### What neurons see
 

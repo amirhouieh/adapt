@@ -58,8 +58,9 @@ interface BrainConfig {
     queryGaps?: boolean | Partial<LearningConfig>
   }
 
-  dismissedBatchBuffer?: {
-    maxSize?: number                        // default: 100
+  gaps?: {
+    maxStored?: number                      // Gap records kept for evolution (default: 100)
+    chunkChars?: number                     // Characters of mixed batches per leftover call (default: 4000)
   }
 }
 ```

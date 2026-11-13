@@ -117,11 +117,15 @@ export type LearnOutput =
 			evolution: string
 			reasoning?: string
 			usage?: EventUsage
+			/** Plain-text notes the extract step kept from this batch. */
+			notes?: string
 	  }
 	| {
 			status: 'synthesize:dismissed'
 			output: string
 			usage?: EventUsage
+			/** Plain-text notes the extract step kept from this batch. */
+			notes?: string
 	  }
 	| { status: 'synthesize:error'; error: unknown }
 	| AdaptiveTextLearnOutput

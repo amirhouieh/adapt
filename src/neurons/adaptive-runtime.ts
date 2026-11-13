@@ -71,6 +71,8 @@ export interface AdaptiveTextLearnOutput {
 	readonly state: AdaptiveTextLearningState
 	/** True when every procedure run in this call found nothing relevant. */
 	readonly nothingRelevant?: boolean
+	/** Plain-text notes the extract step kept in this call; absent when it kept nothing. */
+	readonly notes?: string
 }
 
 export interface AdaptiveTextFlushOutput {
@@ -294,12 +296,21 @@ export class AdaptiveTextRuntime {
 				const state = this.#visibleState
 				if (state === undefined)
 					throw new Error('adaptive text runtime is not initialized')
+				const notes = results
+					.flatMap((result) =>
+						(result.outcome === 'change' || result.outcome === 'no_change') &&
+						result.notes
+							? [result.notes]
+							: [],
+					)
+					.join('\n\n')
 				return {
 					status: 'managed',
 					mode: 'adaptive-text',
 					enqueued: learned.enqueued,
 					runs: [...learned.runs, ...flushed],
 					state,
+					...(notes ? { notes } : {}),
 					nothingRelevant:
 						results.length > 0 &&
 						results.every(

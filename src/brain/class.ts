@@ -37,6 +37,10 @@ import {
 	evolutionPrompt,
 	evolutionSystemPrompt,
 	evolutionTools,
+	leftoverEntry,
+	leftoverIsEmpty,
+	leftoverPrompt,
+	leftoverSystemPrompt,
 	neuronConfigsSchema,
 	setupPrompt,
 } from './evolution'
@@ -121,13 +125,15 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	#signals: EvolutionSignal[] = []
 	#evolutionQueue: Promise<void> = Promise.resolve()
 	#pendingEvolutions = 0
+	// Batches some neuron took, waiting for one leftover call (not persisted)
+	#gapBuffer: Array<{ inputs: LearnInput[]; entry: string }> = []
 
 	// Constructor config (not persisted, used during init only)
 	private learningConfig?: LearningConfig
 	private readonly autoSetup: boolean
 	private readonly configNeurons?: GeneratedNeuronConfig[]
 	private readonly internalNeuronsConfig: BrainConfig['internalNeurons']
-	private readonly dismissedBatchMaxSize: number
+	private readonly gaps: { maxStored: number; chunkChars: number }
 
 	private constructor(rawConfig: BrainConfig & { llm?: AdaptLLMPlugin }) {
 		super()
@@ -190,9 +196,10 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		this.autoSetup = rawConfig.autoSetup ?? true
 		this.configNeurons = rawConfig.neurons
 		this.internalNeuronsConfig = rawConfig.internalNeurons
-		this.dismissedBatchMaxSize =
-			rawConfig.dismissedBatchBuffer?.maxSize ??
-			BRAIN_DEFAULTS.dismissedBatchBuffer.maxSize
+		this.gaps = {
+			maxStored: rawConfig.gaps?.maxStored ?? BRAIN_DEFAULTS.gaps.maxStored,
+			chunkChars: rawConfig.gaps?.chunkChars ?? BRAIN_DEFAULTS.gaps.chunkChars,
+		}
 	}
 
 	// ── Public accessors (read from state) ──────────────────────────────────
@@ -892,8 +899,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 					results: neuronResults,
 				})
 
-				// Check if all neurons dismissed this batch
-				await this.handleDismissedBatch(batchId, batch, neuronResults)
+				await this.handleGaps(batchId, batch, neuronResults)
 
 				batchResults.push({
 					id: batchId,
@@ -1464,12 +1470,16 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Re-inject pending dismissed batches into neurons evolution just
-	 * created, updated or merged.
-	 * If accepted → remove from buffer. If dismissed again → increment retryCount.
+	 * Retry stored gaps on neurons an evolution run just changed. A batch no
+	 * neuron took goes to every created, updated or merged neuron. A leftover
+	 * gap (from batches some neuron took) goes only to neurons created or
+	 * merged after it was stored, so neurons that took it never see it again.
+	 * If accepted → remove the record. If dismissed again → increment retryCount.
 	 */
 	private async reinjectDismissedBatches(
-		newNeuronIds: string[],
+		changedIds: string[],
+		createdIds: string[],
+		runStartedAt: string,
 	): Promise<void> {
 		const all = await this.store.dismissedBatches.list()
 		const unresolved = all.filter(
@@ -1477,19 +1487,30 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 		if (unresolved.length === 0) return
 
-		const newNeurons = newNeuronIds
-			.map((id) => this.neurons.get(id))
-			.filter((l): l is Neuron => l !== undefined)
-		if (newNeurons.length === 0) return
+		const neuronsOf = (ids: string[]) =>
+			ids
+				.map((id) => this.neurons.get(id))
+				.filter((l): l is Neuron => l !== undefined)
+		const changed = neuronsOf(changedIds)
+		const created = neuronsOf(createdIds)
+		const tried = new Set<Neuron>()
 
 		let absorbed = 0
 
 		for (const batch of unresolved) {
 			const data = batch.data as LearnInput[]
+			const targets =
+				leftoverOf(batch.gaps) === undefined
+					? changed
+					: batch.timestamp <= runStartedAt
+						? created
+						: []
+			if (targets.length === 0) continue
 
-			// Try every new neuron — don't stop at first acceptance
+			// Try every target — don't stop at first acceptance
 			let anyAccepted = false
-			for (const neuron of newNeurons) {
+			for (const neuron of targets) {
+				tried.add(neuron)
 				const result = await neuron.learn(data)
 				if (result.status !== 'observe:dismissed') {
 					anyAccepted = true
@@ -1513,7 +1534,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 				INTERNAL_NEURON_IDS.injectionGaps,
 			)
 			if (gapNeuron) {
-				const names = newNeurons.map((n) => n.name).join(', ')
+				const names = [...tried].map((n) => n.name).join(', ')
 				const resolvedText = `${absorbed} previously set-aside batch${absorbed === 1 ? ' was' : 'es were'} absorbed after evolution by: ${names}.`
 				gapNeuron.learn([resolvedText]).catch((err) => {
 					const msg = err instanceof Error ? err.message : String(err)
@@ -1618,40 +1639,36 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Handle a batch that no neuron took (a gap). Brain keeps it in the
-	 * dismissed batch buffer for evolution, sends a signal, and feeds the
-	 * injection gap neuron.
+	 * Find gaps in a batch after every neuron saw it.
+	 * - No neuron took it: the whole batch is a gap. Brain stores it for
+	 *   evolution, sends a signal, and feeds the injection gap neuron.
+	 * - Some neuron took it: the batch and the notes the neurons kept go to
+	 *   the gap buffer, which finds what no neuron kept (see #flushGapBuffer).
 	 */
-	private async handleDismissedBatch(
+	private async handleGaps(
 		batchId: string,
 		batch: LearnInput[],
 		neuronResults: NeuronBatchResult[],
 	): Promise<void> {
-		const allDismissed = neuronResults.every(
-			(r) => r.result.status === 'observe:dismissed',
+		const takers = neuronResults.filter(
+			(r) => r.result.status !== 'observe:dismissed',
 		)
-		if (!allDismissed) return
-
-		// Persist dismissed batch
-		await this.store.dismissedBatches.add({
-			id: batchId,
-			data: batch,
-			gaps: [],
-			timestamp: new Date().toISOString(),
-			retryCount: 0,
-			status: 'pending',
-		})
-
-		// Size-based eviction
-		const count = await this.store.dismissedBatches.count()
-		if (count > this.dismissedBatchMaxSize) {
-			const all = await this.store.dismissedBatches.list()
-			all.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-			const toEvict = all.slice(0, count - this.dismissedBatchMaxSize)
-			for (const record of toEvict) {
-				await this.store.dismissedBatches.delete(record.id)
-			}
+		if (takers.length > 0) {
+			const notes = takers.flatMap((r) =>
+				'notes' in r.result && r.result.notes ? [r.result.notes] : [],
+			)
+			// Without notes (a taker deferred or failed) there is nothing to compare
+			if (notes.length === 0) return
+			this.#gapBuffer.push({
+				inputs: batch,
+				entry: leftoverEntry(batch.map(inputText), notes),
+			})
+			const chars = this.#gapBuffer.reduce((n, e) => n + e.entry.length, 0)
+			if (chars >= this.gaps.chunkChars) await this.#flushGapBuffer()
+			return
 		}
+
+		await this.#storeGap(batchId, batch, [])
 
 		this.signal({
 			source: 'brain',
@@ -1667,9 +1684,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 		if (gapNeuron) {
 			try {
-				const items = batch.map((item) =>
-					typeof item === 'string' ? item : item.text,
-				)
+				const items = batch.map(inputText)
 				const gapText = `Data arrived that no specialist could absorb. It has been set aside for now:\n${items.map((item) => `- ${item}`).join('\n')}`
 				await gapNeuron.learn([gapText])
 			} catch (err) {
@@ -1680,9 +1695,68 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
+	 * One leftover call over the buffered batches finds what no neuron kept.
+	 * When something is left, Brain stores the batches with the leftover text
+	 * and sends the leftover text to evolution as one signal.
+	 */
+	async #flushGapBuffer(): Promise<void> {
+		const entries = this.#gapBuffer.splice(0)
+		if (entries.length === 0) return
+		let leftover: string
+		try {
+			const result = await generate({
+				llm: this.llm,
+				model: this.state.models.default,
+				system: leftoverSystemPrompt,
+				prompt: leftoverPrompt(entries.map((e) => e.entry)),
+				...this.llmRepairOptions,
+			})
+			leftover = result.text.trim()
+		} catch (err) {
+			// Keep the batches; the next flush tries again
+			this.#gapBuffer.unshift(...entries)
+			const msg = err instanceof Error ? err.message : String(err)
+			console.error('[brain] leftover call error:', msg)
+			return
+		}
+		if (leftoverIsEmpty(leftover, entries.length)) return
+
+		await this.#storeGap(
+			`leftover_${nanoid()}`,
+			entries.flatMap((e) => e.inputs),
+			[leftover],
+		)
+		this.signal({ source: 'brain', description: leftover })
+	}
+
+	/** Store a gap record for evolution, evicting the oldest past `maxStored`. */
+	async #storeGap(
+		id: string,
+		data: LearnInput[],
+		gaps: string[],
+	): Promise<void> {
+		await this.store.dismissedBatches.add({
+			id,
+			data,
+			gaps,
+			timestamp: new Date().toISOString(),
+			retryCount: 0,
+			status: 'pending',
+		})
+		const count = await this.store.dismissedBatches.count()
+		if (count <= this.gaps.maxStored) return
+		const all = await this.store.dismissedBatches.list()
+		all.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+		for (const record of all.slice(0, count - this.gaps.maxStored)) {
+			await this.store.dismissedBatches.delete(record.id)
+		}
+	}
+
+	/**
 	 * Run evolution now. An agent looks at the neurons, their memories, the
 	 * inputs no neuron took and the buffered signals, and creates, updates,
-	 * merges or removes neurons. Runs are queued, never parallel.
+	 * merges or removes neurons. Runs are queued, never parallel. Batches
+	 * waiting in the gap buffer are checked for leftovers first.
 	 *
 	 * @throws if evolution is not enabled
 	 */
@@ -1710,6 +1784,8 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	async #runEvolution(source: 'auto' | 'manual'): Promise<EvolutionResult> {
+		if (source === 'manual') await this.#flushGapBuffer()
+		const startedAt = new Date().toISOString()
 		const signals = this.#signals.splice(0)
 		this.emit('evolution:started', { signalCount: signals.length })
 		try {
@@ -1759,12 +1835,21 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			})
 
 			// Neurons that now cover new ground get a try at the gaps
-			const changed = changes
-				.filter((c) => c.action !== 'remove')
-				.map((c) => c.neuronId)
-				.filter((id) => this.neurons.has(id))
+			const ids = (actions: EvolutionChange['action'][]) => [
+				...new Set(
+					changes
+						.filter((c) => actions.includes(c.action))
+						.map((c) => c.neuronId)
+						.filter((id) => this.neurons.has(id)),
+				),
+			]
+			const changed = ids(['create', 'update', 'merge'])
 			if (changed.length > 0) {
-				await this.reinjectDismissedBatches([...new Set(changed)])
+				await this.reinjectDismissedBatches(
+					changed,
+					ids(['create', 'merge']),
+					startedAt,
+				)
 			}
 
 			const outcome: EvolutionResult = { changes, reasoning }
@@ -1778,13 +1863,20 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		}
 	}
 
-	/** Text of the most recent dismissed batches, oldest first. */
+	/**
+	 * Text of the most recent gaps, oldest first: the inputs of a batch no
+	 * neuron took, or the leftover text of batches some neuron took.
+	 */
 	async #gapTexts(): Promise<string[]> {
 		const batches = await this.store.dismissedBatches.list()
 		return batches
 			.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
 			.slice(-MAX_GAP_BATCHES)
-			.flatMap((batch) => (Array.isArray(batch.data) ? batch.data : []))
+			.flatMap((batch): unknown[] => {
+				const leftover = leftoverOf(batch.gaps)
+				if (leftover !== undefined) return [leftover]
+				return Array.isArray(batch.data) ? batch.data : []
+			})
 			.flatMap((item: unknown) => {
 				if (typeof item === 'string') return [item]
 				if (
@@ -2031,9 +2123,11 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Dispose Brain: disposes all neurons and the brain store
+	 * Dispose Brain: disposes all neurons and the brain store. Batches still
+	 * in the gap buffer are dropped, like buffered signals.
 	 */
 	async dispose(): Promise<void> {
+		this.#gapBuffer = []
 		for (const neuron of this.neurons.values()) {
 			await neuron.dispose()
 		}
@@ -2045,6 +2139,17 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		this.neuronStatus.clear()
 		await this.store.dispose()
 	}
+}
+
+function inputText(item: LearnInput): string {
+	return typeof item === 'string' ? item : item.text
+}
+
+/** The leftover text of a gap record; undefined for a batch no neuron took. */
+function leftoverOf(gaps: unknown): string | undefined {
+	if (!Array.isArray(gaps)) return undefined
+	const [first]: unknown[] = gaps
+	return typeof first === 'string' ? first : undefined
 }
 
 async function resolveBrainStore(

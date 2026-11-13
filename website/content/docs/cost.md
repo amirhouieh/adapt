@@ -54,7 +54,8 @@ N = number of neurons, B = number of batches.
 |---|---|---|---|
 | **`signal()`** | `0` | — | Buffers only. No immediate LLM call |
 | **Evolution run** | `1–12` | `evolution` | One agent loop; each tool call (read, create, update, merge, remove) is applied without another LLM call |
-| → Gap retry | `1–2` per batch per changed neuron | `learning.model` | Set-aside batches are retried on created, updated and merged neurons |
+| **Leftover call** | `1` per `gaps.chunkChars` characters of batches some neuron took | `model` | Finds lines no neuron kept; also runs on `brain.evolve()` when batches are waiting |
+| → Gap retry | `1–2` per gap per changed neuron | `learning.model` | Whole-batch gaps go to created, updated and merged neurons; leftover gaps only to created and merged ones |
 
 ## Where to spend the smarter model
 

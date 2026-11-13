@@ -72,7 +72,7 @@ Every neuron has one plain-text memory, learned in two stages (extract, then upd
 
 The neuron structure isn't static. As data arrives and queries flow in, neurons can become overloaded, overlap, or leave gaps. Evolution is the loop that lets a Brain reshape itself.
 
-- **Gaps** are inputs no neuron took. Brain keeps them and shows them to evolution.
+- **Gaps** are inputs no neuron took: a whole batch no neuron took, or lines no neuron kept in a batch another neuron took (found by one leftover call per chunk of such batches). Brain keeps them and shows them to evolution.
 - **Signals** flag that something might need to change: gaps, questions no neuron could answer, neuron health (high dismissal, low relevance or confidence), and your own `brain.signal({ source, description })`.
 - **The evolution loop** is one LLM agent that runs when signals accumulate (default threshold: 5) or when you call `brain.evolve()`. It reads neurons and their memories, then **creates**, **updates**, **merges** or **removes** neurons. Each change is a plain neuron config: name, description, instructions.
 

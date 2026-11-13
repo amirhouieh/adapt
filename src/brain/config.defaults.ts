@@ -24,7 +24,8 @@ export const BRAIN_DEFAULTS = {
 		evaluatorSignalThreshold: 5,
 		autoEvaluate: true,
 	},
-	dismissedBatchBuffer: {
-		maxSize: 100,
+	gaps: {
+		maxStored: 100,
+		chunkChars: 4000,
 	},
 } as const

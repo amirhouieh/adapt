@@ -206,6 +206,7 @@ export async function runTwoStep(
 			outcome: 'no_change',
 			reason: 'two_step_no_change',
 			consumedInputIds,
+			notes: extracted,
 		}
 	}
 	return {
@@ -214,6 +215,7 @@ export async function runTwoStep(
 		expectedMemoryRevision: input.memory.revision,
 		expectedConfigurationRevision: context.revisions.configuration,
 		consumedInputIds,
+		notes: extracted,
 		explanation: `two-step: learned from ${consumedInputIds.length} input${consumedInputIds.length === 1 ? '' : 's'}.`,
 	}
 }

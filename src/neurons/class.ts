@@ -780,6 +780,7 @@ export class Neuron extends TypedEmitter<NeuronEventMap> {
 		const previousUnderstanding = await this.getUnderstanding()
 		const learned = await this.#adaptive.learnNow(inputs)
 		const understanding = await this.getUnderstanding()
+		const notes = learned.notes ? { notes: learned.notes } : {}
 		let result: LearnOutput
 		if (learned.nothingRelevant) {
 			result = { status: 'observe:dismissed', output: [...batch], gaps: [] }
@@ -789,9 +790,14 @@ export class Neuron extends TypedEmitter<NeuronEventMap> {
 				newUnderstanding: understanding,
 				significance: 'routine',
 				evolution: `Learned from ${inputs.length} input${inputs.length === 1 ? '' : 's'}.`,
+				...notes,
 			}
 		} else if (learned.runs?.some((run) => run.status === 'settled')) {
-			result = { status: 'synthesize:dismissed', output: 'No changes needed' }
+			result = {
+				status: 'synthesize:dismissed',
+				output: 'No changes needed',
+				...notes,
+			}
 		} else {
 			return learned
 		}

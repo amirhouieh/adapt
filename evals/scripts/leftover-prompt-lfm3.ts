@@ -14,6 +14,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { generateText } from 'ai'
+import { leftoverPrompt, leftoverSystemPrompt } from '../../src/brain/evolution'
 import { twoStepPrompts, TWO_STEP_NOTHING_RELEVANT } from '../../src/learning/text-procedures/two-step'
 
 const MODEL = process.env.MODEL ?? 'liquid/lfm-3-1.7b'
@@ -73,11 +74,6 @@ Our job is to find what in the data is not in the notes.
 
 Reply with those parts of the data only, copied as they are, in plain text. If everything in the data is in the notes, reply with exactly: ${TWO_STEP_NOTHING_RELEVANT}`
 
-const CHUNK_SYSTEM = `Here are some entries. Each entry has data, and the notes that were already taken from it.
-Our job is to find, for each entry, what in its data is not in its notes.
-
-Reply in plain text, one block per entry, starting with its name, like "Entry 1:". Under it, copy the parts of the data that are not in the notes. If everything in an entry's data is in its notes, write: Entry N: ${TWO_STEP_NOTHING_RELEVANT}`
-
 const calls: Array<{ kind: string; system: string; prompt: string; output: string }> = []
 async function call(kind: string, system: string, prompt: string): Promise<string> {
 	const { text } = await generateText({ model, system, prompt })
@@ -123,8 +119,8 @@ for (let run = 1; run <= RUNS; run++) {
 		lines.push(`### ${c.id} (neurons: ${c.neurons.join(', ')})\n`, `Expected: ${c.expected}\n`, 'Notes kept:', '```text', n, '```', 'Leftover (single):', '```text', left, '```\n')
 		console.log(`[run ${run}] ${c.id}: ${left.replaceAll('\n', ' | ').slice(0, 160)}`)
 	}
-	const chunk = cases.map((c, i) => `<Entry ${i + 1}>\n${entry(c.data, notes[i])}\n</Entry ${i + 1}>`).join('\n\n')
-	const chunkOut = await call('leftover:chunk', CHUNK_SYSTEM, chunk)
+	const chunk = leftoverPrompt(cases.map((c, i) => entry(c.data, notes[i])))
+	const chunkOut = await call('leftover:chunk', leftoverSystemPrompt, chunk)
 	lines.push(`### Chunk of all ${cases.length} entries in one call\n`, `Expected: ${cases.map((c, i) => `Entry ${i + 1}: ${c.expected}`).join('; ')}\n`, '```text', chunkOut, '```\n')
 	console.log(`[run ${run}] chunk: ${chunkOut.replaceAll('\n', ' | ').slice(0, 300)}`)
 }

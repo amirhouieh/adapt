@@ -8,6 +8,7 @@
  */
 
 import { z } from 'zod'
+import { TWO_STEP_NOTHING_RELEVANT } from '../learning/text-procedures/two-step'
 import { tool } from '../llm'
 import { neuronConfigSchema } from '../neurons/schema.config'
 import type { Brain } from './class'
@@ -120,6 +121,45 @@ ${list(view.signals.map((s) => `[${s.source}] ${s.description}`))}
 ${list(view.history)}`
 }
 
+// ── Leftover ────────────────────────────────────────────────────────────────
+
+/**
+ * One leftover call looks at a chunk of batches some neuron took, each with
+ * the notes the neurons kept, and copies what no neuron kept. Prompt as
+ * tested in evals/scripts/leftover-prompt-lfm3.ts.
+ */
+export const leftoverSystemPrompt = `Here are some entries. Each entry has data, and the notes that were already taken from it.
+Our job is to find, for each entry, what in its data is not in its notes.
+
+Reply in plain text, one block per entry, starting with its name, like "Entry 1:". Under it, copy the parts of the data that are not in the notes. If everything in an entry's data is in its notes, write: Entry N: ${TWO_STEP_NOTHING_RELEVANT}`
+
+/** One entry's text: the batch data and the notes neurons kept from it. */
+export function leftoverEntry(data: string[], notes: string[]): string {
+	return `Data:\n${data.join('\n')}\n\nNotes already taken:\n${notes.join('\n') || '(none)'}`
+}
+
+export function leftoverPrompt(entries: string[]): string {
+	return entries
+		.map((entry, i) => `<Entry ${i + 1}>\n${entry}\n</Entry ${i + 1}>`)
+		.join('\n\n')
+}
+
+/**
+ * True when the leftover reply holds nothing: empty, or every line is only
+ * an entry name or says the entry has nothing left.
+ */
+export function leftoverIsEmpty(reply: string, entryCount: number): boolean {
+	const empty = new Set([TWO_STEP_NOTHING_RELEVANT])
+	for (let i = 1; i <= entryCount; i++) {
+		empty.add(`Entry ${i}:`)
+		empty.add(`Entry ${i}: ${TWO_STEP_NOTHING_RELEVANT}`)
+	}
+	return reply
+		.split('\n')
+		.map((line) => line.trim())
+		.every((line) => line === '' || empty.has(line))
+}
+
 const neuronIdSchema = z.object({ id: z.string().describe('The neuron id') })
 const mergeSchema = neuronConfigSchema.extend({
 	ids: z
@@ -173,7 +213,20 @@ export function evolutionTools(
 			inputSchema: neuronConfigSchema,
 			execute: ({ id, ...changes }: z.infer<typeof neuronConfigSchema>) =>
 				attempt(async () => {
-					await brain.updateNeuron(id, changes)
+					const before = brain.getNeuron(id)
+					const previous = before && {
+						name: before.name,
+						description: before.description,
+						instructions: before.instructions,
+					}
+					const neuron = await brain.updateNeuron(id, changes)
+					if (
+						previous &&
+						neuron.name === previous.name &&
+						neuron.description === previous.description &&
+						neuron.instructions === previous.instructions
+					)
+						return { unchanged: id }
 					onChange({ action: 'update', neuronId: id })
 					return { updated: id }
 				}),

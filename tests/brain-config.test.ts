@@ -225,7 +225,8 @@ describe('BRAIN_DEFAULTS', () => {
 		expect(BRAIN_DEFAULTS.evolution.autoEvaluate).toBe(true)
 	})
 
-	it('has correct dismissed batch buffer defaults', () => {
-		expect(BRAIN_DEFAULTS.dismissedBatchBuffer.maxSize).toBe(100)
+	it('has correct gap defaults', () => {
+		expect(BRAIN_DEFAULTS.gaps.maxStored).toBe(100)
+		expect(BRAIN_DEFAULTS.gaps.chunkChars).toBe(4000)
 	})
 })

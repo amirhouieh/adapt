@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 - **Breaking:** evolution events are `evolution:started`, `evolution:change`, `evolution:completed` and `evolution:failed`. The `evaluator:*` and `evolution:action:*` events are removed. `BrainUpdateResult.evolutionResults` is now `evolution` (`{ changes, reasoning }`).
 - **Breaking:** `evolution.coverageGap.gapCountThreshold` and `windowSize` (unused) are removed. `brain.evolutionContext` and the prompt context's `evolutionGuidance` are removed; evolution reads the brain prompt itself.
 - **Breaking:** gaps are tracked by Brain: every batch no neuron took is kept and sends a signal, and a question no neuron could answer sends a signal. Brain no longer reads neuron-reported gaps. Set-aside batches are retried on neurons an evolution run created, updated or merged (no longer on every `addNeuron`, and no 5 s timer).
+- **Breaking:** lines no neuron kept in a batch some neuron took are now gaps too. Brain collects such batches with the notes the neurons kept; when they reach `gaps.chunkChars` characters (default 4000), one plain-text leftover call finds what no neuron kept. A non-empty leftover is stored with its raw batches and sent to evolution as one signal; after evolution its raw batches are retried only on neurons created or merged after it was stored. `brain.evolve()` checks a part-full buffer first; `dispose()` drops it and it is not saved. Tested on LFM3 in `evals/baselines/leftover-prompt-lfm3-2026-11-13.md`.
+- **Breaking:** `dismissedBatchBuffer: { maxSize }` is now `gaps: { maxStored, chunkChars }`.
+- `LearnOutput` (`synthesized`, `synthesize:dismissed`) and the adaptive learn output carry `notes`: the plain text the extract step kept from the batch. Neuron behaviour is unchanged.
+- Evolution's `updateNeuron` tool reports a change only when the name, description or instructions really changed.
 - The evolution proposal/validation/activation code, registry lifecycle and run control (never used by `Brain`) are removed, with their tests and evals.
 
 ## [0.1.0] - 2026-11-12

@@ -117,11 +117,16 @@ export interface InternalNeuronsConfig {
 }
 
 /**
- * Configuration for the dismissed batch buffer
+ * Configuration for gaps: inputs no neuron kept.
  */
-export interface DismissedBatchBufferConfig {
-	/** Max number of dismissed batches to retain (default: 100) */
-	maxSize?: number
+export interface GapsConfig {
+	/** Max number of gap records kept for evolution (default: 100) */
+	maxStored?: number
+	/**
+	 * Characters of mixed batches (inputs plus the notes neurons kept) to
+	 * collect before one model call looks for what no neuron kept (default: 4000)
+	 */
+	chunkChars?: number
 }
 
 /**
@@ -159,8 +164,8 @@ export interface BrainConfig extends CascadableConfig, AdaptRepairOptions {
 	autoSetup?: boolean
 	/** Internal neurons config (all enabled by default) */
 	internalNeurons?: InternalNeuronsConfig
-	/** Dismissed batch buffer config */
-	dismissedBatchBuffer?: DismissedBatchBufferConfig
+	/** Gap config: inputs no neuron kept */
+	gaps?: GapsConfig
 	/** Subscribe before initialization starts, so init events can be observed. */
 	onEvent?: UnifiedHandler<BrainEvent>
 }

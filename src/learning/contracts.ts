@@ -195,6 +195,8 @@ export type LearningChange = {
 	readonly candidateSignals?: readonly unknown[]
 	readonly pendingInputIds?: readonly string[]
 	readonly diagnostics?: unknown
+	/** Plain-text notes the procedure kept from the inputs. */
+	readonly notes?: string
 }
 
 export type LearningNoChange = {
@@ -203,6 +205,8 @@ export type LearningNoChange = {
 	readonly consumedInputIds?: readonly string[]
 	readonly pendingInputIds?: readonly string[]
 	readonly diagnostics?: unknown
+	/** Plain-text notes the procedure kept from the inputs. */
+	readonly notes?: string
 }
 
 export type LearningDeferred = {
@@ -279,6 +283,13 @@ function parseLearningResult(value: unknown): LearningResult {
 		typeof result.explanation !== 'string'
 	) {
 		throw new Error('explanation must be a string')
+	}
+	if (
+		(result.outcome === 'change' || result.outcome === 'no_change') &&
+		result.notes !== undefined &&
+		typeof result.notes !== 'string'
+	) {
+		throw new Error('notes must be a string')
 	}
 	if (
 		result.outcome === 'change' &&
