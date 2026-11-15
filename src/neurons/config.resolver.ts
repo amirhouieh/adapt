@@ -6,6 +6,7 @@
  */
 
 import { nanoid } from 'nanoid'
+import { localModel } from '../llm/local/model'
 import type { ParentModels } from '../types/config'
 import { cascade } from '../utils/cascade'
 import { NEURON_DEFAULTS } from './config.defaults'
@@ -15,16 +16,12 @@ export function resolveNeuronConfig(
 	config: NeuronConfig,
 	parentModels?: ParentModels,
 ): ResolvedNeuronConfig {
-	const model = config.model ?? parentModels?.model
-	if (!model) {
-		throw new Error('Neuron requires a model')
-	}
+	const model = config.model ?? parentModels?.model ?? localModel()
 
 	const blueprintModel = cascade(
 		config.blueprintModel,
 		parentModels?.blueprintModel,
-		config.model,
-		parentModels?.model,
+		model,
 	)
 
 	return {

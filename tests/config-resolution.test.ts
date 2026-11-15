@@ -8,12 +8,6 @@ import { mockModel } from './helpers'
 describe('resolveNeuronConfig', () => {
 	const model = mockModel()
 
-	it('throws when no model is provided', () => {
-		expect(() =>
-			resolveNeuronConfig({ instructions: 'test' } as any),
-		).toThrow('Neuron requires a model')
-	})
-
 	it('uses config.model when provided', () => {
 		const result = resolveNeuronConfig({ model, instructions: 'test' })
 		expect(result.model).toBe(model)

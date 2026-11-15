@@ -12,6 +12,7 @@ import {
 	stepCountIs,
 	tool,
 } from '../llm'
+import { localModel } from '../llm/local/model'
 import {
 	type AdjustResult,
 	type GeneratedNeuronConfig,
@@ -138,7 +139,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	private constructor(rawConfig: BrainConfig & { llm?: AdaptLLMPlugin }) {
 		super()
 
-		const model = rawConfig.model
+		const model = rawConfig.model ?? localModel()
 		const blueprintModel = rawConfig.blueprintModel ?? model
 
 		this.llm = resolveRuntimeLLM({

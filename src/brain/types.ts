@@ -135,8 +135,11 @@ export interface GapsConfig {
 export interface BrainConfig extends CascadableConfig, AdaptRepairOptions {
 	/** Natural language prompt describing what to track and learn */
 	prompt: string
-	/** Default model - cascades to all operations */
-	model: LanguageModel
+	/**
+	 * Default model - cascades to all operations. Defaults to `localModel()`:
+	 * LFM3 on LM Studio at http://localhost:1234/v1.
+	 */
+	model?: LanguageModel
 	/**
 	 * Custom LLM plugin for BYO runtimes (Effect, in-house clients, etc.).
 	 * Defaults to the AI SDK plugin which uses the live `model` you passed.
@@ -177,7 +180,9 @@ export interface BrainConfig extends CascadableConfig, AdaptRepairOptions {
  * cache from `Brain.create`).
  *
  * Pick exactly one form:
- *  - `model: openai('gpt-4o')` — covers the 90% case (single AI SDK provider).
+ *  - `model: openrouter('liquid/lfm-3-1.7b')` — one live AI SDK model (e.g. from
+ *    `@ai-sdk/openai-compatible`). Covers the common hosted case. Local models
+ *    from `localModel()` are plain data and need nothing here.
  *  - per-slot `init/query/etc.` — when the brain was created with multi-slot
  *    model overrides.
  *  - `llm: customPlugin` — for BYO runtimes (Effect, in-house clients, etc.).

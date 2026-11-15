@@ -153,8 +153,8 @@ export interface QueryConfig {
 }
 
 export interface NeuronConfig extends CascadableConfig, AdaptRepairOptions {
-	/** Default model for all operations */
-	model: LanguageModel
+	/** Default model for all operations. Defaults to `localModel()` (LFM3 on LM Studio). */
+	model?: LanguageModel
 	/** Natural language instructions for what this neuron tracks and watches for */
 	instructions: string
 	/** Optional unique identifier */

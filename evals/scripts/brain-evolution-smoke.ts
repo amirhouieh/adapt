@@ -12,16 +12,18 @@
  *
  * No LLM judge: read the printed changes and memories.
  * Run: export OPENROUTER_API_KEY=... && npx tsx evals/scripts/brain-evolution-smoke.ts
+ * Local default (LFM3 on LM Studio, no key): LOCAL=1 npx tsx evals/scripts/brain-evolution-smoke.ts
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
-import { type AdaptLLMPlugin, Brain, createAiSdkLLM, MemoryBrainStore } from '../../src'
+import { type AdaptLLMPlugin, Brain, createAiSdkLLM, localModel, MemoryBrainStore } from '../../src'
 
-const MODEL = process.env.MODEL ?? 'liquid/lfm-3-1.7b'
+const LOCAL = process.env.LOCAL === '1'
+const MODEL = process.env.MODEL ?? (LOCAL ? localModel().id : 'liquid/lfm-3-1.7b')
 const apiKey = process.env.OPENROUTER_API_KEY
-if (!apiKey) throw new Error('OPENROUTER_API_KEY is required')
+if (!LOCAL && !apiKey) throw new Error('OPENROUTER_API_KEY is required (or LOCAL=1)')
 
 const provider = createOpenAICompatible({
 	name: 'openrouter',
@@ -29,7 +31,7 @@ const provider = createOpenAICompatible({
 	apiKey,
 	supportsStructuredOutputs: true,
 })
-const baseLLM = createAiSdkLLM({ providers: { openrouter: provider } })
+const baseLLM = LOCAL ? createAiSdkLLM() : createAiSdkLLM({ providers: { openrouter: provider } })
 let calls = 0
 const log: unknown[] = []
 const llm = {
@@ -47,7 +49,7 @@ const out = resolve(import.meta.dirname, '../.data/brain-evolution-smoke', new D
 mkdirSync(out, { recursive: true })
 const started = Date.now()
 const t = () => ((Date.now() - started) / 1000).toFixed(0)
-const report: Record<string, unknown> = { model: MODEL }
+const report: Record<string, unknown> = { model: MODEL, local: LOCAL }
 
 async function snapshot(brain: Brain) {
 	const neurons = []
@@ -66,7 +68,7 @@ async function scenario(
 	const events: unknown[] = []
 	const brain = await Brain.create({
 		prompt: 'Track my coding preferences and my food habits.',
-		model: provider(MODEL),
+		model: LOCAL ? localModel(MODEL) : provider(MODEL),
 		llm,
 		store: new MemoryBrainStore(),
 		autoSetup: false,

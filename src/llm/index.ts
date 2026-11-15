@@ -11,6 +11,7 @@ import {
 } from 'ai'
 import { jsonrepair } from 'jsonrepair'
 import { type ZodError, type ZodSchema, z } from 'zod'
+import { localProvider } from './local/model'
 
 export type { CallSettings, LanguageModelUsage } from 'ai'
 
@@ -424,7 +425,10 @@ export type AiSdkLLMOptions = {
 }
 
 export function createAiSdkLLM(options: AiSdkLLMOptions = {}): AdaptLLMPlugin {
-	const providers = options.providers ?? {}
+	const providers: Record<string, AiSdkProviderFactory> = {
+		local: localProvider,
+		...options.providers,
+	}
 	const gateway = options.gateway === true
 	// Per-plugin cache — instance-scoped so a new plugin instance does
 	// not leak live models from a previous instance into the new resolver.
@@ -782,9 +786,9 @@ export function createAiSdkLLM(options: AiSdkLLMOptions = {}): AdaptLLMPlugin {
  *    models found in `models`. Covers the common case where the user passes
  *    `model: openai('gpt-4o')` and never thinks about plugins.
  *
- * If `llm` is not given AND no live AI SDK models are passed, returns an
- * AI SDK plugin with no providers — calls will throw a clear "register a
- * provider" error on first use, which is the right failure mode.
+ * The default plugin always resolves `localModel()` configs (provider
+ * `local`). Any other persisted model with no live model or registered
+ * provider throws a clear "register a provider" error on first use.
  */
 export function resolveRuntimeLLM(opts: {
 	llm?: AdaptLLMPlugin
