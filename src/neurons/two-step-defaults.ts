@@ -6,7 +6,6 @@
  * (room for mandatory thinking), temperature 0, batches of up to 8 inputs.
  */
 
-import { randomUUID } from 'node:crypto'
 import {
 	createAdaptTextProcedureProvider,
 	createConservativeByteTokenCounter,
@@ -57,8 +56,8 @@ export function defaultTwoStepRuntime(
 				}),
 			},
 		],
-		stateIds: { next: (kind) => `${kind}-${randomUUID()}` },
-		inputIds: { next: () => randomUUID() },
+		stateIds: { next: (kind) => `${kind}-${globalThis.crypto.randomUUID()}` },
+		inputIds: { next: () => globalThis.crypto.randomUUID() },
 		clock: { now: () => new Date().toISOString() },
 		scheduler: {
 			schedule(dueAt, callback) {

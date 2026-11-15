@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { type ZodSchema, z } from 'zod'
 import type {
 	AdaptFinishReason,
@@ -854,7 +853,7 @@ export function createLocalLLM(config: LocalLLMConfig): LocalLLM {
 
 		try {
 			const result = await callWithBoundedRetries({
-				callId: randomUUID(),
+				callId: globalThis.crypto.randomUUID(),
 				stage,
 				priority,
 				scheduler: config.scheduler,

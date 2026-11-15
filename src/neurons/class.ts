@@ -10,9 +10,7 @@
  * Understanding is NOT cached — it lives in `store.understanding`.
  */
 
-import { isDeepStrictEqual } from 'node:util'
 import { nanoid } from 'nanoid'
-
 import type { TextLearningConfig } from '../learning/text-procedures'
 import type { TextInput, TextProfileSnapshot } from '../learning/text-state'
 import type {
@@ -25,6 +23,7 @@ import { resolveRuntimeLLM } from '../llm'
 import type { EvolutionRecord, NeuronStore } from '../stores'
 import type { ParentModels } from '../types/config'
 import { TypedEmitter } from '../types/events'
+import { deepEqual } from '../utils/deep-equal'
 import {
 	type AdaptiveTextFlushOutput,
 	type AdaptiveTextLearningConfig,
@@ -1219,7 +1218,7 @@ function sameProfile(
 	left: TextProfileSnapshot<TextLearningConfig>,
 	right: TextProfileSnapshot<TextLearningConfig>,
 ): boolean {
-	return isDeepStrictEqual(left, right)
+	return deepEqual(left, right)
 }
 
 function definedOnly<T extends object>(value: T | undefined): Partial<T> {
