@@ -17,7 +17,6 @@ Under the hood, adapt splits memory into neurons: small units, each attending to
 npm i adapt-memory
 ```
 
-`adapt-memory` is not on npm yet.
 
 The default model is LFM3 1.7B in [LM Studio](https://lmstudio.ai) at `http://localhost:1234/v1`. Use `localModel()` for another local model or server.
 

@@ -37,7 +37,7 @@ The code needs ESM and top-level `await`. The [quickstart](https://adapt.unbody.
 
 ## Status
 
-MIT. `adapt-memory` is not on npm yet ([changelog](CHANGELOG.md)). Earlier versions were published as `@unbody-io/adapt`; their stores are not supported. Shipped features, next steps and limits are on the [concepts page](https://adapt.unbody.io/docs/concepts#status).
+MIT. Version 0.2.0 ([changelog](CHANGELOG.md)). Earlier versions were published as `@unbody-io/adapt`; their stores are not supported. Shipped features, next steps and limits are on the [concepts page](https://adapt.unbody.io/docs/concepts#status).
 
 ## Links
 

@@ -98,7 +98,7 @@ adapt keeps a rewritten understanding, not the source text. For verbatim recall,
 
 ## Status
 
-MIT. `adapt-memory` is not on npm yet ([changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md)). Earlier versions were published as `@unbody-io/adapt`.
+MIT. Version 0.2.0 ([changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md)). Earlier versions were published as `@unbody-io/adapt`.
 
 - **Shipped:** neurons and brains; learning from text with `inject`; `ask` in `direct` and `deep` modes; gaps; evolution; background neurons; local models by default; SQLite save and restore. Runs on Node and Bun, and a CommonJS build is provided for Electron.
 - **Next:** attention to change ([#25](https://github.com/unbody-io/adapt/issues/25)): bursts, sudden spikes in how often something appears, and drift, slow change in what the data is about, with evolution restructuring around them, such as a temporary neuron for a burst or an alert when a feedback theme bursts. Then expectation ([#26](https://github.com/unbody-io/adapt/issues/26)): noticing what didn't match what the brain expected, and prediction, such as "what would I reply to Alex?". Explicit history: dated snapshots of each understanding, and a store of the user's own messages.

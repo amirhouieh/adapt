@@ -1,6 +1,6 @@
 ---
 title: Reference
-description: Every public method, config option with its default, emitted event with payload, store and LLM plugin in adapt 0.1.0 plus unreleased changes (the local default and localModel).
+description: Every public method, config option with its default, emitted event with payload, store and LLM plugin in adapt-memory 0.2.0.
 ---
 
 This page lists exact names, signatures, defaults, events and return types. Read [concepts](/docs/concepts) and [how-it-works](/docs/how-it-works) first for the words and the lifecycle. Import names: root `adapt-memory`; SQLite `adapt-memory/sqlite` (Node, `better-sqlite3`, an optional peer dependency); `adapt-memory/sqlite/bun` (ESM only, `bun:sqlite`). Nothing else is exported.
