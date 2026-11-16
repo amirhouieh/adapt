@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" width="1000" height="580" role="img" aria-label="Attention today: every neuron reads the batch and keeps its part">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 80 1000 475" width="1000" height="475" role="img" aria-label="Attention today: every neuron reads the batch and keeps its part">
 <style>
 text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 @media (prefers-color-scheme: dark){
@@ -11,8 +11,6 @@ text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 
 <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9 z" fill="#171717" stroke="#171717" stroke-linejoin="round"/></marker>
 </defs>
-<text x="40" y="52" font-size="19" font-weight="700" fill="#171717">Attention today: every neuron reads the batch</text>
-<text x="40" y="82" font-size="14" text-anchor="start" fill="#737373">Simplified. How gaps are found exactly is on the How it works page.</text>
 <rect x="30" y="170" width="230" height="236" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text x="48" y="204" font-size="16" font-weight="700" fill="#171717">One batch</text>
 <rect x="46" y="222" width="198" height="42" rx="8" fill="#E8E8E8"/><text x="56" y="249" font-size="13" fill="#171717">Dana owns billing fix</text>
 <rect x="46" y="276" width="198" height="42" rx="8" fill="#E8E8E8"/><text x="56" y="303" font-size="13" fill="#171717">Launch moved to Friday</text>
@@ -28,5 +26,4 @@ text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 <rect x="183" y="452" width="120" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="243" y="470" font-size="13" text-anchor="middle" fill="#171717">left over</text>
 <rect x="770" y="425" width="190" height="100" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="865.0" y="471.0" font-size="16" font-weight="700" fill="#171717">Evolution</text><text text-anchor="middle" x="865.0" y="495.0" font-size="13" fill="#171717">reads the gaps</text>
 <path d="M674,475 C710,475 730,475 766,475" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
-<g opacity="1"><rect x="720" y="120" width="240" height="160" rx="10" fill="#E8E8E8"/><text x="736" y="154" font-size="16" font-weight="700" fill="#171717">Every neuron reads</text><text x="736" y="178" font-size="15" font-weight="400" fill="#171717">the whole batch and</text><text x="736" y="200" font-size="15" font-weight="400" fill="#171717">keeps only its part.</text><text x="736" y="222" font-size="15" font-weight="400" fill="#171717">What none keeps</text><text x="736" y="244" font-size="15" font-weight="400" fill="#171717">is a gap.</text></g>
 </svg>

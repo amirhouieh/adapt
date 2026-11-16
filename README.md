@@ -6,12 +6,12 @@ adapt takes a different approach to memory. Most memory layers are recall-based:
 
 ![adapt is where attention, self-evolution and proactivity overlap.](website/public/diagrams/venn.svg)
 
-Under the hood, adapt splits memory into neurons: small units, each attending to one topic and keeping one plain-text memory of it. A brain is the set of neurons that serves one goal, which you give as a prompt. `inject()` sends new text to every neuron; each extracts what fits its topic and rewrites its memory. Text no neuron keeps is recorded as a gap, and gaps drive evolution, which creates, merges or removes neurons. `ask()` sends a question to the neurons whose topics match and merges their answers.
+Under the hood, adapt splits memory into neurons: small units, each attending to one topic and keeping one plain-text memory of it, called its understanding. A brain is the set of neurons that serves one goal, which you give as a prompt. `inject()` sends new text to every neuron; each extracts what fits its topic and rewrites its understanding. Text no neuron keeps is recorded as a gap, and gaps drive evolution, which creates, merges or removes neurons. `ask()` sends a question to the neurons whose topics match and merges their answers.
 
 ## Install
 
 ```bash
-npm i adapt-memory   # not on npm yet; npm currently serves 0.0.6
+npm i adapt-memory
 ```
 
 ## Quickstart
@@ -33,19 +33,11 @@ await brain.dispose()
 // later: const brain = await Brain.restore('./brain.db')
 ```
 
-`inject` means learn from this data; `ask` means ask what the brain understands, and returns an answer, its sources and what the model could not answer. No model is named, so adapt uses LFM3 1.7B on LM Studio. `localModel('<id>', { baseURL })` points it at another local model or server, untested so far. The code needs ESM and top-level `await`.
+The code needs ESM and top-level `await`. The [quickstart](https://adapt.unbody.io/docs/quickstart) walks through each step.
 
 ## Status
 
-MIT. This release is not on npm yet ([changelog](CHANGELOG.md)); until it is, `npm i adapt-memory` installs 0.0.6, which has a different API. Tested on Node and Bun; a CommonJS build is provided for Electron, untested. Memory in RAM or SQLite.
-
-- **Shipped:** neurons and brains; learning from text; `ask` in `direct` and `deep` modes; gaps; [evolution](https://adapt.unbody.io/docs/concepts#self-evolving) on by default; [background neurons](https://adapt.unbody.io/docs/how-it-works#6-background-neurons); local models by default; save and restore.
-- **Next:** attention to change, bursts and drift ([#25](https://github.com/unbody-io/adapt/issues/25)); expectation, including "what would I reply to Alex?" ([#26](https://github.com/unbody-io/adapt/issues/26)); explicit history: dated snapshots of each understanding, and a store of the user's own messages.
-- **Where this is going:** adapt will learn what to expect from your data and notice when reality differs. Today: attention-based understanding that organizes itself. Next: attention to change, and prediction.
-
-Limits: a neuron keeps no past versions of its understanding, so an old value is lost when a rewrite keeps only the new one. Inputs are 2000 characters at most. [`continuous` governance](https://adapt.unbody.io/docs/guides#memory-size-governance) stops learning once the understanding is full. Evolution needs tool calling. For verbatim recall, citations and audit trails, use RAG or a database alongside adapt.
-
-**Upgrading from 0.0.6:** 0.1.0 does not support 0.0.6 stores. Start with a new one. See the changelog.
+MIT. `adapt-memory` is not on npm yet ([changelog](CHANGELOG.md)). Earlier versions were published as `@unbody-io/adapt`; their stores are not supported. Shipped features, next steps and limits are on the [concepts page](https://adapt.unbody.io/docs/concepts#status).
 
 ## Links
 

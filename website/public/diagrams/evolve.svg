@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1000" height="600" role="img" aria-label="Signals pile up, mainly from gaps, and the brain reshapes itself">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 50 1000 540" width="1000" height="540" role="img" aria-label="Signals pile up, mainly from gaps, and the brain reshapes itself">
 <style>
 text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 @media (prefers-color-scheme: dark){
@@ -11,7 +11,6 @@ text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 
 <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9 z" fill="#171717" stroke="#171717" stroke-linejoin="round"/></marker>
 </defs>
-<text x="40" y="52" font-size="19" font-weight="700" fill="#171717">Signals pile up, mainly from gaps, and the brain reshapes itself</text>
 <g opacity="1"><rect x="30" y="78" width="210" height="116" rx="10" fill="#E8E8E8"/><text x="46" y="108" font-size="15" font-weight="700" fill="#171717">Other signals</text><text x="46" y="134" font-size="15" font-weight="400" fill="#171717">neuron health,</text><text x="46" y="156" font-size="15" font-weight="400" fill="#171717">brain.signal,</text><text x="46" y="178" font-size="15" font-weight="400" fill="#171717">brain.update</text></g>
 <g opacity="1"><rect x="30" y="210" width="210" height="80" rx="10" fill="#E8E8E8"/><text x="46" y="242" font-size="15" font-weight="700" fill="#171717">Questions</text><text x="46" y="268" font-size="15" font-weight="400" fill="#171717">no neuron fit</text></g>
 <g opacity="1"><rect x="30" y="310" width="210" height="80" rx="10" fill="#E8E8E8"/><text x="46" y="342" font-size="15" font-weight="700" fill="#171717">Inputs</text><text x="46" y="368" font-size="15" font-weight="400" fill="#171717">no neuron kept</text></g>
@@ -22,7 +21,6 @@ text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 <path d="M244,350 C265,350 265,270 286,270" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
 <rect x="500" y="100" width="250" height="380" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="625" y="138" font-size="16" font-weight="700" fill="#171717">Agent with tools</text>
 <g><rect x="530" y="160" width="190" height="42" rx="10" fill="#E8E8E8"/><text x="625" y="187" font-size="15" text-anchor="middle" fill="#171717">read a memory</text></g><g><rect x="530" y="220" width="190" height="42" rx="10" fill="#E8E8E8"/><text x="625" y="247" font-size="15" text-anchor="middle" fill="#171717">create a neuron</text></g><g><rect x="530" y="280" width="190" height="42" rx="10" fill="#E8E8E8"/><text x="625" y="307" font-size="15" text-anchor="middle" fill="#171717">update a neuron</text></g><g><rect x="530" y="340" width="190" height="42" rx="10" fill="#E8E8E8"/><text x="625" y="367" font-size="15" text-anchor="middle" fill="#171717">merge neurons</text></g><g><rect x="530" y="400" width="190" height="42" rx="10" fill="#E8E8E8"/><text x="625" y="427" font-size="15" text-anchor="middle" fill="#171717">remove a neuron</text></g><path d="M452,270 C470,270 480,285 496,285" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
-<text x="625" y="505" font-size="13" text-anchor="middle" fill="#737373">needs a model with tool calling</text>
 <text text-anchor="middle" x="895" y="92" font-size="16" font-weight="700" fill="#171717">New structure</text>
 <g opacity="1"><rect x="805" y="115" width="180" height="66" rx="10" fill="#E8E8E8"/><text x="819" y="143" font-size="16" font-weight="700" fill="#171717">new neuron</text><text x="819" y="167" font-size="14" font-weight="400" fill="#171717">from create</text></g>
 <g opacity="1"><rect x="805" y="200" width="180" height="66" rx="10" fill="#E8E8E8"/><text x="819" y="228" font-size="16" font-weight="700" fill="#171717">updated neuron</text><text x="819" y="252" font-size="14" font-weight="400" fill="#171717">memory kept</text></g>
@@ -30,5 +28,5 @@ text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
 <g opacity="0.6"><rect x="805" y="370" width="180" height="66" rx="10" fill="#E8E8E8" stroke="#A3A3A3" stroke-width="1.25" stroke-dasharray="6 5"/><text x="819" y="398" font-size="16" font-weight="700" fill="#171717">removed</text><text x="819" y="422" font-size="14" font-weight="400" fill="#171717">memory lost</text></g>
 <path d="M752,285 C775,285 780,230 801,215" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
 <path d="M135,394 C135,585 895,585 895,462" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
-<rect x="328.70000000000005" y="535" width="376.59999999999997" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="517" y="553" font-size="13" text-anchor="middle" fill="#171717">stored gaps are re-fed to changed neurons</text>
+<rect x="462" y="535" width="110" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="517" y="553" font-size="13" text-anchor="middle" fill="#171717">gap retry</text>
 </svg>

@@ -9,14 +9,12 @@ This page is the one home for model call counts. Each step lists its calls and t
 
 ## 1. Setup
 
-A brain needs neurons before it can learn, so setup designs them from your prompt.
-
-In `Brain.create`:
+Setup runs inside `Brain.create` and gives the brain the neurons it learns with:
 
 1. Neurons you pass in `neurons` are created first. No model call.
 2. If `autoSetup` is true (the default), one call turns the prompt into neurons, each `{ id, name, description, instructions }`. The call must return JSON. Neurons whose id you gave are skipped.
 3. One more call, always, even with `autoSetup: false`, splits the prompt into a purpose and an answer style. The brain uses it when it writes answers.
-4. Four background neurons are created unless you turn them off (section 6).
+4. Four background neurons are created unless you turn them off. These are ordinary neurons the brain keeps about itself and your questions, such as one that learns from input no neuron kept (section 6).
 
 Model calls: 2 with `autoSetup`, 1 without. Creating a neuron costs no call.
 
@@ -24,11 +22,9 @@ Tune: `autoSetup`, `neurons`, `init.model`, `blueprintModel`, `internalNeurons`.
 
 ## 2. Inject
 
-Inject is how a brain learns from text. Each neuron decides alone what to keep.
+`brain.inject(data)` is how a brain learns from text, and each neuron decides on its own what to keep:
 
-For `brain.inject(data)`:
-
-1. Every active neuron reads the whole batch, in parallel. In stage 1, the brain does not route or score inputs.
+1. Every active neuron reads the whole batch, in parallel. The brain does not route or score inputs.
 2. **Extract.** The neuron copies out what fits its topic. If nothing fits, it replies `NONE` and stops. The status is `observe:dismissed`.
 3. **Update.** The neuron gets its old understanding and the extract, and writes the whole new understanding. Identical text is `synthesize:dismissed`. New text is `synthesized`.
 
@@ -48,15 +44,15 @@ Limits:
 
 `inject` returns `{ id, batches: [{ id, index, results: [{ neuronId, result }] }] }`.
 
-On one local server, calls queue. In a 5-task learning benchmark on LM Studio with LFM3 1.7B, a call took about 20 seconds when 4 jobs shared the server, so many neurons on one local server run slowly.
+On one local server, calls queue, so many neurons on one server run slowly ([speed](#speed)).
 
 Tune: `ingest.batchSize`, `learning.governance`, `learning.model`, `adjustNeuron` for a per-neuron rule.
 
 ## 3. Ask
 
-Ask returns one answer built from only the neurons that matter.
+`brain.ask(question)` builds one answer from the neurons whose topics fit the question.
 
-![Ask. A question reaches the brain. One call picks the neurons whose name and description fit. Each picked neuron answers from its own understanding with a relevance score and a confidence score. One last call writes a single answer, and also reads the global understanding background neuron. The result holds the answer, the sources and the gaps the answering model reports. Scores in the picture are examples.](/diagrams/ask.svg)
+![Ask in direct mode: a question, a call that picks neurons, picked neurons with example relevance and confidence scores, one last call, and the answer with sources and gaps.](/diagrams/ask.svg)
 
 Each neuron returns two scores. **Relevance** is how well its understanding fits the question, 0 to 1. **Confidence** is how sure it is of its own answer, 0 to 1.
 
@@ -65,7 +61,7 @@ Each neuron returns two scores. **Relevance** is how well its understanding fits
 1. Keep neurons that have an understanding or input waiting. Paused neurons are kept.
 2. If more than one is left, one call picks the neurons whose id, name and description fit. The prompt asks it to be inclusive. An empty pick means all.
 3. Each picked neuron makes one call that must return JSON. It reads its instructions and its whole understanding, answers only from that, and returns `{ relevant, relevance, confidence, response, gaps }`. A neuron with nothing to read makes no call. A neuron that fails is skipped.
-4. Neurons with `relevant: false` are dropped. One last call writes the answer and drops neurons with relevance 0.1 or lower. It also sees the brain's purpose and the understanding of the background neuron that tracks the whole brain (section 6), and it is told to show both sides where they conflict. That background text can disagree with a neuron, and on LFM3 1.7B this once produced a change stated backwards ([what has changed](#what-has-changed)).
+4. Neurons with `relevant: false` are dropped. One last call writes the answer and drops neurons with relevance 0.1 or lower. It also sees the brain's purpose and the understanding of the background neuron that tracks the whole brain (section 6), and it is told to show both sides where they conflict. That background text can disagree with a neuron's understanding, and the answer can then state a change backwards ([what has changed](#what-has-changed)).
 
 Model calls: 1 if more than one neuron has knowledge, plus the number picked, plus 1.
 
@@ -119,9 +115,9 @@ Tune: `gaps.chunkChars`, `gaps.maxStored`, `evolution.coverageGap.relevanceThres
 
 ## 5. Evolution
 
-The neurons you start with will not fit the data forever. Evolution changes them.
+Evolution creates, updates, merges and removes neurons when signals show that the current set no longer fits the data.
 
-![Evolve. Signals collect, mainly from gaps, and also from neuron health, brain.signal and brain.update. At five signals the brain runs one agent. The agent can read an understanding, and create, update, merge or remove neurons. Then stored gaps are fed again to the neurons that changed.](/diagrams/evolve.svg)
+![Evolve: signals from inputs no neuron kept, questions no neuron fit and other sources reach a threshold of 5; an agent with tools reads, creates, updates, merges or removes neurons; stored gaps are retried on the changed neurons.](/diagrams/evolve.svg)
 
 **Where signals come from:**
 
@@ -160,7 +156,7 @@ Tune: `evolution.enabled`, `evolution.autoEvaluate`, `evolution.evaluatorSignalT
 
 ## 6. Background neurons
 
-The brain needs understanding about itself and your questions. Background neurons (internal neurons in the code) are ordinary neurons the brain keeps for that. All four are on by default.
+Background neurons (internal neurons in the code) are the four ordinary neurons the brain keeps about itself and your questions. All four are on by default.
 
 Each has two names. The **config key** is what you write in `internalNeurons`. The **id** is what you pass to `getInternalNeuron` or `consult`. For example, key `queryGaps` has id `__internal_query_gaps`.
 
@@ -179,53 +175,37 @@ Each has two names. The **config key** is what you write in `internalNeurons`. T
 
 ### What runs without you
 
-Automatic evolution at 5 signals, gap retry after evolution, background learning of the four neurons, the leftover call, and retry timers for cut-off runs. In this release, events report evolution runs and every signal to your app, but no insight is pushed: `ask` is yours to call, and no timer reviews what the brain understands.
+Automatic evolution at 5 signals, gap retry after evolution, background learning of the four neurons, the leftover call, and retry timers for cut-off runs. Events report every signal and every evolution run to your app. Answers come only from `ask`, and no timer reviews what the brain understands.
 
 ## Cost and evidence
 
-Every number here is reported with a local model. A heading that says "not measured yet" has no result.
+Model call counts for each step are in sections 1 to 6. The results below ran on LFM3 1.7B and checked outputs by string match and by reading every text, with no LLM judge.
 
-### Understanding
+### What has changed
 
-Whether the understanding stays correct as facts change.
-
-Public benchmarks:
-
-- **LongMemEval, knowledge updates:** not measured yet.
-- **MemoryAgentBench, conflict resolution:** not measured yet.
-- **PersonaMem:** not measured yet.
-
-#### What has changed
-
-Our own eval: does a rewritten understanding still say "used to X, now Y"? LFM3 1.7B on LM Studio, one Mac, evolution off. Five cases (code editor, diet, project owner, meeting day, programming language), 2 runs each. Each run injects 7 to 8 inputs in three calls, with the change stated once among unrelated inputs, then asks "What changed about <topic>?". Checked by substring match on the old and new value and by reading every text, with no LLM judge. [Baseline and raw logs](https://github.com/unbody-io/adapt/blob/main/evals/baselines/what-has-changed-lfm3-2026-11-15.md).
+Does a rewritten understanding still say "used to X, now Y"? LFM3 1.7B on LM Studio, evolution off, five cases (code editor, diet, project owner, meeting day, programming language), 2 runs each. Each run injects 7 to 8 inputs in three calls, with the change stated once among unrelated inputs, then asks "What changed about <topic>?" ([baseline and raw logs](https://github.com/unbody-io/adapt/blob/main/evals/baselines/what-has-changed-lfm3-2026-11-15.md)).
 
 - **Kept old value, new value and the fact of change:** 8 of 10 runs (4 of 5 cases, both runs each). Example: "This week I switched from Vim to Zed".
 - **Lost the old value:** both runs of the owner case. The input said "Sara moved to the mobile team. Tom is now the owner"; the understanding became "Tom owns the billing project", with no Sara.
-- **Why:** the kept changes held because the input narrated the change and the rewrite repeated it. Nothing in the update step keeps an old value when the new text states only the new one, and [shortening](/docs/guides#memory-size-governance) is told to keep the current value. With 2 runs per case this is not a guarantee.
+- **Why:** the kept changes held because the input narrated the change and the rewrite repeated it. Nothing in the update step keeps an old value when the new text states only the new one, and [shortening](/docs/guides#memory-size-governance) is told to keep the current value.
 - **Other errors in the understanding:** one neuron held both diet values with no change marker, so it contradicted itself; one kept a stale "go-to language for everything" line next to the new language; one added lines nobody wrote.
 - **`ask` in `direct` mode:** for editor, meeting and language, both runs stated the old and new value; editor run 2 also added a claim no understanding made. Diet run 2 missed that eating fish again was a reversal. Owner run 1 answered backwards ("moved from Tom to Sara"): the old owner survived only in the global understanding background neuron, which the answer step reads, and the answer mixed it with the neuron's text. Owner run 2 said it could not give one answer.
 
-**Next:** explicit history, so a change survives even when the input states only the new value: dated snapshots of each understanding, and a store of the user's own messages. Stage 2 needs both anyway, for drift detection and reply prediction.
+### Invented statements
 
-#### Invented statements
+The learn step sometimes writes a claim that no input made. On a 10-fact test with two neurons and 6 runs on LFM3 1.7B via OpenRouter, the current learn prompts invented 4 claims in total, down from 10 before the fix, and kept 56 of 60 facts ([baseline](https://github.com/unbody-io/adapt/blob/main/evals/baselines/learn-invention-lfm3-2026-11-13.md)).
 
-The learn step sometimes writes a claim that no input made. On a 10-fact test with two neurons and 6 runs, the current learn prompts invented 4 claims in total, down from 10 before the fix, and kept 56 of 60 facts. This ran on LFM3 1.7B via OpenRouter, not on-device ([baseline](https://github.com/unbody-io/adapt/blob/main/evals/baselines/learn-invention-lfm3-2026-11-13.md)).
+### Speed
 
-### Prediction
+All on one Mac with LM Studio and LFM3 1.7B.
 
-Reply prediction on Enron: not measured yet. Prediction is not in this release.
-
-### Efficiency
-
-All on one Mac, LM Studio, LFM3 1.7B.
-
-- **LLM calls per 1,000 events:** not measured yet. Per-step call counts are in sections 1 to 6.
-- **Latency:** in a 5-task learning benchmark a call took about 20 seconds with 4 jobs sharing one server. The what-has-changed eval took 3057 seconds for 10 runs, about 5 minutes per run (create, three injects, one `ask`). The evolution smoke runs took 1003 seconds for 54 calls.
-- **Model size:** learning is tested on LFM3 1.7B. Evolution has smoke runs on it: two scenarios, `evolve()` called by hand. Deep `ask` has not been tested on small models.
+- A learning call took about 20 seconds with 4 jobs sharing one server ([baseline](https://github.com/unbody-io/adapt/blob/main/evals/baselines/two-step-production-lfm3-2026-11-12.md)).
+- The what-has-changed runs took 3057 seconds for 10 runs, about 5 minutes per run (create, three injects, one `ask`).
+- Evolution passed two smoke scenarios with `evolve()` called by hand: 54 calls in 1003 seconds ([baseline](https://github.com/unbody-io/adapt/blob/main/evals/baselines/brain-evolution-smoke-local-default-2026-11-15.md)).
 
 ## Background: where the ideas come from
 
-adapt is related to four lines of work. Today it uses none of their algorithms. Two inform the roadmap, and two are analogies.
+adapt is related to four lines of work. It uses none of their algorithms. Two inform the roadmap, and two are analogies.
 
 - **Predictive processing** (roadmap). Brains are modelled as expecting their input and spending effort on the error (Rao and Ballard; Friston). adapt will use this idea for attention to surprise (#26).
 - **Hierarchical temporal memory and standard statistics** (roadmap). Numenta's HTM learns sequences online and flags anomalies. Burst and drift detection, and Markov prediction, are standard statistical tools, and adapt will use them as such (#25, #26).
@@ -234,4 +214,4 @@ adapt is related to four lines of work. Today it uses none of their algorithms. 
 
 Memory that reorganizes itself has prior art too: A-MEM updates older notes when new ones arrive, Letta's sleep-time agents rewrite memory blocks in the background, and LangMem has a background memory manager. adapt differs in what it reorganizes: the set of topic-scoped understandings, driven mainly by gaps.
 
-The claim is the combination. Understanding is split into neurons that each keep one topic, what no neuron keeps becomes a gap, the structure reshapes itself mainly from those gaps, and each neuron's job is narrow enough for a small local model on the device. Next, the same structure gets attention to change and to what broke its expectations.
+The claim is the combination. Understanding is split into neurons that each keep one topic, what no neuron keeps becomes a gap, the structure reshapes itself mainly from those gaps, and each neuron's job is narrow enough for a small local model on the device.

@@ -2,11 +2,11 @@
 
 Terms in reading order; after the first, each definition uses only terms above it. API names are in code font. Terms marked *(next)* are reserved for later releases and never describe current behavior.
 
-- **adapt**: a TypeScript library, `adapt-memory`, that learns from your data as it arrives, on your device. It isn't a store of chunks you search: it forms understanding, revises it when things change, and reorganizes itself around what matters, using small local models.
-- **neuron**: one topic, its `instructions`, and a plain-text account of that topic, called its understanding.
-- **understanding**: a neuron's plain-text account of its topic, rewritten whole when new input fits the topic. Read it with `neuron.getUnderstanding()`. The API also calls it the memory. A neuron keeps no past versions of its understanding.
-- **brain**: today, your goal, written as one prompt, plus its neurons. `Brain.create` designs the first neurons from the prompt. You can also write them yourself.
-- **inject**: `brain.inject(data)`. Learn from this data. In this release every active neuron reads the whole batch and keeps what fits its topic. Inputs are 2000 characters or shorter.
+- **adapt**: a TypeScript memory layer, `adapt-memory`, designed around attention, self-evolution and proactivity, optimized for small local and on-edge models (1–2B).
+- **understanding**: a plain-text memory of one topic, rewritten whole when new input fits the topic. The API also calls it the memory. Past versions are not kept.
+- **neuron**: a small unit that attends to one topic: its `instructions` plus its understanding of that topic. Read the understanding with `neuron.getUnderstanding()`.
+- **brain**: the set of neurons that serves one goal, which you give as a prompt. `Brain.create` designs the first neurons from the prompt. You can also write them yourself.
+- **inject**: `brain.inject(data)`. Learn from this data. Every active neuron reads the whole batch and keeps what fits its topic. Inputs are 2000 characters or shorter.
 - **gap**: input that no neuron kept, or a question that no neuron could answer. The brain records both.
 - **ask**: `brain.ask(question)`. Ask what the brain understands. Returns `{ insight, sources, gaps }`: the answer, the neurons it came from, and the answering model's own list of what it could not answer. That `gaps` field is a report, not the brain's gap records.
 - **attention**: deciding what deserves effort. Not transformer attention. Today it decides only what each neuron keeps: every neuron reads every batch, keeps what fits its topic, and what none keeps is a gap. Next (#25), the brain spends effort on bursts (sudden spikes in how often something appears) and drift (slow change in what the data is about). Then (#26), on whatever broke its expectations.
@@ -14,8 +14,8 @@ Terms in reading order; after the first, each definition uses only terms above i
 - **evolution**: the brain creating, updating, merging or removing its own neurons, run by one agent that needs tool calling. Starts at 5 signals (`evolution.evaluatorSignalThreshold`) or with `brain.evolve()`.
 - **self-evolving**: the pillar that the set of neurons changes through evolution, mainly from gaps.
 - **background neuron**: one of four ordinary neurons the brain keeps about itself (also called internal neurons): global understanding, global query understanding, injection gaps, query gaps.
-- **proactive**: the pillar that the brain knows what didn't fit its topics without being asked. In this release it is passive: gaps are recorded, sent as signals and fed to the gap background neurons, and your app reads them with `brain.consult` or the `brain:signal:received` event. No insight is pushed to your app.
-- **local model**: a model served by a local OpenAI-compatible endpoint. `localModel()` is the default: `lfm3-1.7b` at `http://localhost:1234/v1`. Its id and address are saved with the brain.
+- **proactive**: the pillar that the brain knows what didn't fit its topics without being asked. Gaps are recorded, sent as signals and fed to the gap background neurons; your app reads them with `brain.consult` or the `brain:signal:received` event.
+- **local model**: a model that runs on your machine. `localModel()` is the default: `lfm3-1.7b` at `http://localhost:1234/v1`. Its id and address are saved with the brain.
 - **local-first**: the pillar that adapt runs on a small model on your machine by default, because each neuron's job is narrow. Hosted models also work.
 - **direct** and **deep**: the two `ask` modes. `direct` picks neurons with one call and needs JSON output. `deep` runs an agent loop and needs tool calling too.
 - **relevance** and **confidence**: two scores from 0 to 1 that each neuron returns for a question. Relevance is how well its understanding fits. Confidence is how sure it is.

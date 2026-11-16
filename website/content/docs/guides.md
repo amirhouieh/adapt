@@ -7,7 +7,7 @@ This page covers the controls. Read [how-it-works](/docs/how-it-works) first. Ex
 
 ## Prompt design
 
-Everything you write reaches a model word for word. The brain prompt goes into setup, and each neuron's `instructions` go into its extract and update calls. No call rewrites them. A small model reads them literally, so this is the part of adapt where your effort pays most.
+Everything you write reaches a model word for word. The brain prompt goes into setup, and each neuron's `instructions` go into its extract and update calls. No call rewrites them. A small model reads them literally.
 
 ### The brain prompt
 
@@ -64,9 +64,7 @@ Keep concrete examples, counts and dates.
 
 ## Save and restore
 
-A brain should survive a restart. This is the one home for persistence.
-
-First run:
+To keep a brain across restarts, give it a SQLite store on the first run and restore it from the same path later. First run:
 
 ```ts
 import { Brain } from 'adapt-memory'
@@ -107,7 +105,7 @@ A memory that grows without limit stops fitting the model, so governance shorten
 
 With `continuous`, a full memory stops learning, so use it only for topics that stay small. A run whose request would not fit the model's context is refused, not truncated.
 
-An understanding is one text that is rewritten whole, and a neuron keeps no past versions. Shortening drops old values on purpose: it is told to keep the current value where something changed. To keep history today, store `previousUnderstanding` from the `neuron:synthesized` event with a date. Built-in history is next ([what has changed](/docs/how-it-works#what-has-changed)).
+An understanding is one text that is rewritten whole, and a neuron keeps no past versions. Shortening drops old values on purpose: it is told to keep the current value where something changed. To keep history, store `previousUnderstanding` from the `neuron:synthesized` event with a date ([what has changed](/docs/how-it-works#what-has-changed)).
 
 ## Your own neurons
 
@@ -172,7 +170,7 @@ A change to `prompt` costs 1 call, to split the new prompt. A change to `learnin
 
 ### A neuron alone
 
-A neuron can run without a brain. It has no setup, no gaps and no evolution.
+A neuron can run without a brain, with no setup, gaps or evolution:
 
 ```ts
 import { Neuron, MemoryNeuronStore } from 'adapt-memory'
@@ -189,7 +187,7 @@ It restores like a brain: `Neuron.restore('./neuron.db', { id })`, with `id` whe
 
 ## Local models and per-job models
 
-The default is LFM3 1.7B in LM Studio, the only model tested with this release. Another local model or server is a `localModel(...)` call; Qwen here is untested:
+The default is LFM3 1.7B in LM Studio. Another local model or server is a `localModel(...)` call:
 
 ```ts
 import { Brain, localModel } from 'adapt-memory'
@@ -212,7 +210,7 @@ For llama.cpp use `localModel('<model id>', { baseURL: 'http://localhost:8080/v1
 | `evolution.model` | Runs evolution. Needs tool calling. |
 | `learning.model`, `learning.query.model` | Apply to neurons the brain creates. |
 
-A separate model for evolution, which needs tool calling. Check tool calling on the second model first; this pairing is untested:
+Evolution can run on its own model, which must support tool calling:
 
 ```ts
 const brain = await Brain.create({
@@ -234,6 +232,8 @@ const brain = await Brain.create({
 | Evolution | no | yes |
 | `inspect` | no | yes |
 | `consult` without a `neuron` id | yes | yes |
+
+`brain.inspect(question)` is a read-only agent that answers questions about the brain itself: its neurons, background neurons and config.
 
 Deep ask needs both: the agent gathers answers with tools, and the last answer step must return JSON.
 
@@ -260,7 +260,7 @@ Small-model facts:
 
 ## Hosted models
 
-A hosted model runs off your machine. Pass any AI SDK model. OpenRouter with LFM3 is the tested hosted path. `@ai-sdk/openai-compatible` is installed with adapt. With pnpm or another strict package manager, run `npm i @ai-sdk/openai-compatible` so your code can import it.
+A hosted model runs off your machine. Pass any AI SDK model; the example uses OpenRouter with LFM3. `@ai-sdk/openai-compatible` is installed with adapt. With pnpm or another strict package manager, run `npm i @ai-sdk/openai-compatible` so your code can import it.
 
 ```ts
 import { Brain } from 'adapt-memory'

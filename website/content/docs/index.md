@@ -9,13 +9,15 @@ adapt takes a different approach to memory. Most memory layers are recall-based:
 
 ![adapt is where attention, self-evolution and proactivity overlap.](/diagrams/venn.svg)
 
-Under the hood, adapt splits memory into neurons: small units, each attending to one topic and keeping one plain-text memory of it. A brain is the set of neurons that serves one goal, which you give as a prompt. `inject()` sends new text to every neuron; each extracts what fits its topic and rewrites its memory. Text no neuron keeps is recorded as a gap, and gaps drive evolution, which creates, merges or removes neurons. `ask()` sends a question to the neurons whose topics match and merges their answers.
+Under the hood, adapt splits memory into neurons: small units, each attending to one topic and keeping one plain-text memory of it, called its understanding. A brain is the set of neurons that serves one goal, which you give as a prompt. `inject()` sends new text to every neuron; each extracts what fits its topic and rewrites its understanding. Text no neuron keeps is recorded as a gap, and gaps drive evolution, which creates, merges or removes neurons. `ask()` sends a question to the neurons whose topics match and merges their answers.
 
 ## Install
 
 ```bash
-npm i adapt-memory   # not on npm yet; npm currently serves 0.0.6
+npm i adapt-memory
 ```
+
+`adapt-memory` is not on npm yet.
 
 The default model is LFM3 1.7B in [LM Studio](https://lmstudio.ai) at `http://localhost:1234/v1`. Use `localModel()` for another local model or server.
 

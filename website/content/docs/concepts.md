@@ -3,17 +3,13 @@ title: Concepts
 description: What a brain keeps, how it changes itself, and how adapt compares to RAG and other memory layers.
 ---
 
-## The problem
+## Compared with RAG and memory layers
 
-Your agent should learn the user over time: what they think, what changed, what matters now. The data arrives as a stream of messages, notes, events and logs.
-
-With plain RAG, search returns the old statement and the new one side by side, and something else has to decide which is current. Memory layers decide at write time, each with a unit of memory chosen before it has seen your data: a fact, a graph edge, a memory block, a profile.
-
-## The field
+adapt decides at write time what to keep, and it divides what it keeps by topic. An agent that learns a user over time gets a stream of messages, notes, events and logs in which facts change. With plain RAG, search returns the old statement and the new one side by side, and something else has to decide which is current. Memory layers decide at write time, each with a unit of memory chosen before it has seen your data: a fact, a graph edge, a memory block, a profile.
 
 - **RAG** stores chunks and searches them at question time. Nothing is learned between the write and the question.
 - **mem0** extracts facts as data arrives and updates or deletes the facts that new ones conflict with.
-- **Zep/Graphiti** stores timestamped facts as graph edges and invalidates superseded ones. It is stronger than adapt on history today.
+- **Zep/Graphiti** stores timestamped facts as graph edges and invalidates superseded ones. It is stronger than adapt on history.
 - **Letta** keeps memory blocks in context that the agent edits, plus searchable archival memory.
 - **LangMem** keeps profiles (one rewritten document) or collections of extracted memories, maintained by a background manager.
 - **A-MEM** links notes and updates older notes when new ones arrive.
@@ -24,7 +20,7 @@ adapt also keeps rewritten text, so rewriting is not the difference. Like Letta 
 
 adapt has three properties together.
 
-1. **Attention-based.** Understanding is split into **neurons**. A neuron is one topic, its instructions, and its **understanding** of that topic: plain text, rewritten as data arrives. The API also calls the understanding the memory. Each neuron keeps only what fits its own topic, which is what attention means today ([below](#attention)). What no neuron keeps is a **gap**.
+1. **Attention-based.** Understanding is split into **neurons**. A neuron is one topic, its instructions, and its **understanding** of that topic: plain text, rewritten as data arrives. The API also calls the understanding the memory. Each neuron keeps only what fits its own topic, which is what attention means here ([below](#attention)). What no neuron keeps is a **gap**.
 2. **Self-evolving.** The structure reshapes itself, mainly from those gaps.
 3. **Small local models.** Each neuron's job is narrow enough for a small model on your machine.
 
@@ -34,33 +30,27 @@ You feed a brain with `brain.inject(data)`, which means learn from this data. Yo
 
 A gap has two forms: input that no neuron kept, and a question that no neuron could answer. The brain records both.
 
-Parts of this are borrowed, including memory that reorganizes itself (A-MEM, Letta's sleep-time agents, LangMem's background manager). They are named in [Background](/docs/how-it-works#background-where-the-ideas-come-from). The claim is the combination: understanding split into topics by attention, a structure that reorganizes itself from what fits no topic, and small models on the device, later extended with attention to change and to expectation.
+Parts of this are borrowed, including memory that reorganizes itself (A-MEM, Letta's sleep-time agents, LangMem's background manager). They are named in [Background](/docs/how-it-works#background-where-the-ideas-come-from). The claim is the combination: understanding split into topics by attention, a structure that reorganizes itself from what fits no topic, and small models on the device.
 
 ## Attention
 
 > **Attention:** deciding what deserves effort.
 
-This is not transformer attention. Today it decides what each neuron keeps, not how much effort an input gets. On input, every active neuron reads the whole batch and keeps only what fits its topic; what no neuron keeps is a gap. On a question, one call picks the neurons whose topic fits, and their answers become one answer. A question no neuron could answer is also a gap.
+This is not transformer attention. In adapt it decides what each neuron keeps, not how much effort an input gets. On input, every active neuron reads the whole batch and keeps only what fits its topic; what no neuron keeps is a gap. On a question, one call picks the neurons whose topic fits, and their answers become one answer. A question no neuron could answer is also a gap.
 
-Next ([#25](https://github.com/unbody-io/adapt/issues/25)), the brain shifts effort to bursts, sudden spikes in how often something appears, and to drift, slow change in what the data is about. Then ([#26](https://github.com/unbody-io/adapt/issues/26)), to whatever broke its expectations.
-
-![Attention today, simplified. A batch of three inputs goes to every neuron. Each neuron keeps only the part that fits its own topic, and one neuron keeps nothing. The input no neuron kept is a gap, and evolution reads the gaps. How gaps are found exactly is on the How it works page.](/diagrams/attention.svg)
-
-Where this is going is one loop: **expect** (learn what the data usually does), **notice surprise** (see where it differs), attend, understand, reorganize, all on the device. Today's release is stage 1: attend, understand and reorganize. Stage 2 adds expect and notice surprise.
-
-![The loop adapt is built around: expect, notice surprise, attend, understand, reorganize, repeating on the device. Stage 1, shipped today, is attend, understand and reorganize; today attention is by topic and does not depend on surprise. Expect and notice surprise are next, in issues 25 and 26.](/diagrams/loop.svg)
+![A batch of three inputs goes to every neuron. Two neurons keep their part, one keeps nothing, and the input no neuron kept becomes a gap that evolution reads.](/diagrams/attention.svg)
 
 ## Three pillars
 
-Each follows from attention. Each has four parts: what it means, why it follows, how to use it today, and what is next.
+Each follows from attention. Each has three parts: what it means, why it follows from attention, and how to use it.
 
 ### Self-evolving
 
-**What it means.** The set of neurons is not fixed. The brain creates, updates, merges and removes its own neurons. This is called evolution.
+**What it means.** The set of neurons is not fixed: the brain creates, updates, merges and removes its own neurons, a process called evolution.
 
 **Why it follows from attention.** Attention leaves a remainder you can count: input no neuron kept, and questions no neuron could answer. Gaps say where the structure no longer fits the data, so they are the main input to changing it.
 
-**Today.** Each gap sends a **signal**, a short note that something is missing or changed. Signals also come from neuron health (how often a neuron dismisses input, and how well it answers), `brain.signal` and `brain.update` ([how it works](/docs/how-it-works#5-evolution)). At 5 signals, the brain runs one evolution agent that can create, update, merge or remove neurons. This is on by default.
+**How to use it.** Each gap sends a **signal**, a short note that something is missing or changed. Signals also come from neuron health (how often a neuron dismisses input, and how well it answers), `brain.signal` and `brain.update` ([how it works](/docs/how-it-works#5-evolution)). At 5 signals the brain runs evolution: one agent that can create, update, merge or remove neurons. Evolution is on by default.
 
 ```ts
 await brain.evolve() // run one now
@@ -71,15 +61,13 @@ Options: `evolution.autoEvaluate` (default on) and `evolution.evaluatorSignalThr
 
 Evolution needs a model with tool calling. A removed neuron takes its understanding with it; set `evolution.autoEvaluate: false` to run evolution only when you call `brain.evolve()`.
 
-**Next.** Restructuring around attention to change, such as a temporary neuron for a burst ([#25](https://github.com/unbody-io/adapt/issues/25)).
-
 ### Proactive
 
-**What it means.** The brain knows what didn't fit, without being asked. One idea, two stages: today it knows what didn't fit its topics, and next it knows what didn't match its expectations.
+**What it means.** The brain knows what didn't fit its topics, without being asked.
 
 **Why it follows from attention.** If each neuron keeps only its topic, the remainder is visible to the brain itself as input arrives. No user has to point at the hole.
 
-**Today.** The brain records what didn't fit as gaps: input no neuron kept, and questions no neuron could answer. Each gap is stored with the brain and sent as a signal, and those signals drive evolution. Your app can listen for them as they happen, and question the brain's gap records with `consult`. Without a target, `consult` runs an agent over all of the brain's own records and needs tool calling; [How it works](/docs/how-it-works#6-background-neurons) shows how to read one gap record directly.
+**How to use it.** The brain records what didn't fit as gaps: input no neuron kept, and questions no neuron could answer. Input gaps are stored with the brain, every gap is sent as a signal, and those signals drive evolution. Your app can listen for signals as they happen. Gaps also feed two of the background neurons, one for input no neuron kept and one for questions no neuron could answer, and `brain.consult(question)` asks the background neurons instead of your own. Without a target, `consult` runs an agent over all background neurons that have knowledge and needs tool calling; [How it works](/docs/how-it-works#6-background-neurons) shows how to ask one directly.
 
 ```ts
 brain.on('brain:signal:received', (s) => console.log(s.source, s.description))
@@ -88,37 +76,40 @@ const unkept = await brain.consult('What data did no neuron keep?')
 
 `ask()` also returns `gaps`: what the answering model could not answer for that question.
 
-**Next.** Attention to change, bursts and drift ([#25](https://github.com/unbody-io/adapt/issues/25)), then surprise: noticing what didn't match what it expected ([#26](https://github.com/unbody-io/adapt/issues/26)).
-
 ### Local-first
 
-**What it means.** By default the model that runs adapt runs on your machine, behind a local OpenAI-compatible server such as LM Studio. Hosted models also work ([guides](/docs/guides#hosted-models)). Tested on Node and Bun. A CommonJS build is provided for Electron, untested.
+**What it means.** By default the model that runs adapt runs on your machine. Hosted models also work ([guides](/docs/guides#hosted-models)).
 
 **Why it follows from attention.** Each neuron's job is narrow: read a batch, keep what fits one topic, rewrite one short text. Each is a plain-text step that LFM3 1.7B completes, so the default can be a small local model.
 
-**Today.** With no model option, adapt uses LFM3 1.7B on LM Studio at `http://localhost:1234/v1`. `localModel()` points adapt at another local model or server ([quickstart](/docs/quickstart#other-local-models)). What has been tested, and how well it does, is in [evidence](/docs/how-it-works#cost-and-evidence).
-
-**Next.** Planned: cheap statistics see every event, and a small model sees only what is surprising ([#25](https://github.com/unbody-io/adapt/issues/25), [#26](https://github.com/unbody-io/adapt/issues/26)).
+**How to use it.** With no model option, adapt uses LFM3 1.7B on LM Studio at `http://localhost:1234/v1` ([quickstart](/docs/quickstart#1-start-a-local-model)). `localModel()` points adapt at another local model or server ([quickstart](/docs/quickstart#other-local-models)). Results on LFM3 1.7B are in [cost and evidence](/docs/how-it-works#cost-and-evidence).
 
 ## Use cases
 
-**Personal email assistant.** Today: "What do I think about X, and what changed?" Later: "What would I reply to Alex?"
+**Personal email assistant.** "What do I think about X, and what changed?"
 
-**Team standups.** Today: neurons for projects, blockers and owners. Later: "What will block next week?"
+**Team standups.** Neurons for projects, blockers and owners.
 
-**Product feedback.** Today: a neuron for each theme, and new themes appear as gaps become new neurons. Later: an alert when a theme bursts ([#25](https://github.com/unbody-io/adapt/issues/25)).
+**Product feedback.** A neuron for each theme, and new themes appear as gaps become new neurons.
 
 ## When not to use it
 
-adapt keeps a rewritten understanding, not the source text. For verbatim recall, citations and audit trails, use RAG or a database alongside adapt. For a reliable history of how facts changed, use a temporal store such as Zep/Graphiti: today a neuron keeps no past versions of its understanding.
+adapt keeps a rewritten understanding, not the source text. For verbatim recall, citations and audit trails, use RAG or a database alongside adapt. For a reliable history of how facts changed, use a temporal store such as Zep/Graphiti: a neuron keeps no past versions of its understanding.
 
 ## Status
 
-- **Shipped:** neurons and brains; learning from text with `inject`; `ask` in `direct` and `deep` modes; gaps; evolution; background neurons; local models by default; SQLite save and restore. MIT. The latest version on npm is 0.0.6; this release is not published yet ([changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md)). Until it is, `npm i adapt-memory` installs 0.0.6, which has none of this page's API.
-- **Next:** attention to change, bursts and drift ([#25](https://github.com/unbody-io/adapt/issues/25)); expectation, including "what would I reply to Alex?" ([#26](https://github.com/unbody-io/adapt/issues/26)); explicit history: dated snapshots of each understanding, and a store of the user's own messages.
-- **Where this is going:** adapt will learn what to expect from your data and notice when reality differs. Today: attention-based understanding that organizes itself. Next: attention to change, and prediction.
+MIT. `adapt-memory` is not on npm yet ([changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md)). Earlier versions were published as `@unbody-io/adapt`.
+
+- **Shipped:** neurons and brains; learning from text with `inject`; `ask` in `direct` and `deep` modes; gaps; evolution; background neurons; local models by default; SQLite save and restore. Runs on Node and Bun, and a CommonJS build is provided for Electron.
+- **Next:** attention to change ([#25](https://github.com/unbody-io/adapt/issues/25)): bursts, sudden spikes in how often something appears, and drift, slow change in what the data is about, with evolution restructuring around them, such as a temporary neuron for a burst or an alert when a feedback theme bursts. Then expectation ([#26](https://github.com/unbody-io/adapt/issues/26)): noticing what didn't match what the brain expected, and prediction, such as "what would I reply to Alex?". Explicit history: dated snapshots of each understanding, and a store of the user's own messages.
 
 Inputs are at most 2000 characters each; split longer text before `inject`. Other limits are in [reference](/docs/reference).
+
+### Roadmap
+
+adapt is built around one loop: **expect** (learn what the data usually does), **notice surprise** (see where it differs), attend, understand and reorganize, all on the device. This release covers attend, understand and reorganize, with attention by topic. Expect and notice surprise come next: cheap statistics see every event, and a small model sees only what is surprising ([#25](https://github.com/unbody-io/adapt/issues/25), [#26](https://github.com/unbody-io/adapt/issues/26)).
+
+![The loop: expect, notice surprise, attend, understand, reorganize. Attend, understand and reorganize are shipped; expect and notice surprise are next.](/diagrams/loop.svg)
 
 ## Next
 

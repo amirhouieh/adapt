@@ -3,17 +3,17 @@ title: Quickstart
 description: Start a local model, create a brain, learn from text, ask a question and save the brain, in five minutes.
 ---
 
-This page takes you from nothing to a brain that learns on a local model and survives a restart. Read [concepts](/docs/concepts) first for the words: brain, neuron, understanding, gap.
+This page takes you from nothing to a brain that learns on a local model and survives a restart. It uses the terms from the [introduction](/docs): neuron, understanding, brain and gap.
 
 The code needs ESM and top-level `await`. Use a `.mjs` file, or `"type": "module"` in `package.json`.
 
 ## 1. Start a local model
 
-adapt talks to any OpenAI-compatible local server. The default is LM Studio with Liquid LFM3 1.7B.
+The default model is Liquid LFM3 1.7B, served by LM Studio.
 
 1. In LM Studio, load `lfm3-1.7b`.
 2. Set the context length to 32768 tokens. adapt asks for up to 8192 output tokens, so do not cap output lower.
-3. Start the server on port 1234.
+3. Start the server on port 1234. LM Studio serves an OpenAI-compatible API, which is what adapt calls.
 
 You do not name the model in code. With no `model` option, adapt uses `localModel()`, which is `lfm3-1.7b` at `http://localhost:1234/v1`.
 
@@ -33,7 +33,7 @@ const brain = await Brain.create({
 })
 ```
 
-The prompt is your goal. `Brain.create` makes two model calls. One designs the neurons from the prompt. The other splits the prompt into a purpose and an answer style, which the brain uses when it writes answers.
+The prompt is your goal. `Brain.create` makes two model calls: one designs the neurons from the prompt, and the other splits the prompt into a purpose and an answer style, which the brain uses when it writes answers.
 
 Look at the neurons it designed:
 
@@ -108,7 +108,7 @@ Restore makes no model calls and needs no model option: a local model is saved w
 
 ## 7. Finish
 
-Some learning continues after `inject` and `ask` return: the brain's [background neurons](/docs/how-it-works#6-background-neurons), which it keeps about itself, learn from what just happened. A script that exits at once can cut that off. When you are done, call:
+Besides the neurons for your topics, a brain keeps four [background neurons](/docs/how-it-works#6-background-neurons): ordinary neurons that learn about the brain itself, such as which questions no neuron could answer. They learn from each `inject` and `ask` after the call returns, so a script that exits at once can cut that learning off. When you are done, call:
 
 ```ts
 await brain.dispose()
@@ -147,13 +147,13 @@ await brain.dispose()
 
 ## Other local models
 
-`localModel()` points adapt at another model in LM Studio or another OpenAI-compatible server, such as llama.cpp. Only LFM3 1.7B has been tested with this release. Pass the result as `model` to `Brain.create`:
+`localModel()` points adapt at another model in LM Studio or at another OpenAI-compatible server, such as llama.cpp. This release is tested on LFM3 1.7B ([results](/docs/how-it-works#cost-and-evidence)). Pass the result as `model` to `Brain.create`:
 
 ```ts
 import { localModel } from 'adapt-memory'
 
-localModel('qwen/qwen3.5-2b') // another model in LM Studio (untested)
-localModel('<model id>', { baseURL: 'http://localhost:8080/v1' }) // a llama.cpp server (untested)
+localModel('qwen/qwen3.5-2b') // another model in LM Studio
+localModel('<model id>', { baseURL: 'http://localhost:8080/v1' }) // a llama.cpp server
 ```
 
 Use the id your server reports. A saved brain remembers its local model and server address. Hosted models are covered in [guides](/docs/guides#hosted-models).
