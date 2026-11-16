@@ -1,157 +1,42 @@
 ---
-title: Getting Started
-description: Install Adapt and build your first Brain in under 5 minutes.
+title: Introduction
+description: Self-organizing memory for AI agents, built for small local models.
 ---
 
-Adapt is a TypeScript library for building AI systems that learn and evolve from data. This guide walks you through installation and building your first Brain in under 5 minutes.
+adapt is a TypeScript memory layer designed around attention, self-evolution and proactivity, optimized for small local and on-edge models (1–2B).
+
+adapt takes a different approach to memory. Most memory layers are recall-based: they store data and retrieve it when asked. adapt is attention-based: it tracks what you tell it to, and decides which incoming data deserves its effort. This lets adapt keep a small, current memory instead of a growing archive, notice data that fits nothing it tracks, and reshape what it tracks as the data changes. Each of these steps is narrow enough for a small local model.
+
+![adapt is where attention, self-evolution and proactivity overlap.](/diagrams/venn.svg)
+
+Under the hood, adapt splits memory into neurons: small units, each attending to one topic and keeping one plain-text memory of it, called its understanding. A brain is the set of neurons that serves one goal, which you give as a prompt. `inject()` sends new text to every neuron; each extracts what fits its topic and rewrites its understanding. Text no neuron keeps is recorded as a gap, and gaps drive evolution, which creates, merges or removes neurons. `ask()` sends a question to the neurons whose topics match and merges their answers.
 
 ## Install
 
 ```bash
-npm install @unbody-io/adapt
+npm i adapt-memory
 ```
 
-Adapt ships dual ESM and CommonJS builds — `import { Brain } from '@unbody-io/adapt'` works in modern bundlers and `require('@unbody-io/adapt')` works in Electron's main process or any other CJS consumer.
 
-Adapt connects to LLMs through [Vercel AI SDK](https://sdk.vercel.ai) providers. Install the one that matches your LLM service — for example, `@ai-sdk/openai` for OpenAI or `@ai-sdk/anthropic` for Claude:
+The default model is LFM3 1.7B in [LM Studio](https://lmstudio.ai) at `http://localhost:1234/v1`. Use `localModel()` for another local model or server.
 
-```bash
-npm install @ai-sdk/openai
-```
+## Example
 
-See [Configuration — Using Different Providers](./configuration#using-different-providers) for the full list of supported providers.
+```ts
+import { Brain } from 'adapt-memory'
 
-## Quick Start
-
-### Brain
-
-A Brain takes a prompt describing what to learn, automatically creates specialized neurons to cover different aspects of that domain, and coordinates them. You feed it data, it routes to all neurons, and when you ask a question it synthesizes answers from all of them.
-
-```typescript
-import { Brain } from '@unbody-io/adapt'
-import { openai } from '@ai-sdk/openai'
-
-const brain = await Brain.create({
-  prompt: 'Track my coding patterns and development philosophy.',
-  model: openai('gpt-4o'),
-})
+const brain = await Brain.create({ prompt: 'Track my coding preferences and food habits.' })
 
 await brain.inject([
-  'commit: refactor: extract validation into pure functions',
-  'review: Too heavy — factory functions work fine for our scale.',
+  'I always use strict TypeScript.',
+  'Dinner: vegetarian ramen.',
+  'Code review: prefer small pure functions.',
 ])
 
-const result = await brain.ask('What is my coding philosophy?')
-console.log(result.insight)
+const answer = await brain.ask('What do I prefer in code?')
+console.log(answer.insight)
 ```
 
-### Standalone Neuron
+## Next
 
-If you don't need multi-domain orchestration, neurons work independently without a Brain. You get direct control over a single learning domain:
-
-```typescript
-import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
-import { openai } from '@ai-sdk/openai'
-
-const neuron = await TextNeuron.create({
-  model: openai('gpt-4o'),
-  instructions: 'Track product design principles and philosophy.',
-  store: new MemoryNeuronStore(),
-})
-
-await neuron.learn([
-  'User said: simplicity over features',
-  'Team decided: no dark patterns, ever',
-])
-
-const result = await neuron.query('What are our design principles?')
-console.log(result.insight)
-```
-
-### Explicit Neurons
-
-By default, Brain uses the LLM to decompose your prompt into neurons automatically. If you already know what neurons you want, you can define them explicitly:
-
-```typescript
-const brain = await Brain.create({
-  prompt: 'Track cooking knowledge.',
-  model: openai('gpt-4o'),
-  autoSetup: false,
-  neurons: [
-    {
-      id: 'techniques',
-      name: 'Cooking Techniques',
-      type: 'text',
-      description: 'Culinary methods and approaches',
-      instructions: 'Track cooking techniques, methods, and principles.',
-    },
-    {
-      id: 'recipes',
-      name: 'Recipe Collection',
-      type: 'text',
-      description: 'Tracked recipes and ingredients',
-      instructions: 'Track recipes with cuisine type, ingredients, and difficulty level.',
-    },
-  ],
-})
-```
-
-Both `autoSetup` and `neurons` can coexist — Brain will auto-generate additional neurons alongside your explicit ones.
-
-### SQLite Persistence
-
-By default, all state is held in memory and lost when the process exits. To persist knowledge across sessions, use SQLite. Two construction verbs handle the two cases — `Brain.create` for the first run, `Brain.restore` for every run after.
-
-**Node.js**
-
-```bash
-npm install better-sqlite3
-```
-
-```typescript
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
-import { openai } from '@ai-sdk/openai'
-
-// First run — fresh brain, persists to disk
-const brain = await Brain.create({
-  prompt: 'Track my coding patterns.',
-  model: openai('gpt-4o'),
-  store: new SQLiteBrainStore('./brain.db'),
-})
-
-// Subsequent runs — restore from disk, no LLM calls during init
-const brain = await Brain.restore('./brain.db', { model: openai('gpt-4o') })
-```
-
-Per-neuron data is written to sibling files derived from the brain DB path automatically (e.g. `./brain.db` → `./brain.<neuron-id>.db`). The `model` argument rehydrates persisted model refs through the LLM plugin — see [Brain — Fresh vs Restored](./brain#fresh-vs-restored) for runtime options including custom plugins and per-slot model overrides.
-
-**Bun**
-
-```typescript
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite/bun'
-import { openai } from '@ai-sdk/openai'
-
-// First run
-const brain = await Brain.create({
-  prompt: 'Track my coding patterns.',
-  model: openai('gpt-4o'),
-  store: new SQLiteBrainStore('./brain.db'),
-})
-
-// Subsequent runs — Bun callers must pass an explicit store instance
-const brain = await Brain.restore(
-  new SQLiteBrainStore('./brain.db'),
-  { model: openai('gpt-4o') },
-)
-```
-
-The path-string sugar `Brain.restore('./brain.db', ...)` always uses the Node SQLite adapter via dynamic import; Bun callers construct `SQLiteBrainStore` from `@unbody-io/adapt/sqlite/bun` and pass the instance instead.
-
-## Next Steps
-
-- [Concepts](./concepts) — architecture and mental model
-- [Brain](./brain) — full Brain API guide
-- [Neurons](./neurons) — TextNeuron in depth: two-stage learning and memory strategies
-- [Prompt Design](./prompt-design) — the most important input to a neuron
+[Quickstart](/docs/quickstart) · [Concepts](/docs/concepts) · [How it works](/docs/how-it-works) · [Guides](/docs/guides) · [Reference](/docs/reference)

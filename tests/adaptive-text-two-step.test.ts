@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { TextNeuron, type AdaptiveTextLearningRuntime, type AdaptLLMPlugin } from '../src'
+import { Neuron, type AdaptiveTextLearningRuntime, type AdaptLLMPlugin } from '../src'
 import { LearningRegistry } from '../src/learning/registry'
 import {
 	fitTextProcedureRequest,
@@ -146,11 +146,11 @@ describe('two-step procedure', () => {
 		)
 		expect(seen).toHaveLength(2)
 		expect(seen[0]).toMatchObject({
-			system: `Here is some data. Our job is to extract whatever valuable and relevant pieces of information it has related to this topic:\n${purpose}\n\nReply with the extracted information only, in plain text. If nothing in the data is relevant, reply with exactly: NONE`,
+			system: `Here is some data. Our job is to extract whatever valuable and relevant pieces of information it has related to this topic:\n${purpose}\n\nReply with the extracted information only, in plain text, keeping what the data says about each piece. If nothing in the data is relevant, reply with exactly: NONE`,
 			prompt: 'Data:\nPrefers Slack for urgent things.\n\nThe weather was nice.',
 		})
 		expect(seen[1]).toMatchObject({
-			system: `Here is information extracted about this topic:\n${purpose}\n\nand here is our existing understanding of it. Update the understanding accordingly.\nReply with the updated understanding only, in plain text.`,
+			system: `Here is information extracted about this topic:\n${purpose}\n\nand here is our existing understanding of it. Update the understanding accordingly, keeping their wording. Add nothing that neither of them says.\nReply with the updated understanding only, in plain text.`,
 			prompt: 'Existing understanding:\nRoutine updates go by email.\n\nExtracted information:\nUrgent matters: Slack.',
 		})
 		expect(proposal.result).toMatchObject({
@@ -237,7 +237,7 @@ describe('two-step procedure', () => {
 	})
 })
 
-describe('two-step in the adaptive TextNeuron pipeline', () => {
+describe('two-step in the adaptive Neuron pipeline', () => {
 	class Clock {
 		value = at
 		now(): string { return this.value }
@@ -306,7 +306,7 @@ describe('two-step in the adaptive TextNeuron pipeline', () => {
 		const path = join(directory, 'neuron.sqlite')
 		const clock = new Clock()
 		const seen: ProseRequest[] = []
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			id: 'preferences', model: queryModel, llm: legacyLlm, store: new SQLiteNeuronStore(path),
 			instructions: purpose,
 			learning: {
@@ -332,7 +332,7 @@ describe('two-step in the adaptive TextNeuron pipeline', () => {
 		expect((await neuron.getLearningState()).pendingDeliveryIds).toEqual([])
 		await neuron.dispose()
 
-		const restored = await TextNeuron.restore(path, {
+		const restored = await Neuron.restore(path, {
 			model: queryModel, llm: legacyLlm,
 			learning: { mode: 'adaptive', runtime: runtime([], [], clock) },
 		})

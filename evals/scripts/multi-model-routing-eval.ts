@@ -210,7 +210,7 @@ async function runCombo(combo: Combo, runIndex: number) {
 		const neuronList = brain.getNeurons()
 		console.log(`  [t=${elapsed()}s] blueprint produced ${neuronList.length} neuron(s)`)
 		for (const n of neuronList) {
-			console.log(`    - ${n.id}  type=${n.type}  name="${n.name}"`)
+			console.log(`    - ${n.id}  name="${n.name}"`)
 		}
 		dumpCalls(callLog, '[1] calls so far')
 

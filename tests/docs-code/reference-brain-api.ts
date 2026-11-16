@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/reference-brain-api.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -50,7 +50,7 @@ async function main() {
 		autoSetup: false,
 		evolution: { enabled: false },
 		neurons: [
-			{ id: 'oe', type: 'text', name: 'OE', description: 'onEvent test', instructions: 'Track onEvent patterns.' },
+			{ id: 'oe', name: 'OE', description: 'onEvent test', instructions: 'Track onEvent patterns.' },
 		],
 		onEvent: (event) => { onEventTypes.push(event.type) },
 	})
@@ -133,19 +133,14 @@ async function main() {
 	// ── Evolution Methods ────────────────────────────────────────────────
 	section('Evolution Methods')
 
-	assert(typeof brain.createNeuron === 'function', 'brain.createNeuron() exists')
-	assert(typeof brain.deleteNeuron === 'function', 'brain.deleteNeuron() exists')
+	assert(typeof brain.evolve === 'function', 'brain.evolve() exists')
 	assert(typeof brain.mergeNeurons === 'function', 'brain.mergeNeurons() exists')
-	assert(typeof brain.splitNeuron === 'function', 'brain.splitNeuron() exists')
 	assert(typeof brain.updateNeuron === 'function', 'brain.updateNeuron() exists')
-	assert(typeof brain.evaluateEvolution === 'function', 'brain.evaluateEvolution() exists')
-	assert(typeof brain.evaluateEvolutionStream === 'function', 'brain.evaluateEvolutionStream() exists')
 
 	// ── Signals & Config Methods ─────────────────────────────────────────
 	section('Signals & Config Methods')
 
 	assert(typeof brain.signal === 'function', 'brain.signal() exists')
-	assert(typeof brain.triggerEvolution === 'function', 'brain.triggerEvolution() exists')
 	assert(typeof brain.update === 'function', 'brain.update() exists')
 	assert(typeof brain.on === 'function', 'brain.on() exists')
 
@@ -162,7 +157,6 @@ async function main() {
 
 	assert(typeof brain.prompt === 'string', 'brain.prompt is string')
 	assert(brain.promptContext === undefined || typeof brain.promptContext === 'object', 'brain.promptContext is object or undefined')
-	assert(brain.evolutionContext === null || typeof brain.evolutionContext === 'string', 'brain.evolutionContext is string or null')
 	assert(typeof brain.config === 'object', 'brain.config is object')
 	assert(brain.neurons instanceof Map, 'brain.neurons is Map')
 	assert(brain.internalNeurons instanceof Map, 'brain.internalNeurons is Map')

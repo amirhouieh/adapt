@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-16
+
+- **Breaking:** the package is renamed from `@unbody-io/adapt` to `adapt-memory`. Update installs and imports, including `adapt-memory/sqlite` and `adapt-memory/sqlite/bun`.
+- Local models are the default. With no `model`, `Brain` and `Neuron` use `localModel()`: LFM3 (`lfm3-1.7b`) on LM Studio at `http://localhost:1234/v1`. `localModel(id?, { baseURL? })` picks another local model (Qwen: `localModel('qwen/qwen3.5-2b')`) or another OpenAI-compatible server (llama.cpp: `{ baseURL: 'http://localhost:8080/v1' }`). It is plain data, saved with the brain, so `Brain.restore(store)` needs no model. New exports: `localModel`, `LocalModel`, `DEFAULT_LOCAL_MODEL_ID`, `DEFAULT_LOCAL_BASE_URL`. Hosted models work as before: pass `model`. `BrainConfig.model` and `NeuronConfig.model` are now optional.
+- `@ai-sdk/openai-compatible` is now a dependency (was a dev dependency); the default AI SDK plugin uses it for `localModel()` configs.
+- **Breaking:** the unused 0.0.6 migration code is removed, with the store collections only it used. `BrainStore` no longer has `registryHeads`, `registryRevisions`, `evolutionActivations`, `evolutionStages` or `memoryMappings`. Old SQLite files that have these tables still open; the tables are ignored.
+- **Breaking:** the `@unbody-io/adapt/memgraph` export and the `neo4j-driver` peer dependency are removed. The unused graph neuron code is gone too. A test of graph on LFM3 showed no gain (`evals/baselines/graph-arms-all-lfm3-2026-11-13.md`).
+- **Breaking:** there is one neuron class, `Neuron` (was `TextNeuron` extending `BaseNeuron`). Types are renamed to match: `NeuronConfig`, `NeuronState`, `NeuronEvent`, `NeuronEventMap`, `ResolvedNeuronConfig`. The neuron `type` field, `neuron.type`, `Brain.neuronTypes`, `textNeuronDescriptor`, `NeuronTypeDescriptor`, `BaseNeuronUpdateInput`, `ManagedLearnOutput` and `TextNeuronUpdateResult` are removed. Neuron configs no longer take `type`. Saved 0.1.0 brains still load; the stored `type` is ignored.
+- **Breaking:** `ToolBasedMethod`, `ToolBasedConfig`, `QueryMode` and the neuron `QueryOptions.mode` are removed. Neurons always answer with one direct call. `brain.ask(..., { mode })` is unchanged.
+- **Breaking:** neuron setup and evolution are simpler. Setup is one call that turns the brain prompt into neuron configs (id, name, description, instructions). Evolution is one agent loop: it sees the neurons, their memory sizes, the inputs no neuron took and the buffered signals, can read a neuron's memory, and creates, updates, merges or removes neurons. Each change is applied at once. There is no split action (update one neuron and create the rest).
+- **Breaking:** `brain.evolve()` replaces `evaluateEvolution()` and `evaluateEvolutionStream()`; it returns `{ changes, reasoning }`. `dryRun` and `triggerEvolution()` are removed, and `signal()` no longer takes `bypass`.
+- **Breaking:** `updateNeuron(id, { name?, description?, instructions? })` and `mergeNeurons(ids, config)` take plain configs and make no LLM call; they work with evolution disabled. A merged neuron starts with the source memories joined. `createNeuron(guidance)`, `splitNeuron()` and `deleteNeuron()` are removed; use `addNeuron(config)` and `removeNeuron(id)`. `createNeuronFromConfig()` is folded into `addNeuron()`, which now throws on a duplicate id.
+- **Breaking:** evolution events are `evolution:started`, `evolution:change`, `evolution:completed` and `evolution:failed`. The `evaluator:*` and `evolution:action:*` events are removed. `BrainUpdateResult.evolutionResults` is now `evolution` (`{ changes, reasoning }`).
+- **Breaking:** `evolution.coverageGap.gapCountThreshold` and `windowSize` (unused) are removed. `brain.evolutionContext` and the prompt context's `evolutionGuidance` are removed; evolution reads the brain prompt itself.
+- **Breaking:** gaps are tracked by Brain: every batch no neuron took is kept and sends a signal, and a question no neuron could answer sends a signal. Brain no longer reads neuron-reported gaps. Set-aside batches are retried on neurons an evolution run created, updated or merged (no longer on every `addNeuron`, and no 5 s timer).
+- **Breaking:** lines no neuron kept in a batch some neuron took are now gaps too. Brain collects such batches with the notes the neurons kept; when they reach `gaps.chunkChars` characters (default 4000), one plain-text leftover call finds what no neuron kept. A non-empty leftover is stored with its raw batches and sent to evolution as one signal; after evolution its raw batches are retried only on neurons created or merged after it was stored. `brain.evolve()` checks a part-full buffer first; `dispose()` drops it and it is not saved. Tested on LFM3 in `evals/baselines/leftover-prompt-lfm3-2026-11-13.md`.
+- **Breaking:** `dismissedBatchBuffer: { maxSize }` is now `gaps: { maxStored, chunkChars }`.
+- `LearnOutput` (`synthesized`, `synthesize:dismissed`) and the adaptive learn output carry `notes`: the plain text the extract step kept from the batch. Neuron behaviour is unchanged.
+- Evolution's `updateNeuron` tool reports a change only when the name, description or instructions really changed.
+- The evolution proposal/validation/activation code, registry lifecycle and run control (never used by `Brain`) are removed, with their tests and evals.
+
 ## [0.1.0] - 2026-11-12
 
 Adapt v2. Every change below is breaking unless marked otherwise.

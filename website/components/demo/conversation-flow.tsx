@@ -2,26 +2,25 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Clock } from "lucide-react"
-import { USE_CASES, type UseCase, type ModelRef } from "../../lib/demo/use-cases"
+import { USE_CASES, type UseCase } from "../../lib/demo/use-cases"
+import type { DemoModelId } from "../../lib/demo/model"
+import { DemoSettings } from "./demo-settings"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TextReveal } from "./text-reveal"
 
-function modelName(m: string | ModelRef | undefined): string | null {
-	if (!m) return null
-	const id = typeof m === "string" ? m : m.model
-	return id.includes("/") ? id.split("/").pop()! : id
-}
-
 interface Props {
 	onStart: (useCase: UseCase, prompt: string) => void
+	modelId: DemoModelId
+	error: string | null
+	onModelChange: (id: DemoModelId) => void
 }
 
 const mono = '"SF Mono", "Fira Code", "Cascadia Code", monospace'
 
 type Step = "pick" | "prompt" | "starting"
 
-export function ConversationFlow({ onStart }: Props) {
+export function ConversationFlow({ onStart, modelId, error, onModelChange }: Props) {
 	const [step, setStep] = useState<Step>("pick")
 	const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null)
 	const [prompt, setPrompt] = useState("")
@@ -91,8 +90,18 @@ export function ConversationFlow({ onStart }: Props) {
 								color: "#9b9ba8",
 								fontFamily: mono,
 							}}>
-								Everything runs in your browser — no backend, just Adapt.
 							</p>
+							<div style={{ marginTop: "1rem" }}>
+								<DemoSettings
+									modelId={modelId}
+									onModelChange={onModelChange}
+								/>
+							</div>
+							{error && (
+								<p style={{ margin: "0.75rem 0 0", fontSize: "0.72rem", color: "#b42318", fontFamily: mono }}>
+									Could not start: {error}
+								</p>
+							)}
 						</div>
 						<div
 							className="demo-card-grid"
@@ -106,8 +115,6 @@ export function ConversationFlow({ onStart }: Props) {
 							}}
 						>
 							{USE_CASES.map((uc) => {
-								const models = [modelName(uc.model), modelName(uc.evolution?.model)].filter(Boolean)
-
 								return (
 									<button
 										key={uc.id}
@@ -182,24 +189,6 @@ export function ConversationFlow({ onStart }: Props) {
 													{uc.evolution?.autoEvaluate ? "auto-eval" : "manual eval"}
 												</Badge>
 											</div>
-											{models.length > 0 && (
-												<div
-													style={{
-														display: "flex",
-														flexDirection: "column",
-														gap: "0.1rem",
-														fontSize: "0.58rem",
-														lineHeight: 1.5,
-														color: "#7b7b86",
-														fontFamily: mono,
-														fontStyle: "italic",
-													}}
-												>
-													{models.map((model) => (
-														<div key={model}>{model}</div>
-													))}
-												</div>
-											)}
 										</div>
 									</button>
 								)

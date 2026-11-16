@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 80 1000 475" width="1000" height="475" role="img" aria-label="Attention today: every neuron reads the batch and keeps its part">
+<style>
+text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){
+[fill="#171717"]{fill:#EDEDED}[stroke="#171717"]{stroke:#EDEDED}
+[fill="#737373"]{fill:#A3A3A3}[fill="#E8E8E8"]{fill:#262626}[fill="#F2F2F2"]{fill:#191919}[stroke="#A3A3A3"]{stroke:#525252}
+}
+</style>
+<defs>
+
+
+<marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9 z" fill="#171717" stroke="#171717" stroke-linejoin="round"/></marker>
+</defs>
+<rect x="30" y="170" width="230" height="236" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text x="48" y="204" font-size="16" font-weight="700" fill="#171717">One batch</text>
+<rect x="46" y="222" width="198" height="42" rx="8" fill="#E8E8E8"/><text x="56" y="249" font-size="13" fill="#171717">Dana owns billing fix</text>
+<rect x="46" y="276" width="198" height="42" rx="8" fill="#E8E8E8"/><text x="56" y="303" font-size="13" fill="#171717">Launch moved to Friday</text>
+<rect x="46" y="330" width="198" height="42" rx="8" fill="#E8E8E8"/><text x="56" y="357" font-size="13" fill="#171717">Office closed Monday</text>
+<g opacity="1"><rect x="380" y="110" width="290" height="70" rx="10" fill="#E8E8E8"/><text x="396" y="139" font-size="15" font-weight="700" fill="#171717">Neuron: owners</text><text x="396" y="165" font-size="15" font-weight="400" fill="#171717">keeps: Dana, billing fix</text></g>
+<g opacity="1"><rect x="380" y="200" width="290" height="70" rx="10" fill="#E8E8E8"/><text x="396" y="229" font-size="15" font-weight="700" fill="#171717">Neuron: launch</text><text x="396" y="255" font-size="15" font-weight="400" fill="#171717">keeps: Friday</text></g>
+<g opacity="0.55"><rect x="380" y="290" width="290" height="70" rx="10" fill="#E8E8E8" stroke="#A3A3A3" stroke-width="1.25" stroke-dasharray="6 5"/><text x="396" y="319" font-size="15" font-weight="700" fill="#171717">Neuron: customers</text><text x="396" y="345" font-size="15" font-weight="400" fill="#171717">keeps nothing here</text></g>
+<path d="M262,288 C320,288 320,148 376,146" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M262,288 C320,288 320,236 376,236" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M262,288 C320,288 320,326 376,326" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<g opacity="1"><rect x="380" y="430" width="290" height="90" rx="10" fill="#E8E8E8"/><text x="396" y="462" font-size="15" font-weight="700" fill="#171717">Gap: Office closed Monday</text><text x="396" y="490" font-size="15" font-weight="400" fill="#171717">no neuron kept it</text></g>
+<path d="M145,408 C145,480 300,476 376,476" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" stroke-dasharray="2 7" marker-end="url(#ar)"/>
+<rect x="183" y="452" width="120" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="243" y="470" font-size="13" text-anchor="middle" fill="#171717">left over</text>
+<rect x="770" y="425" width="190" height="100" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="865.0" y="471.0" font-size="16" font-weight="700" fill="#171717">Evolution</text><text text-anchor="middle" x="865.0" y="495.0" font-size="13" fill="#171717">reads the gaps</text>
+<path d="M674,475 C710,475 730,475 766,475" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+</svg>

@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/09-prompt-design.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -37,10 +37,10 @@ async function main() {
 		model,
 		autoSetup: false,
 		neurons: [
-			{ id: 'design', type: 'text', name: 'Design', description: 'Design patterns', instructions: 'Track design patterns.' },
-			{ id: 'tech', type: 'text', name: 'Tech', description: 'Tech patterns', instructions: 'Track tech patterns.' },
-			{ id: 'patterns', type: 'text', name: 'Patterns', description: 'General patterns', instructions: 'Track general patterns.' },
-			{ id: 'trends', type: 'text', name: 'Trends', description: 'Trend tracking', instructions: 'Track trends.' },
+			{ id: 'design', name: 'Design', description: 'Design patterns', instructions: 'Track design patterns.' },
+			{ id: 'tech', name: 'Tech', description: 'Tech patterns', instructions: 'Track tech patterns.' },
+			{ id: 'patterns', name: 'Patterns', description: 'General patterns', instructions: 'Track general patterns.' },
+			{ id: 'trends', name: 'Trends', description: 'Trend tracking', instructions: 'Track trends.' },
 		],
 	})
 

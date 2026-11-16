@@ -242,7 +242,7 @@ async function testAddBatch(createStore: CreateNeuronStore) {
 	await store.dispose()
 }
 
-// ── Test: Pipeline simulation (TextNeuron-style) ───────────────────────────
+// ── Test: Pipeline simulation (Neuron-style) ───────────────────────────
 
 async function testTextPipeline(createStore: CreateNeuronStore) {
 	section('Text pipeline simulation')

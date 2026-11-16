@@ -6,14 +6,9 @@ import * as path from 'node:path'
 import { guardBrainStore, isPromiseLike } from '../../internal/atomic'
 import { createBrainStoreCollections } from '../../internal/builders'
 import {
-	brainEvolutionActivationCollectionSpec,
 	brainEvolutionCollectionSpec,
-	brainEvolutionStageCollectionSpec,
 	brainInternalNeuronCollectionSpec,
-	brainMemoryMappingCollectionSpec,
 	brainNeuronCollectionSpec,
-	brainRegistryHeadCollectionSpec,
-	brainRegistryRevisionCollectionSpec,
 	brainStateCollectionSpec,
 	dismissedBatchCollectionSpec,
 	type StoreCollectionSpec,
@@ -21,13 +16,8 @@ import {
 import type {
 	AtomicBrainStore,
 	BrainCollection,
-	BrainEvolutionActivationRecord,
 	BrainEvolutionRecord,
-	BrainEvolutionStageRecord,
-	BrainMemoryMappingRecord,
 	BrainNeuronRecord,
-	BrainRegistryHeadRecord,
-	BrainRegistryRevisionRecord,
 	BrainStateRecord,
 	BrainStore,
 	DismissedBatchRecord,
@@ -47,11 +37,6 @@ function initializeBrainStoreSchema(db: SQLiteDatabase): void {
 	ensureSqliteCollectionSchema(db, brainInternalNeuronCollectionSpec)
 	ensureSqliteCollectionSchema(db, brainEvolutionCollectionSpec)
 	ensureSqliteCollectionSchema(db, dismissedBatchCollectionSpec)
-	ensureSqliteCollectionSchema(db, brainRegistryHeadCollectionSpec)
-	ensureSqliteCollectionSchema(db, brainRegistryRevisionCollectionSpec)
-	ensureSqliteCollectionSchema(db, brainEvolutionActivationCollectionSpec)
-	ensureSqliteCollectionSchema(db, brainEvolutionStageCollectionSpec)
-	ensureSqliteCollectionSchema(db, brainMemoryMappingCollectionSpec)
 }
 
 export class SQLiteBrainStore implements BrainStore {
@@ -63,11 +48,6 @@ export class SQLiteBrainStore implements BrainStore {
 	internalNeurons: BrainCollection<BrainNeuronRecord>
 	evolution: BrainCollection<BrainEvolutionRecord>
 	dismissedBatches: BrainCollection<DismissedBatchRecord>
-	registryHeads: BrainCollection<BrainRegistryHeadRecord>
-	registryRevisions: BrainCollection<BrainRegistryRevisionRecord>
-	evolutionActivations: BrainCollection<BrainEvolutionActivationRecord>
-	evolutionStages: BrainCollection<BrainEvolutionStageRecord>
-	memoryMappings: BrainCollection<BrainMemoryMappingRecord>
 
 	constructor(dbPath: string = ':memory:') {
 		this.path = dbPath
@@ -84,11 +64,6 @@ export class SQLiteBrainStore implements BrainStore {
 		this.internalNeurons = collections.internalNeurons
 		this.evolution = collections.evolution
 		this.dismissedBatches = collections.dismissedBatches
-		this.registryHeads = collections.registryHeads
-		this.registryRevisions = collections.registryRevisions
-		this.evolutionActivations = collections.evolutionActivations
-		this.evolutionStages = collections.evolutionStages
-		this.memoryMappings = collections.memoryMappings
 	}
 
 	getNeuronStore(neuronId: string): NeuronStore {
@@ -114,11 +89,6 @@ export class SQLiteBrainStore implements BrainStore {
 							internalNeurons: this.internalNeurons.atomic(),
 							evolution: this.evolution.atomic(),
 							dismissedBatches: this.dismissedBatches.atomic(),
-							registryHeads: this.registryHeads.atomic(),
-							registryRevisions: this.registryRevisions.atomic(),
-							evolutionActivations: this.evolutionActivations.atomic(),
-							evolutionStages: this.evolutionStages.atomic(),
-							memoryMappings: this.memoryMappings.atomic(),
 						},
 						scope,
 					),

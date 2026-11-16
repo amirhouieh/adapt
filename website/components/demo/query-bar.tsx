@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback, type CSSProperties, type RefObject } from "react"
 import Markdown from "react-markdown"
-import type { Brain, BaseNeuron } from "@unbody-io/adapt"
+import type { LanguageModel } from "ai"
+import type { Brain, Neuron as AdaptNeuron } from "adapt-memory"
 import type { Neuron } from "../../lib/demo/types"
+import { classifyIntent } from "../../lib/demo/model"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -38,25 +40,11 @@ interface Suggestions {
 
 interface Props {
 	neurons: Neuron[]
+	model: LanguageModel
 	disabled: boolean
 	brainRef: RefObject<Brain | null>
 	onActiveChange?: (active: boolean) => void
 	suggestions?: Suggestions
-}
-
-async function classifyIntent(query: string, neurons: Neuron[]): Promise<"ask" | "signal"> {
-	try {
-		const res = await fetch("/api/brain/classify", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ query, neurons: neurons.map((n) => ({ name: n.name, description: n.description })) }),
-		})
-		if (!res.ok) return "ask"
-		const data = await res.json() as { intent: "ask" | "signal" }
-		return data.intent
-	} catch {
-		return "ask"
-	}
 }
 
 const s = {
@@ -271,7 +259,7 @@ function SuggestionGroup({ label, items, onPick }: { label: string; items: strin
 	)
 }
 
-export function QueryBar({ neurons, disabled, brainRef, onActiveChange, suggestions }: Props) {
+export function QueryBar({ neurons, model, disabled, brainRef, onActiveChange, suggestions }: Props) {
 	const [query, setQuery] = useState("")
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 	const [deepSearch, setDeepSearch] = useState(false)
@@ -343,11 +331,11 @@ export function QueryBar({ neurons, disabled, brainRef, onActiveChange, suggesti
 		setResult({ status: "Classifying..." })
 
 		try {
-			const intent = await classifyIntent(q, neurons)
+			const intent = await classifyIntent(model, q, neurons.map((n) => n.name))
 			if (abort.signal.aborted) return
 
 			if (intent === "signal") {
-				brain.signal({ source: "user:query-bar", description: q, bypass: true })
+				brain.signal({ source: "user:query-bar", description: q })
 				setQuery("")
 				setResult(null)
 				setFocused(false)
@@ -361,7 +349,7 @@ export function QueryBar({ neurons, disabled, brainRef, onActiveChange, suggesti
 			if (selectedIds.size > 0) {
 				const selectedNeurons = Array.from(selectedIds)
 					.map((id) => brain.getNeuron(id))
-					.filter((n): n is BaseNeuron<unknown> => n != null)
+					.filter((n): n is AdaptNeuron => n != null)
 
 				setResult((prev) => ({
 					...prev,

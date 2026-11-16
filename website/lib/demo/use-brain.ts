@@ -7,6 +7,7 @@ import type {
 	BrainEvent,
 	InjectionProgress,
 	DataSource,
+	DataItem,
 } from "./types"
 import { commentaryFromEvent, isInternalNeuron } from "./commentary"
 
@@ -53,7 +54,6 @@ const COMMENTARY_QUEUE_CAP = 5
 
 interface UseBrainOptions {
 	model: LanguageModel
-	blueprintModel?: LanguageModel
 	prompt: string
 	autoSetup?: boolean
 	learning?: {
@@ -71,7 +71,6 @@ interface UseBrainOptions {
 	}
 	evolution?: {
 		enabled?: boolean
-		model?: LanguageModel
 		autoEvaluate?: boolean
 		evaluatorSignalThreshold?: number
 	}
@@ -82,13 +81,12 @@ interface UseBrainOptions {
 
 export function useBrain() {
 	const [state, setState] = useState<DemoState>(initialState)
-	const brainRef = useRef<import("@unbody-io/adapt").Brain | null>(null)
+	const brainRef = useRef<import("adapt-memory").Brain | null>(null)
 	const eventIdCounter = useRef(0)
 	const timelineRef = useRef<{ t: number; event: string; payload: Record<string, unknown> }[]>([])
 	const fullLogRef = useRef<string[]>([])
 	const startTimeRef = useRef(0)
 	const narratedInternalSetupRef = useRef(false)
-	const pendingEvolutionRef = useRef(0)
 	const evoActivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	// Commentary queues (one per category)
@@ -223,7 +221,7 @@ export function useBrain() {
 	}, [])
 
 	const start = useCallback(async (options: UseBrainOptions) => {
-		const { Brain, MemoryBrainStore } = await import("@unbody-io/adapt")
+		const { Brain, MemoryBrainStore } = await import("adapt-memory")
 
 		startTimeRef.current = Date.now()
 		timelineRef.current = []
@@ -254,11 +252,10 @@ export function useBrain() {
 			"brain:inject:batch:started",
 			"brain:inject:batch:completed",
 			"brain:signal:received",
-			"evaluator:evaluation:started",
-			"evaluator:evaluation:completed",
-			"evolution:action:executed",
-			"evolution:action:failed",
-			"evaluator:evaluation:failed",
+			"evolution:started",
+			"evolution:change",
+			"evolution:completed",
+			"evolution:failed",
 		])
 
 		// Single handler attached BEFORE init via Brain.create's `onEvent` hook, so
@@ -266,7 +263,7 @@ export function useBrain() {
 		// is still null while init runs — the helpers below tolerate a null brain and
 		// degrade gracefully (payload-only labels); the final syncNeurons after
 		// create() fills in the neuron list.
-		const handleBrainEvent = (event: { type: string; payload: Record<string, unknown> }) => {
+		const handleBrainEvent = (event: { type: string; payload: object }) => {
 			const eventType = event.type
 			const payload = event.payload as Record<string, unknown>
 
@@ -384,20 +381,7 @@ export function useBrain() {
 			}
 
 			// Evolution action tracking
-			if (eventType === "evaluator:evaluation:completed") {
-				pendingEvolutionRef.current = payload.decisionCount as number
-				if (pendingEvolutionRef.current === 0) {
-					setState((prev) => ({ ...prev, activity: "Ready", evolutionActivity: "" }))
-				}
-			}
-			if (eventType === "evolution:action:executed" || eventType === "evolution:action:failed") {
-				pendingEvolutionRef.current = Math.max(0, pendingEvolutionRef.current - 1)
-				if (pendingEvolutionRef.current === 0) {
-					setState((prev) => ({ ...prev, activity: "Ready", evolutionActivity: "" }))
-				}
-			}
-			if (eventType === "evaluator:evaluation:failed") {
-				pendingEvolutionRef.current = 0
+			if (eventType === "evolution:completed" || eventType === "evolution:failed") {
 				setState((prev) => ({ ...prev, activity: "Ready", evolutionActivity: "" }))
 			}
 
@@ -408,7 +392,7 @@ export function useBrain() {
 					eventType === "brain:init:completed" ||
 					eventType === "brain:neuron:added" ||
 					eventType === "brain:neuron:removed" ||
-					eventType === "evolution:action:executed"
+					eventType === "evolution:change"
 				) {
 					syncNeurons(brain)
 				}
@@ -450,7 +434,6 @@ export function useBrain() {
 				prompt: options.prompt,
 				autoSetup: options.autoSetup ?? true,
 				model: options.model,
-				init: { model: options.blueprintModel ?? options.model },
 				store: new MemoryBrainStore(),
 				ingest: options.ingest,
 				learning: {
@@ -461,7 +444,6 @@ export function useBrain() {
 					enabled: options.evolution.enabled,
 					autoEvaluate: options.evolution.autoEvaluate,
 					evaluatorSignalThreshold: options.evolution.evaluatorSignalThreshold,
-					model: options.evolution.model ?? options.model,
 				} : undefined,
 				onEvent: handleBrainEvent,
 			}), 3)
@@ -487,7 +469,6 @@ export function useBrain() {
 					{
 						id,
 						name,
-						type: "text",
 						description: (payload.instructions as string) ?? "",
 						understandingSize: 0,
 						activity: "idle",
@@ -499,15 +480,13 @@ export function useBrain() {
 		})
 	}
 
-	const syncNeurons = (brain: import("@unbody-io/adapt").Brain) => {
-		const neuronMap = brain.neurons
+	const syncNeurons = (brain: import("adapt-memory").Brain) => {
 		const newNeurons: Neuron[] = []
-		for (const [id, neuron] of neuronMap) {
+		for (const neuron of brain.getNeurons()) {
 			if (neuron.name.startsWith("__internal")) continue
 			newNeurons.push({
-				id,
+				id: neuron.id,
 				name: neuron.name,
-				type: neuron.type,
 				description: neuron.description,
 				understandingSize: 0,
 				activity: "idle",
@@ -558,11 +537,7 @@ export function useBrain() {
 				)
 			}
 
-			const items = source.items.map((item) => ({
-				...item.data,
-				_id: item.id,
-				_label: item.label,
-			}))
+			const items = source.items.map(itemToText)
 			await retryAsync(() => brain.inject(items), 3)
 
 			// Pause between sources so UI can breathe
@@ -630,7 +605,7 @@ interface ActivityResult {
 function activityFromEvent(
 	type: string,
 	payload: Record<string, unknown>,
-	brain: import("@unbody-io/adapt").Brain | null,
+	brain: import("adapt-memory").Brain | null,
 ): ActivityResult | null {
 	switch (type) {
 		case "brain:init:started": return { text: "Analyzing prompt...", category: "progress" }
@@ -662,16 +637,23 @@ function activityFromEvent(
 			if (!source.startsWith("user:")) return null
 			return { text: "Signal received", category: "evolution" }
 		}
-		case "evaluator:evaluation:started": return { text: "Reflecting...", category: "evolution" }
-		case "evaluator:evaluation:completed": {
-			const count = payload.decisionCount as number
-			return { text: count > 0 ? `Evolution: ${count} decision(s)` : "Evolution: no changes", category: "evolution" }
+		case "evolution:started": return { text: "Reflecting...", category: "evolution" }
+		case "evolution:change": return { text: `Evolving: ${payload.action}`, category: "evolution" }
+		case "evolution:completed": {
+			const count = (payload.changes as unknown[])?.length ?? 0
+			return { text: count > 0 ? `Evolution: ${count} change(s)` : "Evolution: no changes", category: "evolution" }
 		}
-		case "evolution:action:executed": return { text: `Evolving: ${payload.action} on ${(payload.targets as string[])?.join(", ")}`, category: "evolution" }
-		case "evolution:action:failed": return { text: `Evolution failed: ${payload.action} on ${(payload.targets as string[])?.join(", ")}`, category: "evolution" }
-		case "evaluator:evaluation:failed": return { text: "Evolution error", category: "evolution" }
+		case "evolution:failed": return { text: "Evolution error", category: "evolution" }
 		default: return null
 	}
+}
+
+/** The brain learns from plain text: the label, then one line per field. */
+function itemToText(item: DataItem): string {
+	const fields = Object.entries(item.data).map(([key, value]) =>
+		typeof value === "string" ? `${key}: ${value}` : `${key}: ${JSON.stringify(value)}`,
+	)
+	return [item.label, ...fields].join("\n")
 }
 
 async function retryAsync<T>(fn: () => Promise<T>, maxRetries: number): Promise<T> {

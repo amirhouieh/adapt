@@ -55,7 +55,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 		const { model } = createQueuedJsonModel([
 			{
 				purpose: 'Track coding preferences.',
-				evolutionGuidance: null,
 				synthesisDirective: null,
 			},
 		])
@@ -69,7 +68,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 			neurons: [
 				{
 					id: 'coding',
-					type: 'text',
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns and preferences.',
@@ -106,7 +104,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 		const { model } = createQueuedJsonModel([
 			{
 				purpose: 'Track coding preferences.',
-				evolutionGuidance: null,
 				synthesisDirective: null,
 			},
 		])
@@ -119,7 +116,6 @@ describe('Brain init recovery from partial state (issue #6)', () => {
 			neurons: [
 				{
 					id: 'coding',
-					type: 'text',
 					name: 'Coding',
 					description: 'Tracks coding patterns',
 					instructions: 'Track coding patterns and preferences.',

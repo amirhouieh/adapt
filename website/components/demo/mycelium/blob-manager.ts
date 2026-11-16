@@ -379,25 +379,6 @@ export class BlobManager {
 		}, 400) // 400ms to drift together
 	}
 
-	/** One neuron splits — death at position, daughters spawn from parent position */
-	onSplit(
-		deletedId: string,
-		newNeuronIds: string[],
-	): void {
-		const parent = this.findBlob(deletedId)
-		const parentX = parent?.x ?? 0
-		const parentY = parent?.y ?? 0
-
-		this.removeNeuron(deletedId)
-
-		// Stagger births from the parent's position
-		for (let i = 0; i < newNeuronIds.length; i++) {
-			setTimeout(() => {
-				this.addNeuron(newNeuronIds[i], "", parentX, parentY)
-			}, this.deathDuration * 500 + i * 200)
-		}
-	}
-
 	// ─── Frame update ───────────────────────────────────────────────
 
 	/** Call every frame. Advances animations, decays pulses, drifts positions. */

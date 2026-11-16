@@ -12,10 +12,9 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.83",
+    "@ai-sdk/openai-compatible": "^2.0.35",
     "@base-ui/react": "^1.4.0",
-    "@openrouter/ai-sdk-provider": "^2.1.1",
-    "@unbody-io/adapt": "0.0.6",
+    "adapt-memory": "^0.2.0",
     "ai": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

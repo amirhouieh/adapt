@@ -11,13 +11,8 @@ import type { StoreCollectionSpec } from '../internal/specs'
 import type {
 	AtomicBrainStore,
 	BrainCollection,
-	BrainEvolutionActivationRecord,
 	BrainEvolutionRecord,
-	BrainEvolutionStageRecord,
-	BrainMemoryMappingRecord,
 	BrainNeuronRecord,
-	BrainRegistryHeadRecord,
-	BrainRegistryRevisionRecord,
 	BrainStateRecord,
 	BrainStore,
 	DismissedBatchRecord,
@@ -42,11 +37,6 @@ export class MemoryBrainStore implements BrainStore {
 	internalNeurons: MemoryBrainCollection<BrainNeuronRecord>
 	evolution: MemoryBrainCollection<BrainEvolutionRecord>
 	dismissedBatches: MemoryBrainCollection<DismissedBatchRecord>
-	registryHeads: MemoryBrainCollection<BrainRegistryHeadRecord>
-	registryRevisions: MemoryBrainCollection<BrainRegistryRevisionRecord>
-	evolutionActivations: MemoryBrainCollection<BrainEvolutionActivationRecord>
-	evolutionStages: MemoryBrainCollection<BrainEvolutionStageRecord>
-	memoryMappings: MemoryBrainCollection<BrainMemoryMappingRecord>
 	private atomicTail = Promise.resolve()
 
 	// Cached per id — the cache IS the persistence layer for memory: a Brain
@@ -64,13 +54,6 @@ export class MemoryBrainStore implements BrainStore {
 		this.internalNeurons = asMemoryCollection(collections.internalNeurons)
 		this.evolution = asMemoryCollection(collections.evolution)
 		this.dismissedBatches = asMemoryCollection(collections.dismissedBatches)
-		this.registryHeads = asMemoryCollection(collections.registryHeads)
-		this.registryRevisions = asMemoryCollection(collections.registryRevisions)
-		this.evolutionActivations = asMemoryCollection(
-			collections.evolutionActivations,
-		)
-		this.evolutionStages = asMemoryCollection(collections.evolutionStages)
-		this.memoryMappings = asMemoryCollection(collections.memoryMappings)
 	}
 
 	getNeuronStore(neuronId: string): NeuronStore {
@@ -96,11 +79,6 @@ export class MemoryBrainStore implements BrainStore {
 		const internalNeurons = this.internalNeurons.snapshot()
 		const evolution = this.evolution.snapshot()
 		const dismissedBatches = this.dismissedBatches.snapshot()
-		const registryHeads = this.registryHeads.snapshot()
-		const registryRevisions = this.registryRevisions.snapshot()
-		const evolutionActivations = this.evolutionActivations.snapshot()
-		const evolutionStages = this.evolutionStages.snapshot()
-		const memoryMappings = this.memoryMappings.snapshot()
 		const scope = { active: true }
 		try {
 			const result = operation(
@@ -111,11 +89,6 @@ export class MemoryBrainStore implements BrainStore {
 						internalNeurons: this.internalNeurons.atomic(),
 						evolution: this.evolution.atomic(),
 						dismissedBatches: this.dismissedBatches.atomic(),
-						registryHeads: this.registryHeads.atomic(),
-						registryRevisions: this.registryRevisions.atomic(),
-						evolutionActivations: this.evolutionActivations.atomic(),
-						evolutionStages: this.evolutionStages.atomic(),
-						memoryMappings: this.memoryMappings.atomic(),
 					},
 					scope,
 				),
@@ -131,11 +104,6 @@ export class MemoryBrainStore implements BrainStore {
 			this.internalNeurons.restore(internalNeurons)
 			this.evolution.restore(evolution)
 			this.dismissedBatches.restore(dismissedBatches)
-			this.registryHeads.restore(registryHeads)
-			this.registryRevisions.restore(registryRevisions)
-			this.evolutionActivations.restore(evolutionActivations)
-			this.evolutionStages.restore(evolutionStages)
-			this.memoryMappings.restore(memoryMappings)
 			throw error
 		} finally {
 			scope.active = false

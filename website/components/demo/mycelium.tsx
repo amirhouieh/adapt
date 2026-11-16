@@ -182,20 +182,10 @@ export const Mycelium = forwardRef<MyceliumHandle, Props>(function Mycelium({ ne
 						)
 					}
 					break
-				case "evolution:action:executed": {
-					const action = payload.action as string
-					const result = payload.result as Record<string, unknown> | undefined
-					const targets = payload.targets as string[] | undefined
-					if (action === "merge" && result && targets) {
-						const newIds = (result.newNeuronIds ?? result.created) as string[] | undefined
-						if (newIds?.[0]) {
-							manager.onMerge(targets, newIds[0])
-						}
-					} else if (action === "split" && result && targets?.[0]) {
-						const newIds = (result.newNeuronIds ?? result.created) as string[] | undefined
-						if (newIds?.length) {
-							manager.onSplit(targets[0], newIds)
-						}
+				case "evolution:change": {
+					const mergedIds = payload.mergedIds as string[] | undefined
+					if (payload.action === "merge" && mergedIds && neuronId) {
+						manager.onMerge(mergedIds.filter((id) => id !== neuronId), neuronId)
 					}
 					break
 				}

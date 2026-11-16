@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "id": "graph-arms",
+  "title": "Where should graph live? Fixed inputs and answer key for arms 0-3",
+  "source": "Synthetic. Kitchen inputs adapted from evals/scripts/two-step-strategies-lfm3.ts; same-name idea from evals/datasets/adaptive-text-learning/stream-project-commitments.json. Written before any arm was run.",
+  "howToCheck": "Inject every input in order through Brain (topic only says which neuron should keep it). Then ask each question once. Read each answer against `expected` and `wrong` by hand: correct, wrong, or missing. No LLM judge.",
+  "scenarios": {
+    "1": "Same name, different people",
+    "2": "Who did what, and changes over time",
+    "3": "Same person or thing across topics (two neurons)",
+    "4": "Questions that need two hops"
+  },
+  "neurons": [
+    {
+      "topic": "kitchen",
+      "purpose": "Kitchen renovation: decisions, costs, people, who did what, and how these changed over time."
+    },
+    {
+      "topic": "household",
+      "purpose": "Household admin: contacts and phone numbers, payments, neighbours, the bank, family activities."
+    }
+  ],
+  "inputs": [
+    { "id": "k01", "topic": "kitchen", "observedAt": "2026-01-05T10:00:00.000Z", "text": "2026-01-05: Kitchen renovation budget set at 18,000 euro." },
+    { "id": "k02", "topic": "kitchen", "observedAt": "2026-01-07T10:00:00.000Z", "text": "2026-01-07: Contractor chosen: Bouwbedrijf De Vries, contact person Pieter de Vries." },
+    { "id": "h01", "topic": "household", "observedAt": "2026-01-08T10:00:00.000Z", "text": "2026-01-08: Our neighbour Morgan Lee at number 12 keeps a spare key to our house." },
+    { "id": "k03", "topic": "kitchen", "observedAt": "2026-01-10T10:00:00.000Z", "text": "2026-01-10: Cabinets will be white oak, made by a local carpenter, Sanne Bakker." },
+    { "id": "k04", "topic": "kitchen", "observedAt": "2026-01-12T10:00:00.000Z", "text": "2026-01-12: Countertop: grey quartz, 2,400 euro." },
+    { "id": "h02", "topic": "household", "observedAt": "2026-01-15T10:00:00.000Z", "text": "2026-01-15: Our mortgage advisor at the bank is also called Morgan Lee. Meeting about a renovation loan on 2 February." },
+    { "id": "h03", "topic": "household", "observedAt": "2026-01-18T10:00:00.000Z", "text": "2026-01-18: Phone numbers: Pieter de Vries 06-1200 3400; Sanne Bakker 06-2200 4400." },
+    { "id": "k05", "topic": "kitchen", "observedAt": "2026-01-22T10:00:00.000Z", "text": "2026-01-22: Electrician is Mo Haddad; he will add 6 new sockets." },
+    { "id": "h04", "topic": "household", "observedAt": "2026-01-25T10:00:00.000Z", "text": "2026-01-25: Our son's football coach is Mo Haddad, a teacher at De Linde school. He is not the same person as our electrician." },
+    { "id": "h05", "topic": "household", "observedAt": "2026-02-02T10:00:00.000Z", "text": "2026-02-02: Morgan Lee at the bank approved a renovation loan of 15,000 euro." },
+    { "id": "k06", "topic": "kitchen", "observedAt": "2026-02-05T10:00:00.000Z", "text": "2026-02-05: Found water damage under the sink. The De Vries crew repaired it the same week; cost 1,100 euro." },
+    { "id": "k07", "topic": "kitchen", "observedAt": "2026-02-09T10:00:00.000Z", "text": "2026-02-09: Budget raised to 19,500 euro because of the water damage." },
+    { "id": "h06", "topic": "household", "observedAt": "2026-02-12T10:00:00.000Z", "text": "2026-02-12: Our neighbour Morgan Lee is away until 1 March. Meanwhile the spare key is with Alex Rowan at number 14." },
+    { "id": "k08", "topic": "kitchen", "observedAt": "2026-02-18T10:00:00.000Z", "text": "2026-02-18: Countertop changed from grey quartz to black granite, 2,900 euro." },
+    { "id": "k09", "topic": "kitchen", "observedAt": "2026-02-20T10:00:00.000Z", "text": "2026-02-20: Plumber is Lotte Visser; she will move the sink 1 meter to the left." },
+    { "id": "h07", "topic": "household", "observedAt": "2026-02-22T10:00:00.000Z", "text": "2026-02-22: Lotte Visser fixed the bathroom tap, 120 euro. Her phone: 06-3300 5500." },
+    { "id": "h08", "topic": "household", "observedAt": "2026-03-01T10:00:00.000Z", "text": "2026-03-01: Our neighbour Morgan Lee is back. Alex Rowan gave the spare key back to her." },
+    { "id": "k10", "topic": "kitchen", "observedAt": "2026-03-05T10:00:00.000Z", "text": "2026-03-05: Mo Haddad finished the electrical work: the 6 sockets plus 2 extra." },
+    { "id": "k11", "topic": "kitchen", "observedAt": "2026-03-10T10:00:00.000Z", "text": "2026-03-10: Floor tiles (grey, 60x60) installed by the De Vries team." },
+    { "id": "k12", "topic": "kitchen", "observedAt": "2026-03-15T10:00:00.000Z", "text": "2026-03-15: Cabinets delivered by Sanne Bakker." },
+    { "id": "k13", "topic": "kitchen", "observedAt": "2026-03-18T10:00:00.000Z", "text": "2026-03-18: Pieter de Vries is on leave; his colleague Ruud Smit is now our contact at De Vries." },
+    { "id": "h09", "topic": "household", "observedAt": "2026-03-19T10:00:00.000Z", "text": "2026-03-19: Ruud Smit's phone: 06-4400 6600." },
+    { "id": "k14", "topic": "kitchen", "observedAt": "2026-03-20T10:00:00.000Z", "text": "2026-03-20: Correction: the black granite countertop costs 3,100 euro, not 2,900." },
+    { "id": "h10", "topic": "household", "observedAt": "2026-03-26T10:00:00.000Z", "text": "2026-03-26: Paid Sanne Bakker 3,200 euro for the kitchen cabinets." },
+    { "id": "k15", "topic": "kitchen", "observedAt": "2026-03-28T10:00:00.000Z", "text": "2026-03-28: Budget now 20,300 euro after the extra sockets and the countertop correction." },
+    { "id": "h11", "topic": "household", "observedAt": "2026-04-05T10:00:00.000Z", "text": "2026-04-05: Football practice moved to Sunday. Coach Mo Haddad's phone: 06-5500 7700." },
+    { "id": "k16", "topic": "kitchen", "observedAt": "2026-04-10T10:00:00.000Z", "text": "2026-04-10: Small crack found in one floor tile; the contractor will replace it." },
+    { "id": "h12", "topic": "household", "observedAt": "2026-04-12T10:00:00.000Z", "text": "2026-04-12: Morgan Lee has left the bank. Our new mortgage advisor is Femke Jansen." },
+    { "id": "k17", "topic": "kitchen", "observedAt": "2026-04-15T10:00:00.000Z", "text": "2026-04-15: Pieter de Vries is back from leave and is our contact again. Ruud Smit moved to another project." },
+    { "id": "k18", "topic": "kitchen", "observedAt": "2026-04-20T10:00:00.000Z", "text": "2026-04-20: Final inspection passed. One open item: the cracked floor tile." }
+  ],
+  "questions": [
+    {
+      "id": "q01", "scenarios": [1, 2],
+      "question": "Who has our spare key now?",
+      "expected": "Morgan Lee, the neighbour at number 12 (got it back on 1 March).",
+      "wrong": ["Morgan Lee from the bank", "Alex Rowan (only had it until 1 March)", "Merging the two Morgan Lees"]
+    },
+    {
+      "id": "q02", "scenarios": [1, 2],
+      "question": "Who approved our renovation loan, and is that person still our advisor?",
+      "expected": "Morgan Lee at the bank. No: she left the bank; the new advisor is Femke Jansen.",
+      "wrong": ["The neighbour Morgan Lee", "Saying Morgan Lee is still the advisor"]
+    },
+    {
+      "id": "q03", "scenarios": [1, 3],
+      "question": "What is our electrician's phone number?",
+      "expected": "Not known: no phone number was given for the electrician Mo Haddad.",
+      "wrong": ["06-5500 7700 (that is the football coach Mo Haddad)"]
+    },
+    {
+      "id": "q04", "scenarios": [1, 3],
+      "question": "Is our son's football coach the same person as our electrician?",
+      "expected": "No. Both are called Mo Haddad, but the coach is a teacher at De Linde school and a different person.",
+      "wrong": ["Yes", "Treating them as one person"]
+    },
+    {
+      "id": "q05", "scenarios": [2],
+      "question": "Who repaired the water damage?",
+      "expected": "The De Vries crew (the contractor, Bouwbedrijf De Vries).",
+      "wrong": ["Lotte Visser", "The plumber", "Mo Haddad"]
+    },
+    {
+      "id": "q06", "scenarios": [2],
+      "question": "Who was on leave in March?",
+      "expected": "Pieter de Vries.",
+      "wrong": ["Ruud Smit"]
+    },
+    {
+      "id": "q07", "scenarios": [2],
+      "question": "Who is our contact at the contractor now?",
+      "expected": "Pieter de Vries (back from leave since 15 April).",
+      "wrong": ["Ruud Smit"]
+    },
+    {
+      "id": "q08", "scenarios": [2],
+      "question": "What countertop do we have, and what did it cost?",
+      "expected": "Black granite, 3,100 euro.",
+      "wrong": ["Grey quartz", "2,900 euro", "2,400 euro"]
+    },
+    {
+      "id": "q09", "scenarios": [2],
+      "question": "How many sockets did the electrician add?",
+      "expected": "8 (6 planned plus 2 extra).",
+      "wrong": ["6", "2"]
+    },
+    {
+      "id": "q10", "scenarios": [3],
+      "question": "What is the phone number of the person who made our kitchen cabinets?",
+      "expected": "Sanne Bakker, 06-2200 4400.",
+      "wrong": ["Any other number", "Saying it is not known"]
+    },
+    {
+      "id": "q11", "scenarios": [3],
+      "question": "The person who fixed our bathroom tap: what did she do in the kitchen?",
+      "expected": "Lotte Visser; she moved the kitchen sink 1 meter to the left.",
+      "wrong": ["She repaired the water damage", "Saying she did nothing in the kitchen"]
+    },
+    {
+      "id": "q12", "scenarios": [3, 4],
+      "question": "What is the phone number of the plumber who moved the kitchen sink?",
+      "expected": "06-3300 5500 (Lotte Visser).",
+      "wrong": ["Any other number", "Saying it is not known"]
+    },
+    {
+      "id": "q13", "scenarios": [4],
+      "question": "Who installed the floor tiles, and who is our contact at that company now?",
+      "expected": "The De Vries team (Bouwbedrijf De Vries); the contact now is Pieter de Vries.",
+      "wrong": ["Ruud Smit as current contact", "Lotte Visser", "Sanne Bakker"]
+    },
+    {
+      "id": "q14", "scenarios": [3, 4],
+      "question": "Who do I call about the cracked floor tile, and on what number?",
+      "expected": "Pieter de Vries at Bouwbedrijf De Vries (they installed the tiles; he is the contact again), 06-1200 3400.",
+      "wrong": ["Ruud Smit", "06-4400 6600", "Lotte Visser", "Mo Haddad"]
+    }
+  ]
+}

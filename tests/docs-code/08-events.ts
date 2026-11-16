@@ -9,7 +9,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/08-events.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -36,7 +36,7 @@ async function main() {
 		evolution: { enabled: false },
 		autoSetup: false,
 		neurons: [
-			{ id: 'events', type: 'text', name: 'Events', description: 'Event patterns', instructions: 'Track event patterns.' },
+			{ id: 'events', name: 'Events', description: 'Event patterns', instructions: 'Track event patterns.' },
 		],
 	})
 
@@ -124,7 +124,7 @@ async function main() {
 		evolution: { enabled: false },
 		autoSetup: false,
 		neurons: [
-			{ id: 'init-events', type: 'text', name: 'Init Events', description: 'Init event patterns', instructions: 'Track init event patterns.' },
+			{ id: 'init-events', name: 'Init Events', description: 'Init event patterns', instructions: 'Track init event patterns.' },
 		],
 		onEvent: (event) => { initEvents.push(event.type) },
 	})

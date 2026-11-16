@@ -6,11 +6,11 @@ import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
-import { TextNeuron, createAiSdkLLM, type AdaptLLMPlugin } from '../../src'
+import { Neuron, createAiSdkLLM, type AdaptLLMPlugin } from '../../src'
 import { SQLiteNeuronStore } from '../../src/sqlite'
 import { createAdaptTextProcedureProvider, createConservativeByteTokenCounter, twoStepRecipeRef, type TextLearningConfig } from '../../src/learning/text-procedures'
 import type { TextProfileSnapshot } from '../../src/learning/text-state'
-import type { AdaptiveTextLearningRuntime } from '../../src/neurons/text'
+import type { AdaptiveTextLearningRuntime } from '../../src/neurons'
 import { createBoundedDeviceScheduler } from '../../src/llm/local/scheduler'
 
 const root = resolve(import.meta.dirname, '../..')
@@ -91,7 +91,7 @@ function prepare(configPath?: string): string {
   const suite: Suite = { createdAt: new Date().toISOString(), baseline: spawnSync('git', ['-C', baseline, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(), settings: supplied?.settings ?? settings, models: supplied?.models ?? models, tasks, sourceHashes: sourceHashes(), ...(supplied ? { provider: supplied.provider, memoryOnly: supplied.memoryOnly ?? false, ...(supplied.loadedContextTokens ? { loadedContextTokens: supplied.loadedContextTokens } : {}), ...(supplied.requestBodyExtras ? { requestBodyExtras: supplied.requestBodyExtras } : {}) } : {}), disclosures: [
     'Original v1 records. Quality judgment uses the user criterion of learning quality over time, from committed understanding only; query answers are excluded.',
     'One repetition per task, model, arm. The v2 arm runs the fixed two-step text procedure.',
-    'Dataset tasks run as standalone generic TextNeurons. This is not the original complete-Brain behavior evaluation.',
+    'Dataset tasks run as standalone generic Neurons. This is not the original complete-Brain behavior evaluation.',
     'Common input text uses the original v1 behavior formatter: [timestamp] [type] [source: source] newline content. Other original datasets omit the source tag when absent and include their author tag when present. Event IDs remain in delivery metadata; all event content and timestamps are preserved.',
     'Common receipt groups of 8 with forced flush; coffee retains original groups of 3 then 4 and scope change. Threshold changes are disclosed in checkpoint records.',
     supplied ? `Provider and generation settings are saved explicitly. The v2 declared model context is ${supplied.loadedContextTokens ?? 8192}; remote model native context and reasoning behavior differ from local Qwen. Results do not isolate model weights alone.` : 'Common local settings: 8192 loaded context, temperature 0, output limit 2048, no provider retries. Model thinking is already off for both Qwen installations.',
@@ -147,7 +147,7 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
   if (providerConfig.apiKeyEnv && !apiKey) throw new Error(`missing credential environment variable ${providerConfig.apiKeyEnv}`)
   const provider = createOpenAICompatible({ name: providerConfig.name, baseURL: providerConfig.baseURL, ...(apiKey ? { apiKey } : {}), supportsStructuredOutputs: true, fetch: wireFetch })
   const model = provider(modelId)
-  const legacy = arm === 'v1' ? { ...(await import(pathToFileURL(resolve(baseline, 'src/index.ts')).href)), ...(await import(pathToFileURL(resolve(baseline, 'src/sqlite.ts')).href)) } as { TextNeuron: typeof TextNeuron; SQLiteNeuronStore: typeof SQLiteNeuronStore; createAiSdkLLM: typeof createAiSdkLLM } : undefined
+  const legacy = arm === 'v1' ? { ...(await import(pathToFileURL(resolve(baseline, 'src/index.ts')).href)), ...(await import(pathToFileURL(resolve(baseline, 'src/sqlite.ts')).href)) } as { Neuron: typeof Neuron; SQLiteNeuronStore: typeof SQLiteNeuronStore; createAiSdkLLM: typeof createAiSdkLLM } : undefined
   const makePlugin = legacy?.createAiSdkLLM ?? createAiSdkLLM
   const basePlugin = makePlugin({ providers: { [model.provider]: ((id: string) => { if (id !== modelId) throw new Error('unexpected model'); return model }) } })
   const llm: AdaptLLMPlugin = { ...basePlugin, async call(request) {
@@ -177,7 +177,7 @@ async function worker(directory: string, modelId: string, arm: string, taskId: s
     stateIds: { next: kind => `${kind}-${randomUUID()}` }, inputIds: { next: () => randomUUID() }, clock: { now: () => new Date().toISOString() },
     scheduler: { schedule(dueAt, callback) { const handle = setTimeout(callback, Math.max(0, Date.parse(dueAt) - Date.now())); handle.unref(); return handle }, cancel(handle) { clearTimeout(handle as ReturnType<typeof setTimeout>) } },
     policy: { maxRetainedProfiles: 8, maxFlushRuns: 64, headStateId: 'adaptive-text-profile-head', narrativeMemoryId: 'current', stateKind: 'adaptive-text-learning' }, countInputTokens: inputs => inputs.reduce((sum, item) => sum + tokens.countText(item.text).tokens, 0), onError: error => appendFileSync(resolve(job, 'runtime-errors.jsonl'), JSON.stringify(error, replacer) + '\n') }
-  const Core = legacy?.TextNeuron ?? TextNeuron
+  const Core = legacy?.Neuron ?? Neuron
   const Store = legacy?.SQLiteNeuronStore ?? SQLiteNeuronStore
   const database = resolve(job, 'memory.sqlite')
   let store = new Store(database)

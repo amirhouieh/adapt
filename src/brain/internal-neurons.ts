@@ -41,7 +41,6 @@ const definitions: InternalNeuronDef[] = [
 			name: 'Global Understanding',
 			description:
 				'Synthesizes understanding across all specialists into a unified picture',
-			type: 'text',
 			instructions: `You receive understanding updates from every specialist in the network. Each update tells you what a specialist now knows — its current understanding after processing new data.
 
 Your job is to form a unified understanding from all specialists. You are not tracking raw data — you are synthesizing what the network as a whole understands.
@@ -65,7 +64,6 @@ Track answers to:
 			name: 'Global Query Understanding',
 			description:
 				'Tracks what users ask — query topics, frequency, clusters, and coverage gaps',
-			type: 'text',
 			instructions: `Track and categorize all user queries to understand what information users need.
 
 Watch for:
@@ -88,7 +86,6 @@ Track answers to:
 			name: 'Injection Gap Neuron',
 			description:
 				'Tracks data that no external neuron could process — injection gaps',
-			type: 'text',
 			instructions: `You are a cross-domain, general-purpose gap tracker. You are NOT limited to any specific subject area — you track gaps from ALL topics and domains.
 
 You receive reports about data that was rejected by all specialized neurons in the system. These reports describe what topics were dismissed. EVERY item you receive is relevant by definition — never dismiss it.
@@ -112,7 +109,6 @@ Drop topics that haven't appeared recently — if a gap stops being reported, it
 			name: 'Query Gap Neuron',
 			description:
 				'Tracks questions that external neurons could not answer well',
-			type: 'text',
 			instructions: `Accumulate and reason about query gaps — questions that users ask but no neuron can answer well.
 
 Watch for:
@@ -160,11 +156,4 @@ export function getInternalNeuronConfigs(
 	}
 
 	return configs
-}
-
-/**
- * Check if an ID belongs to an internal neuron
- */
-export function isInternalNeuronId(id: string): boolean {
-	return id.startsWith('__internal_')
 }

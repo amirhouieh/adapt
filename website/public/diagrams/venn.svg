@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480" role="img" aria-label="adapt is where attention, self-evolution and proactivity overlap">
+<style>
+  text { font-family: 'Google Sans Code', ui-monospace, Menlo, monospace; fill: #171717; }
+  .c { fill: none; stroke: #171717; stroke-width: 1.25; }
+  .t { font-size: 15px; font-weight: 600; }
+  .core { font-size: 16px; font-weight: 700; }
+  @media (prefers-color-scheme: dark) { text { fill: #EDEDED; } .c { stroke: #EDEDED; } }
+</style>
+<circle class="c" cx="250" cy="190" r="140"/>
+<circle class="c" cx="390" cy="190" r="140"/>
+<circle class="c" cx="320" cy="310" r="140"/>
+<text class="t" x="185" y="160" text-anchor="middle">attention</text>
+<text class="t" x="455" y="160" text-anchor="middle">self-evolution</text>
+<text class="t" x="320" y="400" text-anchor="middle">proactivity</text>
+<text class="core" x="320" y="240" text-anchor="middle">adapt</text>
+</svg>

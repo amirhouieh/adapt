@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/reference-neuron-api.ts
  */
 
-import { TextNeuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { Neuron, MemoryNeuronStore } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -29,24 +29,24 @@ function section(title: string) {
 }
 
 async function main() {
-	// ── TextNeuron — Methods ─────────────────────────────────────────────
-	section('TextNeuron — Lifecycle')
+	// ── Neuron — Methods ─────────────────────────────────────────────
+	section('Neuron — Lifecycle')
 
-	const textNeuron = await TextNeuron.create({
+	const textNeuron = await Neuron.create({
 		model,
 		instructions: 'Track API test patterns.',
 		store: new MemoryNeuronStore(),
 	})
 
 	// Lifecycle
-	assert(typeof TextNeuron.create === 'function', 'TextNeuron.create() exists')
-	assert(typeof TextNeuron.restore === 'function', 'TextNeuron.restore() exists')
+	assert(typeof Neuron.create === 'function', 'Neuron.create() exists')
+	assert(typeof Neuron.restore === 'function', 'Neuron.restore() exists')
 	assert(typeof textNeuron.dispose === 'function', 'textNeuron.dispose() exists')
 	assert(typeof textNeuron.isInitialized === 'function', 'textNeuron.isInitialized() exists')
 	assert(textNeuron.isInitialized() === true, 'isInitialized() returns true after create()')
 
 	// ── Learning ─────────────────────────────────────────────────────────
-	section('TextNeuron — Learning')
+	section('Neuron — Learning')
 
 	assert(typeof textNeuron.learn === 'function', 'textNeuron.learn() exists')
 
@@ -76,7 +76,7 @@ async function main() {
 	}
 
 	// ── Querying ─────────────────────────────────────────────────────────
-	section('TextNeuron — Querying')
+	section('Neuron — Querying')
 
 	assert(typeof textNeuron.query === 'function', 'textNeuron.query() exists')
 	assert(typeof textNeuron.queryStream === 'function', 'textNeuron.queryStream() exists')
@@ -96,7 +96,7 @@ async function main() {
 	for await (const _ of qStream.textStream) { break }
 
 	// ── Understanding ────────────────────────────────────────────────────
-	section('TextNeuron — Understanding')
+	section('Neuron — Understanding')
 
 	assert(typeof textNeuron.getUnderstanding === 'function', 'getUnderstanding() exists')
 	assert(typeof textNeuron.setUnderstanding === 'function', 'setUnderstanding() exists')
@@ -104,7 +104,7 @@ async function main() {
 	assert(typeof textNeuron.hasKnowledge === 'function', 'hasKnowledge() exists')
 
 	const understanding = await textNeuron.getUnderstanding()
-	assert(typeof understanding === 'string' || understanding === null, 'TextNeuron understanding is string or null')
+	assert(typeof understanding === 'string' || understanding === null, 'Neuron understanding is string or null')
 
 	const summary = await textNeuron.getSummary()
 	assert(typeof summary === 'string', 'getSummary() returns string')
@@ -113,7 +113,7 @@ async function main() {
 	assert(typeof hasKnowledge === 'boolean', 'hasKnowledge() returns boolean')
 
 	// ── Introspection ────────────────────────────────────────────────────
-	section('TextNeuron — Introspection')
+	section('Neuron — Introspection')
 
 	assert(typeof textNeuron.getHealth === 'function', 'getHealth() exists')
 	assert(typeof textNeuron.getMetrics === 'function', 'getMetrics() exists')
@@ -137,7 +137,7 @@ async function main() {
 	assert(typeof thresholds === 'object', 'getUnderstandThresholds() returns object')
 
 	// ── Config ───────────────────────────────────────────────────────────
-	section('TextNeuron — Config')
+	section('Neuron — Config')
 
 	assert(typeof textNeuron.update === 'function', 'update() exists')
 	assert(typeof textNeuron.adjust === 'function', 'adjust() exists')
@@ -153,10 +153,9 @@ async function main() {
 	assert(Array.isArray(updateResult.changedFields), 'update() returns changedFields')
 
 	// ── Identity ─────────────────────────────────────────────────────────
-	section('TextNeuron — Identity')
+	section('Neuron — Identity')
 
 	assert(typeof textNeuron.id === 'string', 'neuron.id is string')
-	assert(textNeuron.type === 'text', 'neuron.type is "text"')
 	assert(typeof textNeuron.name === 'string', 'neuron.name is string')
 	assert(typeof textNeuron.description === 'string', 'neuron.description is string')
 	assert(typeof textNeuron.instructions === 'string', 'neuron.instructions is string')

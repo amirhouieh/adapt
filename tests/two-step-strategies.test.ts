@@ -3,8 +3,8 @@ import type {
 	LanguageModelV3GenerateResult,
 } from '@ai-sdk/provider'
 import { describe, expect, it } from 'vitest'
-import { MemoryNeuronStore, TextNeuron } from '../src'
-import { shortenSystem } from '../src/neurons/text/strategies'
+import { MemoryNeuronStore, Neuron } from '../src'
+import { shortenSystem } from '../src/neurons/strategies'
 import type { LanguageModel } from '../src/llm'
 
 // Plain-text model: replies are returned in order, one per call.
@@ -56,7 +56,7 @@ async function learnWith(
 	replies: string[],
 	governance: { strategy: 'continuous' | 'cumulative' | 'decay'; maxTokens: number },
 ) {
-	const neuron = await TextNeuron.create({
+	const neuron = await Neuron.create({
 		model: scriptedModel(replies),
 		instructions: 'Track coding preferences.',
 		store: new MemoryNeuronStore(),
@@ -106,7 +106,7 @@ describe('two-step memory strategies', () => {
 
 	it('the strategy call uses the same output limit as the update step', async () => {
 		const limits: Array<number | undefined> = []
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			model: scriptedModel(['Prefers Biome.', LONG, 'Seed: uses Biome.'], limits),
 			instructions: 'Track coding preferences.',
 			store: new MemoryNeuronStore(),
@@ -119,7 +119,7 @@ describe('two-step memory strategies', () => {
 	})
 
 	it('a cut-off strategy reply (finish: length) is not saved', async () => {
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			model: scriptedModel([
 				'Prefers Biome.',
 				LONG,
@@ -145,7 +145,7 @@ describe('two-step memory strategies', () => {
 	})
 
 	it('governance can be changed with update()', async () => {
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			model: scriptedModel([]),
 			instructions: 'Track coding preferences.',
 			store: new MemoryNeuronStore(),

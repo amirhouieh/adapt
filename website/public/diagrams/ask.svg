@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 70 1000 440" width="1000" height="440" role="img" aria-label="One question, one answer">
+<style>
+text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){
+[fill="#171717"]{fill:#EDEDED}[stroke="#171717"]{stroke:#EDEDED}
+[fill="#737373"]{fill:#A3A3A3}[fill="#E8E8E8"]{fill:#262626}[fill="#F2F2F2"]{fill:#191919}[stroke="#A3A3A3"]{stroke:#525252}
+}
+</style>
+<defs>
+
+
+<marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9 z" fill="#171717" stroke="#171717" stroke-linejoin="round"/></marker>
+</defs>
+<rect x="30" y="225" width="130" height="80" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="95.0" y="271" font-size="15" font-weight="700" fill="#171717">A question</text>
+<rect x="205" y="225" width="180" height="80" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="295.0" y="271" font-size="15" font-weight="700" fill="#171717">Pick neurons</text>
+<path d="M162,265 C180,265 185,265 201,265" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<g opacity="1"><rect x="470" y="100" width="230" height="100" rx="10" fill="#E8E8E8"/><text x="486" y="130" font-size="15" font-weight="700" fill="#171717">Neuron: billing</text><text x="486" y="156" font-size="15" font-weight="400" fill="#171717">relevance 0.9</text><text x="486" y="178" font-size="15" font-weight="400" fill="#171717">confidence 0.8</text></g>
+<g opacity="1"><rect x="470" y="225" width="230" height="100" rx="10" fill="#E8E8E8"/><text x="486" y="255" font-size="15" font-weight="700" fill="#171717">Neuron: people</text><text x="486" y="281" font-size="15" font-weight="400" fill="#171717">relevance 0.6</text><text x="486" y="303" font-size="15" font-weight="400" fill="#171717">confidence 0.7</text></g>
+<g opacity="0.5"><rect x="470" y="350" width="230" height="100" rx="10" fill="#E8E8E8" stroke="#A3A3A3" stroke-width="1.25" stroke-dasharray="6 5"/><text x="486" y="382" font-size="15" font-weight="700" fill="#171717">Neuron: deadlines</text><text x="486" y="410" font-size="15" font-weight="400" fill="#171717">not picked</text></g>
+<path d="M387,250 C420,250 430,155 466,148" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M387,270 C420,270 430,275 466,275" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M387,290 C420,290 430,395 466,400" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" stroke-dasharray="2 7" marker-end="url(#ar)"/>
+<rect x="775" y="178" width="190" height="80" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="870.0" y="224" font-size="15" font-weight="700" fill="#171717">One last call</text>
+<path d="M702,150 C735,150 745,195 771,205" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M702,275 C735,275 745,235 771,230" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<g opacity="1"><rect x="755" y="370" width="230" height="110" rx="10" fill="#E8E8E8"/><text x="771" y="404" font-size="16" font-weight="700" fill="#171717">Answer</text><text x="771" y="434" font-size="15" font-weight="400" fill="#171717">+ sources</text><text x="771" y="458" font-size="15" font-weight="400" fill="#171717">+ gaps</text></g>
+<path d="M870,262 C870,300 870,340 870,366" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+</svg>

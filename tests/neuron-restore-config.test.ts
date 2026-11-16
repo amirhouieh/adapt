@@ -8,7 +8,7 @@ import type {
 	LanguageModelV3CallOptions,
 	LanguageModelV3GenerateResult,
 } from '@ai-sdk/provider'
-import { TextNeuron, MemoryNeuronStore } from '../src'
+import { Neuron, MemoryNeuronStore } from '../src'
 import { createAiSdkLLM } from '../src/llm'
 import { SQLiteNeuronStore } from '../src/sqlite'
 import type { NeuronStore } from '../src/stores'
@@ -77,7 +77,7 @@ const scenarios = [
 describe.each(scenarios)('Standalone neuron restore config precedence ($name)', ({ factory }) => {
 	it('persisted thresholds survive a create→restore round-trip', async () => {
 		const scenario = factory()
-		const neuron1 = await TextNeuron.create({
+		const neuron1 = await Neuron.create({
 			id: 'coding',
 			name: 'Coding',
 			description: 'Tracks coding patterns',
@@ -89,14 +89,14 @@ describe.each(scenarios)('Standalone neuron restore config precedence ($name)', 
 		expect(neuron1.getUnderstandThresholds().maxObservations).toBe(7)
 		await neuron1.dispose()
 
-		const neuron2 = await TextNeuron.restore(scenario.openStore(), { id: 'coding' })
+		const neuron2 = await Neuron.restore(scenario.openStore(), { id: 'coding' })
 		expect(neuron2.getUnderstandThresholds().maxObservations).toBe(7)
 		await neuron2.dispose()
 	})
 
-	it('TextNeuron.create on a populated store throws', async () => {
+	it('Neuron.create on a populated store throws', async () => {
 		const scenario = factory()
-		const first = await TextNeuron.create({
+		const first = await Neuron.create({
 			id: 'coding',
 			instructions: 'Track coding patterns and preferences.',
 			model: initOnlyModel(),
@@ -105,7 +105,7 @@ describe.each(scenarios)('Standalone neuron restore config precedence ($name)', 
 		await first.dispose()
 
 		await expect(
-			TextNeuron.create({
+			Neuron.create({
 				id: 'coding',
 				instructions: 'Track coding patterns and preferences.',
 				model: initOnlyModel(),
@@ -114,14 +114,14 @@ describe.each(scenarios)('Standalone neuron restore config precedence ($name)', 
 		).rejects.toThrow(/already exists/i)
 	})
 
-	it('TextNeuron.restore on an empty store throws', async () => {
+	it('Neuron.restore on an empty store throws', async () => {
 		const scenario = factory()
-		await expect(TextNeuron.restore(scenario.openStore())).rejects.toThrow(/no neuron found/i)
+		await expect(Neuron.restore(scenario.openStore())).rejects.toThrow(/no neuron found/i)
 	})
 
 	it('post-restore neuron.update overrides loaded thresholds and persists', async () => {
 		const scenario = factory()
-		const first = await TextNeuron.create({
+		const first = await Neuron.create({
 			id: 'coding',
 			instructions: 'Track coding patterns and preferences.',
 			model: initOnlyModel(),
@@ -130,20 +130,20 @@ describe.each(scenarios)('Standalone neuron restore config precedence ($name)', 
 		})
 		await first.dispose()
 
-		const restored = await TextNeuron.restore(scenario.openStore())
+		const restored = await Neuron.restore(scenario.openStore())
 		await restored.update({ understand: { thresholds: { maxObservations: 12 } } })
 		expect(restored.getUnderstandThresholds().maxObservations).toBe(12)
 		await restored.dispose()
 
-		const restored2 = await TextNeuron.restore(scenario.openStore())
+		const restored2 = await Neuron.restore(scenario.openStore())
 		expect(restored2.getUnderstandThresholds().maxObservations).toBe(12)
 		await restored2.dispose()
 	})
 
-	it('TextNeuron.restore resolves persisted models via per-call plugin', async () => {
+	it('Neuron.restore resolves persisted models via per-call plugin', async () => {
 		const scenario = factory()
 
-		const first = await TextNeuron.create({
+		const first = await Neuron.create({
 			id: 'coding',
 			instructions: 'Track coding patterns and preferences.',
 			model: initOnlyModel(),
@@ -156,7 +156,7 @@ describe.each(scenarios)('Standalone neuron restore config precedence ($name)', 
 		await first.dispose()
 
 		// Restore — pass a plugin so persisted model refs resolve.
-		const restored = await TextNeuron.restore(scenario.openStore(), {
+		const restored = await Neuron.restore(scenario.openStore(), {
 			llm: createAiSdkLLM({
 				providers: { test: () => initOnlyModel() as never },
 			}),

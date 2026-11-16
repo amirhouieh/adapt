@@ -1,5 +1,3 @@
-// Base
-
 // Store (re-exported from stores/)
 export type {
 	EvolutionRecord,
@@ -11,55 +9,44 @@ export type {
 } from '../stores'
 export { MemoryNeuronCollection, MemoryNeuronStore } from '../stores'
 export type {
-	AdjustResult,
-	BaseNeuronState,
-	BaseNeuronUpdateInput,
-	BaseResolvedConfig,
-	EventUsage,
-	LearnInput,
-	LearnOptions,
-	LearnOutput,
-	ManagedLearnOutput,
-	ModelSlots,
-	SharedNeuronEventMap,
-	StateTransform,
-	StoredModelRef,
-	UnderstandThresholds,
-} from './base'
-export { BaseNeuron } from './base'
-export type { QueryOptions, QueryResult } from './base/query'
-export { ToolBasedMethod } from './base/query'
-// Schemas
-export {
-	type GeneratedNeuronConfig,
-	neuronConfigSchema,
-} from './schema.config'
-export type {
 	AdaptiveTextFlushOutput,
 	AdaptiveTextLearningConfig,
 	AdaptiveTextLearningRuntime,
 	AdaptiveTextLearningState,
 	AdaptiveTextLearnOutput,
 	AdaptiveTextModelProfile,
-	ResolvedTextNeuronConfig,
-	TextNeuronConfig,
-	TextNeuronEvent,
-	TextNeuronEventMap,
-	TextNeuronUpdateResult,
-} from './text'
-// TextNeuron
-export { TextNeuron } from './text'
-// Descriptors
-export { textNeuronDescriptor } from './text/descriptor'
-export type { GovernanceConfig, Strategy } from './text/strategies'
-export { STRATEGIES } from './text/strategies'
+} from './adaptive-runtime'
+// Neuron
+export { Neuron } from './class'
+export type { QueryOptions, QueryResult } from './query'
+// Schemas
+export {
+	type GeneratedNeuronConfig,
+	neuronConfigSchema,
+} from './schema.config'
 export type {
-	Neuron,
+	ModelSlots,
+	NeuronState,
+	StateTransform,
+	StoredModelRef,
+} from './state'
+export type { GovernanceConfig, Strategy } from './strategies'
+export { STRATEGIES } from './strategies'
+export type {
+	AdjustResult,
+	EventUsage,
+	LearnInput,
+	LearnOptions,
+	LearnOutput,
+	NeuronConfig,
+	NeuronEvent,
+	NeuronEventMap,
 	NeuronHealth,
 	NeuronMetadata,
 	NeuronOrigin,
 	NeuronStatus,
-	NeuronTypeDescriptor,
+	ResolvedNeuronConfig,
 	Significance,
 	TokenUsage,
+	UnderstandThresholds,
 } from './types'

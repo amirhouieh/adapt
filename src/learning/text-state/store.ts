@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { isDeepStrictEqual } from 'node:util'
 import type {
 	LearningCommitInput,
 	LearningCommitResult,
@@ -9,6 +8,7 @@ import type {
 	PendingWorkRecord,
 	StateRecord,
 } from '../../stores/types'
+import { deepEqual } from '../../utils/deep-equal'
 import type {
 	TextActivationResult,
 	TextCoordinatorConfiguration,
@@ -255,7 +255,7 @@ export class TextLearningStateStore<
 			if (existingHead) {
 				if (existingHead.record !== 'head')
 					throw new Error('configured text head id is occupied')
-				if (!isDeepStrictEqual(existingHead.profile, profile))
+				if (!deepEqual(existingHead.profile, profile))
 					throw new Error(
 						'durable text profile does not match supplied initialization',
 					)
@@ -351,7 +351,7 @@ export class TextLearningStateStore<
 					? { status: 'deduplicated', coverage: 'processed' }
 					: { status: 'conflict', reason: 'delivery-id-reused' }
 			const revision = revisionOrInitial(store.learningRevisions.get('current'))
-			if (!isDeepStrictEqual(revision.active_bindings, profile.bindings))
+			if (!deepEqual(revision.active_bindings, profile.bindings))
 				throw new Error('active profile changed while enqueueing')
 			const runningWorkIds = new Set(
 				store.state.list().flatMap((record) => {
@@ -365,7 +365,7 @@ export class TextLearningStateStore<
 					(work) =>
 						work.status === 'pending' &&
 						!runningWorkIds.has(work.id) &&
-						isDeepStrictEqual(work.bindings, profile.bindings),
+						deepEqual(work.bindings, profile.bindings),
 				)
 				.sort(
 					(left, right) =>
@@ -570,10 +570,7 @@ export class TextLearningStateStore<
 				})
 				return { status: 'memory-capacity', reason }
 			}
-			if (
-				!work.bindings ||
-				!isDeepStrictEqual(work.bindings, revision.active_bindings)
-			)
+			if (!work.bindings || !deepEqual(work.bindings, revision.active_bindings))
 				return { status: 'idle' }
 			const run: RunState = {
 				kind: this.options.policy.stateKind,
@@ -946,7 +943,7 @@ export class TextLearningStateStore<
 			const revision = revisionOrInitial(store.learningRevisions.get('current'))
 			if (
 				!revision.active_bindings ||
-				!isDeepStrictEqual(
+				!deepEqual(
 					selectionPin(
 						revision.active_bindings,
 						revision.learned_state_revision,
@@ -960,7 +957,7 @@ export class TextLearningStateStore<
 				.filter((work) => work.status === 'pending')
 			let supersededAttempts = 0
 			for (const work of pending) {
-				if (isDeepStrictEqual(work.bindings, profile.bindings)) continue
+				if (deepEqual(work.bindings, profile.bindings)) continue
 				const replacementWorkId = this.options.ids.next('work')
 				const replacementAttemptId = this.options.ids.next('attempt')
 				const supersedeId = this.options.ids.next('supersede')
@@ -1124,7 +1121,7 @@ export class TextLearningStateStore<
 			throw new Error('profile ref and timestamp are required')
 		requireNonnegative(profile.revision, 'profile revision')
 		if (
-			!isDeepStrictEqual(profile.ref, profile.bindings.profile) ||
+			!deepEqual(profile.ref, profile.bindings.profile) ||
 			profile.revision !== profile.bindings.profile_revision
 		)
 			throw new Error('profile snapshot and bindings disagree')

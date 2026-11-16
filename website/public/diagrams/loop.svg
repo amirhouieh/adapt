@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 75 1000 500" width="1000" height="500" role="img" aria-label="The loop adapt is built around">
+<style>
+text{font-family:'Google Sans Code',ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){
+[fill="#171717"]{fill:#EDEDED}[stroke="#171717"]{stroke:#EDEDED}
+[fill="#737373"]{fill:#A3A3A3}[fill="#E8E8E8"]{fill:#262626}[fill="#F2F2F2"]{fill:#191919}[stroke="#A3A3A3"]{stroke:#525252}
+}
+</style>
+<defs>
+
+
+<marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L9,5 L1,9 z" fill="#171717" stroke="#171717" stroke-linejoin="round"/></marker>
+</defs>
+<rect x="60" y="224" width="220" height="92" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25" stroke-dasharray="7 6"/><text text-anchor="middle" x="170.0" y="266.0" font-size="16" font-weight="700" fill="#171717">expect</text><text text-anchor="middle" x="170.0" y="290.0" font-size="13" fill="#171717">baselines, expectations</text><rect x="97.8" y="211" width="144.4" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="170.0" y="229" font-size="13" text-anchor="middle" fill="#171717">next: #25, #26</text>
+
+<rect x="390" y="116" width="220" height="92" rx="14" fill="#F2F2F2" stroke="#171717" stroke-width="1.25" stroke-dasharray="7 6"/><text text-anchor="middle" x="500.0" y="158.0" font-size="16" font-weight="700" fill="#171717">notice surprise</text><text text-anchor="middle" x="500.0" y="182.0" font-size="13" fill="#171717">bursts, drift, misses</text><rect x="427.8" y="103" width="144.39999999999998" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="500.0" y="121" font-size="13" text-anchor="middle" fill="#171717">next: #25, #26</text>
+
+<rect x="720" y="224" width="220" height="92" rx="14" fill="#E8E8E8" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="830.0" y="266.0" font-size="16" font-weight="700" fill="#171717">attend</text><text text-anchor="middle" x="830.0" y="290.0" font-size="13" fill="#171717">today: by topic</text>
+<rect x="610" y="404" width="220" height="92" rx="14" fill="#E8E8E8" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="720.0" y="446.0" font-size="16" font-weight="700" fill="#171717">understand</text><text text-anchor="middle" x="720.0" y="470.0" font-size="13" fill="#171717">each neuron rewrites</text>
+<rect x="170" y="404" width="220" height="92" rx="14" fill="#E8E8E8" stroke="#171717" stroke-width="1.25"/><text text-anchor="middle" x="280.0" y="446.0" font-size="16" font-weight="700" fill="#171717">reorganize</text><text text-anchor="middle" x="280.0" y="470.0" font-size="13" fill="#171717">evolution</text>
+<path d="M282,246 C330,236 340,192 386,186" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" stroke-dasharray="2 7" marker-end="url(#ar)"/>
+<path d="M612,186 C660,192 670,236 718,246" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" stroke-dasharray="2 7" marker-end="url(#ar)"/>
+<path d="M850,318 C858,360 840,382 800,402" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M608,450 L394,450" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<path d="M215,402 C190,380 180,352 175,320" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" stroke-dasharray="2 7" marker-end="url(#ar)"/>
+<path d="M392,420 C560,380 640,340 718,300" fill="none" stroke="#171717" stroke-width="1.25" stroke-linecap="round" marker-end="url(#ar)"/>
+<rect x="400" y="318" width="180" height="26" rx="13" fill="#F2F2F2" stroke="#A3A3A3" stroke-width="1.2"/><text x="490" y="336" font-size="13" text-anchor="middle" fill="#171717">today: new neurons</text>
+<rect x="40" y="525" width="26" height="22" rx="6" fill="#E8E8E8" stroke="#171717" stroke-width="1.25"/><text x="78" y="543" font-size="13" text-anchor="start" fill="#171717">shipped</text>
+<rect x="190" y="525" width="26" height="22" rx="6" fill="#F2F2F2" stroke="#171717" stroke-width="1.25" stroke-dasharray="5 4"/><text x="228" y="543" font-size="13" text-anchor="start" fill="#171717">next</text>
+</svg>

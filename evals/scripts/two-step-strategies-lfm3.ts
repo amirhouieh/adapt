@@ -1,7 +1,7 @@
 /**
  * Memory strategies on a real model (LFM3 on OpenRouter).
  *
- * Three standalone TextNeurons learn the same 24 dated facts (kitchen
+ * Three standalone Neurons learn the same 24 dated facts (kitchen
  * renovation, with changes over time) in batches of 4:
  * - continuous (control: no compression)
  * - cumulative (over maxTokens → seed)
@@ -22,9 +22,9 @@ import {
 	type AdaptLLMPlugin,
 	createAiSdkLLM,
 	MemoryNeuronStore,
-	TextNeuron,
+	Neuron,
 } from '../../src'
-import { estimateTokens, type Strategy } from '../../src/neurons/text/strategies'
+import { estimateTokens, type Strategy } from '../../src/neurons/strategies'
 
 const MODEL = process.env.MODEL ?? 'liquid/lfm-3-1.7b'
 const MAX_TOKENS = Number(process.env.MAX_TOKENS ?? 300)
@@ -118,7 +118,7 @@ interface Step {
 	memoryTokens: number
 }
 
-async function settle(neuron: TextNeuron): Promise<void> {
+async function settle(neuron: Neuron): Promise<void> {
 	for (let i = 0; i < 120; i++) {
 		const state = await neuron.getLearningState()
 		if (state.pendingDeliveryIds.length === 0 && state.runningRunIds.length === 0) return
@@ -130,7 +130,7 @@ async function settle(neuron: TextNeuron): Promise<void> {
 
 async function run(strategy: Strategy): Promise<Step[]> {
 	const calls: Call[] = []
-	const neuron = await TextNeuron.create({
+	const neuron = await Neuron.create({
 		model,
 		llm: logged(calls),
 		instructions:

@@ -2,20 +2,12 @@
  * Use case configs — mirrors playground's BrainConfig type structure
  */
 
-export type ModelRef = { provider?: string; model: string }
-
 export interface UseCase {
 	id: string
 	title: string
 	description: string
 	prompt: string
 	autoSetup?: boolean
-	/** Default provider for all model slots */
-	provider?: string
-	/** Main model — string or { provider, model } */
-	model?: string | ModelRef
-	/** Blueprint model — string or { provider, model } */
-	blueprintModel?: string | ModelRef
 	learning?: {
 		understand?: {
 			thresholds?: {
@@ -31,7 +23,6 @@ export interface UseCase {
 	}
 	evolution?: {
 		enabled?: boolean
-		model?: string | ModelRef
 		autoEvaluate?: boolean
 		evaluatorSignalThreshold?: number
 	}
@@ -55,8 +46,6 @@ export const USE_CASES: UseCase[] = [
 		title: "Daily Standups",
 		description: "Watch a Brain learn from standup meeting transcripts — discovering team dynamics, projects, and patterns.",
 		prompt: "You are learning from daily standup transcripts of a software team. You start knowing nothing — everything must be discovered from the data.\n\nPrioritize specialization over generalization. Create dedicated specialists for each distinct thing you discover — individual team members, projects, dynamics, cultural signals — rather than lumping things together. If two things could be separate specialists, they should be.\n\nLet understanding build incrementally. Follow the data.",
-		provider: "google",
-		model: "gemini-3.1-flash-lite",
 		autoSetup: true,
 		ingest: { batchSize: 3 },
 		appBatchSize: 10,
@@ -73,7 +62,6 @@ export const USE_CASES: UseCase[] = [
 			enabled: true,
 			autoEvaluate: true,
 			evaluatorSignalThreshold: 5,
-			model: { provider: "openrouter", model: "x-ai/grok-4.3" },
 		},
 		dataPaths: [
 			"/demo/data/daily-standups/2026-02-25.json",
@@ -97,8 +85,6 @@ export const USE_CASES: UseCase[] = [
 		title: "Product Feedback",
 		description: "Watch a Brain learn from multi-channel feedback — tweets, support tickets, and app reviews.",
 		prompt: "You are learning from product feedback across multiple channels. You start knowing nothing — let the data guide you.",
-		provider: "google",
-		model: "gemini-3.1-flash-lite",
 		autoSetup: true,
 		ingest: { batchSize: 3 },
 		duration: "~1 min",
@@ -114,7 +100,6 @@ export const USE_CASES: UseCase[] = [
 			enabled: true,
 			autoEvaluate: false,
 			evaluatorSignalThreshold: 5,
-			model: { provider: "openrouter", model: "x-ai/grok-4.3" },
 		},
 		dataPaths: [
 			"/demo/data/product-feedback/tweets.json",
@@ -137,8 +122,6 @@ export const USE_CASES: UseCase[] = [
 		title: "Space Exploration",
 		description: "Watch a Brain learn from Wikipedia articles about space missions, astronauts, and agencies.",
 		prompt: "You are learning from Wikipedia articles about space exploration. You start knowing nothing — everything must be discovered from the data.\n\nPrioritize specialization over generalization. Create dedicated specialists for each distinct thing you discover — missions, people, agencies, technologies, eras — rather than lumping things together. If two things could be separate specialists, they should be.\n\nLet understanding build incrementally. Follow the data.",
-		provider: "google",
-		model: "gemini-3.1-flash-lite",
 		autoSetup: true,
 		ingest: { batchSize: 3 },
 		duration: "~2 min",
@@ -154,7 +137,6 @@ export const USE_CASES: UseCase[] = [
 			enabled: true,
 			autoEvaluate: true,
 			evaluatorSignalThreshold: 5,
-			model: { provider: "openrouter", model: "x-ai/grok-4.3" },
 		},
 		dataPaths: [
 			"/demo/data/space-exploration/missions.json",
@@ -176,8 +158,6 @@ export const USE_CASES: UseCase[] = [
 		title: "Coding Agents",
 		description: "Watch a Brain learn how a developer collaborates with Claude Code and Codex across repos and sessions.",
 		prompt: "You are watching and learning from my interactions with coding agents across different repos and sessions.\n\nNotice how I use each agent. Claude Code is usually where I think through concepts, architecture, specs, and tradeoffs. Codex is usually where I execute: editing code, running tests, debugging, and verifying the work.\n\nTrack the projects, agents, sessions, decisions, handoffs, and recurring patterns in how I work.",
-		provider: "google",
-		model: "gemini-3.1-flash-lite",
 		autoSetup: true,
 		ingest: { batchSize: 3 },
 		appBatchSize: 8,
@@ -194,7 +174,6 @@ export const USE_CASES: UseCase[] = [
 			enabled: true,
 			autoEvaluate: true,
 			evaluatorSignalThreshold: 5,
-			model: { provider: "openrouter", model: "x-ai/grok-4.3" },
 		},
 		dataPaths: [
 			"/demo/data/coding-agents/claude-code-sessions.json",

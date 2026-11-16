@@ -3,7 +3,7 @@ import type {
 	LanguageModelV3GenerateResult,
 } from '@ai-sdk/provider'
 import { describe, expect, it } from 'vitest'
-import { MemoryNeuronStore, TextNeuron } from '../src'
+import { MemoryNeuronStore, Neuron } from '../src'
 import type { LanguageModel } from '../src/llm'
 
 // Plain-text model: replies are returned in order, one per call.
@@ -37,9 +37,9 @@ function scriptedModel(replies: string[]): LanguageModel {
 	return model as unknown as LanguageModel
 }
 
-describe('two-step TextNeuron signals to Brain', () => {
+describe('two-step Neuron signals to Brain', () => {
 	it('dismisses when extract finds nothing relevant', async () => {
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			model: scriptedModel(['NONE']),
 			instructions: 'Track coding preferences.',
 			store: new MemoryNeuronStore(),
@@ -54,7 +54,7 @@ describe('two-step TextNeuron signals to Brain', () => {
 	})
 
 	it('reports synthesized when the understanding changes', async () => {
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			model: scriptedModel(['Prefers Biome.', 'Uses Biome for formatting.']),
 			instructions: 'Track coding preferences.',
 			store: new MemoryNeuronStore(),

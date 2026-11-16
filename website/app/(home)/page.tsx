@@ -10,15 +10,16 @@ export default function HomePage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-sm">
           <ScrambleText text={[
-            'Adapt Memory',
+            'Adapt',
             'That\'s new...',
             'Seen this before...',
             'This matters...',
             'Things are shifting...',
-            'I\'ll remember...',
+            'I\'ll learn this...',
           ]} pause={2500} />
         </h1>
-        <p className="text-sm text-fd-muted-foreground">A self-evolving memory layer for AI applications.</p>
+        <p className="text-sm text-fd-muted-foreground">Self-organizing memory for AI agents.</p>
+        <p className="text-sm text-fd-muted-foreground">Designed for small local and edge models.</p>
       </div>
       <InstallCommand />
       <div className="flex flex-row gap-3 items-center">
@@ -34,6 +35,12 @@ export default function HomePage() {
         >
           Try it
         </Link>
+        <a
+          href="/llms-full.txt"
+          className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+        >
+          For agents
+        </a>
       </div>
       </div>
     </div>

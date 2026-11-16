@@ -8,8 +8,8 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/03-brain.ts
  */
 
-import { Brain, MemoryNeuronStore, TextNeuron, createAiSdkLLM } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+import { Brain, MemoryNeuronStore, Neuron, createAiSdkLLM } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -101,7 +101,7 @@ async function main() {
 			llm,
 			autoSetup: false,
 			neurons: [
-				{ id: 'byo', type: 'text', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
+				{ id: 'byo', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
 			],
 			evolution: { enabled: false },
 		})
@@ -117,7 +117,7 @@ async function main() {
 			store: new SQLiteBrainStore(byoPath),
 			autoSetup: false,
 			neurons: [
-				{ id: 'byo', type: 'text', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
+				{ id: 'byo', name: 'BYO', description: 'Smoke', instructions: 'Track patterns.' },
 			],
 			evolution: { enabled: false },
 		})
@@ -137,7 +137,7 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'coding', type: 'text', name: 'Coding', description: 'Coding patterns', instructions: 'Track coding patterns and development philosophy.' },
+				{ id: 'coding', name: 'Coding', description: 'Coding patterns', instructions: 'Track coding patterns and development philosophy.' },
 			],
 		})
 
@@ -256,7 +256,6 @@ tags: architecture, sync`,
 		// Add with explicit config
 		const neuron = await brain.addNeuron({
 			id: 'ui-patterns',
-			type: 'text',
 			name: 'UI Patterns',
 			description: 'Tracks UI/UX design patterns',
 			instructions: 'Track user interface patterns, component choices, and design decisions.',
@@ -293,40 +292,34 @@ tags: architecture, sync`,
 			evolution: { enabled: true },
 			autoSetup: false,
 			neurons: [
-				{ id: 'react-neuron', type: 'text', name: 'React', description: 'React patterns', instructions: 'Track React patterns.' },
-				{ id: 'vue-neuron', type: 'text', name: 'Vue', description: 'Vue patterns', instructions: 'Track Vue patterns.' },
-				{ id: 'broad-neuron', type: 'text', name: 'Broad', description: 'Broad patterns', instructions: 'Track broad patterns.' },
-				{ id: 'neuron-x', type: 'text', name: 'X', description: 'X patterns', instructions: 'Track X patterns.' },
-				{ id: 'neuron-y', type: 'text', name: 'Y', description: 'Y patterns', instructions: 'Track Y patterns.' },
+				{ id: 'react-neuron', name: 'React', description: 'React patterns', instructions: 'Track React patterns.' },
+				{ id: 'vue-neuron', name: 'Vue', description: 'Vue patterns', instructions: 'Track Vue patterns.' },
+				{ id: 'ui-patterns', name: 'UI', description: 'UI patterns', instructions: 'Track UI patterns.' },
 			],
 		})
 
-		// LLM designs the neuron from guidance
-		const created = await evoBrain.createNeuron('Track emerging frontend frameworks')
-		assert(typeof created.id === 'string', 'createNeuron() returns neuron with id')
-
-		// Merge overlapping neurons
-		const merged = await evoBrain.mergeNeurons(
-			['react-neuron', 'vue-neuron'],
-			'Combine into unified frontend framework tracker',
+		// Change what a neuron tracks; its memory is kept
+		await evoBrain.updateNeuron('ui-patterns', {
+			instructions: 'Track UI patterns, with a focus on accessibility.',
+		})
+		assert(
+			evoBrain.getNeuron('ui-patterns')?.instructions === 'Track UI patterns, with a focus on accessibility.',
+			'updateNeuron() changes instructions',
 		)
-		assert(typeof merged.id === 'string', 'mergeNeurons() returns merged neuron with id')
 
-		// Split overloaded neuron
-		const parts = await evoBrain.splitNeuron(
-			'broad-neuron',
-			'Separate into technical patterns vs team dynamics',
-		)
-		assert(Array.isArray(parts), 'splitNeuron() returns array')
-		assert(parts.length >= 2, 'splitNeuron() creates 2+ neurons')
+		// Merge overlapping neurons; the new neuron starts with their memories joined
+		const merged = await evoBrain.mergeNeurons(['react-neuron', 'vue-neuron'], {
+			id: 'frontend-frameworks',
+			name: 'Frontend Frameworks',
+			description: 'Frontend frameworks the team uses and why',
+			instructions: 'Track which frontend frameworks are used, where, and why.',
+		})
+		assert(merged.id === 'frontend-frameworks', 'mergeNeurons() returns merged neuron')
+		assert(evoBrain.getNeuron('react-neuron') === undefined, 'mergeNeurons() removes sources')
 
-		// LLM-driven update
-		await evoBrain.updateNeuron('neuron-x', 'Narrow scope to React hooks only')
-		assert(true, 'updateNeuron() succeeds')
-
-		// Delete via evolution
-		await evoBrain.deleteNeuron('neuron-y')
-		assert(evoBrain.getNeuron('neuron-y') === undefined, 'deleteNeuron() removes neuron')
+		// Let evolution decide now
+		const { changes } = await evoBrain.evolve()
+		assert(Array.isArray(changes), 'evolve() returns changes')
 
 		await evoBrain.dispose()
 
@@ -361,7 +354,7 @@ tags: architecture, sync`,
 		// ── Standalone neuron equivalents ─────────────────────────────────────
 		section('Standalone Neuron — adjust and update')
 
-		const standaloneNeuron = await TextNeuron.create({
+		const standaloneNeuron = await Neuron.create({
 			model,
 			instructions: 'Track coding patterns.',
 			store: new MemoryNeuronStore(),

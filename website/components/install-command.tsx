@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-export function InstallCommand({ command = "npm i @unbody-io/adapt" }: { command?: string }) {
+export function InstallCommand({ command = "npm i adapt-memory" }: { command?: string }) {
 	const [copied, setCopied] = useState(false)
 
 	const handleCopy = () => {

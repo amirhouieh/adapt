@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/07-evolution.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -42,8 +42,6 @@ async function main() {
 			autoEvaluate: true,
 			coverageGap: {
 				relevanceThreshold: 0.3,
-				gapCountThreshold: 5,
-				windowSize: 20,
 			},
 		},
 	})
@@ -52,51 +50,20 @@ async function main() {
 	// ── Manual Control — Signals ─────────────────────────────────────────
 	section('Manual Control — Signals')
 
-	// Inject custom signal
+	// Add a signal
 	brain.signal({
 		source: 'analytics',
 		description: 'Users asking about deployment patterns but no neuron covers it',
 	})
 	assert(true, 'signal() with source and description works')
 
-	// Force immediate evaluation (bypass threshold)
-	brain.signal({
-		source: 'admin',
-		description: 'Restructure neurons for new product direction',
-		bypass: true,
-	})
-	assert(true, 'signal() with bypass works')
+	// ── Manual Control — evolve ──────────────────────────────────────────
+	section('Manual Control — evolve')
 
-	// ── Manual Control — evaluateEvolution ────────────────────────────────
-	section('Manual Control — evaluateEvolution')
-
-	// Manually trigger evaluation
-	const evalResult = await brain.evaluateEvolution()
-	assert(Array.isArray(evalResult.decisions), 'evaluateEvolution() returns decisions array')
-
-	// Dry run — see what the evaluator would decide without executing
-	const dryRunResult = await brain.evaluateEvolution({ dryRun: true })
-	assert(Array.isArray(dryRunResult.decisions), 'evaluateEvolution({ dryRun }) returns decisions')
-
-	// ── Manual Control — Stream ──────────────────────────────────────────
-	section('Manual Control — Stream')
-
-	// Add a signal so the evaluator has something to process
-	brain.signal({ source: 'test', description: 'Test signal for stream evaluation', bypass: true })
-
-	const { stream, decisions } = await brain.evaluateEvolutionStream({ dryRun: true })
-
-	let firstPartType: string | null = null
-	for await (const part of stream.fullStream) {
-		// See evaluator tool calls
-		if (!firstPartType) {
-			firstPartType = part.type
-		}
-	}
-	assert(typeof firstPartType === 'string', `stream part has type: ${firstPartType}`)
-
-	const resolved = await decisions
-	assert(Array.isArray(resolved.decisions), 'stream decisions resolve to array')
+	// Run evolution now
+	const { changes, reasoning } = await brain.evolve()
+	assert(Array.isArray(changes), 'evolve() returns changes array')
+	assert(typeof reasoning === 'string', 'evolve() returns reasoning')
 
 	// ── Enable / Disable ─────────────────────────────────────────────────
 	section('Enable / Disable Evolution')
@@ -117,7 +84,7 @@ async function main() {
 		evolution: { enabled: false },
 		autoSetup: false,
 		neurons: [
-			{ id: 'n1', type: 'text', name: 'N1', description: 'Test', instructions: 'Test neuron.' },
+			{ id: 'n1', name: 'N1', description: 'Test', instructions: 'Test neuron.' },
 		],
 	})
 	assert(sessionBrain instanceof Brain, 'Brain with evolution disabled created')
@@ -133,10 +100,6 @@ async function main() {
 	// Flag a gap from your analytics
 	brain.signal({ source: 'analytics', description: 'Users keep asking about deployment but nothing covers it' })
 	assert(true, 'analytics gap signal accepted')
-
-	// Force immediate evaluation (bypass the signal threshold)
-	brain.signal({ source: 'admin', description: 'Restructure now', bypass: true })
-	assert(true, 'bypass signal accepted')
 
 	await brain.dispose()
 

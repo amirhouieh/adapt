@@ -1,12 +1,7 @@
 import type {
 	BrainCollection,
-	BrainEvolutionActivationRecord,
 	BrainEvolutionRecord,
-	BrainEvolutionStageRecord,
-	BrainMemoryMappingRecord,
 	BrainNeuronRecord,
-	BrainRegistryHeadRecord,
-	BrainRegistryRevisionRecord,
 	BrainStateRecord,
 	DismissedBatchRecord,
 	EvolutionRecord,
@@ -24,14 +19,9 @@ import type {
 	UnderstandingRecord,
 } from '../types'
 import {
-	brainEvolutionActivationCollectionSpec,
 	brainEvolutionCollectionSpec,
-	brainEvolutionStageCollectionSpec,
 	brainInternalNeuronCollectionSpec,
-	brainMemoryMappingCollectionSpec,
 	brainNeuronCollectionSpec,
-	brainRegistryHeadCollectionSpec,
-	brainRegistryRevisionCollectionSpec,
 	brainStateCollectionSpec,
 	dismissedBatchCollectionSpec,
 	learningAttemptCollectionSpec,
@@ -70,11 +60,6 @@ export interface BrainStoreCollections {
 	internalNeurons: BrainCollection<BrainNeuronRecord>
 	evolution: BrainCollection<BrainEvolutionRecord>
 	dismissedBatches: BrainCollection<DismissedBatchRecord>
-	registryHeads: BrainCollection<BrainRegistryHeadRecord>
-	registryRevisions: BrainCollection<BrainRegistryRevisionRecord>
-	evolutionActivations: BrainCollection<BrainEvolutionActivationRecord>
-	evolutionStages: BrainCollection<BrainEvolutionStageRecord>
-	memoryMappings: BrainCollection<BrainMemoryMappingRecord>
 }
 
 export type NeuronCollectionFactory = <T extends { id: string }>(
@@ -113,12 +98,5 @@ export function createBrainStoreCollections(
 		internalNeurons: createCollection(brainInternalNeuronCollectionSpec),
 		evolution: createCollection(brainEvolutionCollectionSpec),
 		dismissedBatches: createCollection(dismissedBatchCollectionSpec),
-		registryHeads: createCollection(brainRegistryHeadCollectionSpec),
-		registryRevisions: createCollection(brainRegistryRevisionCollectionSpec),
-		evolutionActivations: createCollection(
-			brainEvolutionActivationCollectionSpec,
-		),
-		evolutionStages: createCollection(brainEvolutionStageCollectionSpec),
-		memoryMappings: createCollection(brainMemoryMappingCollectionSpec),
 	}
 }

@@ -8,8 +8,8 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/10-recipes.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+import { Brain } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -49,7 +49,7 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'patterns', type: 'text', name: 'Patterns', description: 'Pattern tracking', instructions: 'Track patterns.' },
+				{ id: 'patterns', name: 'Patterns', description: 'Pattern tracking', instructions: 'Track patterns.' },
 			],
 		})
 
@@ -97,18 +97,23 @@ async function main() {
 			evolution: { enabled: true },
 			autoSetup: false,
 			neurons: [
-				{ id: 'eink', type: 'text', name: 'eink', description: 'eink', instructions: 'Track eink.' },
-				{ id: 'paper-displays', type: 'text', name: 'paper-displays', description: 'paper displays', instructions: 'Track paper displays.' },
-				{ id: 'ai-neuron', type: 'text', name: 'AI', description: 'AI tracking', instructions: 'Track AI.' },
-				{ id: 'categories', type: 'text', name: 'Categories', description: 'Categories', instructions: 'Track categories.' },
+				{ id: 'eink', name: 'eink', description: 'eink', instructions: 'Track eink.' },
+				{ id: 'paper-displays', name: 'paper-displays', description: 'paper displays', instructions: 'Track paper displays.' },
+				{ id: 'ai-neuron', name: 'AI', description: 'AI tracking', instructions: 'Track AI.' },
+				{ id: 'categories', name: 'Categories', description: 'Categories', instructions: 'Track categories.' },
 			],
 		})
 
-		await taxonomyBrain.mergeNeurons(['eink', 'paper-displays'], 'Combine under hardware')
+		await taxonomyBrain.mergeNeurons(['eink', 'paper-displays'], {
+			id: 'hardware',
+			name: 'Hardware',
+			description: 'Display hardware the user follows',
+			instructions: 'Track e-ink and paper-like display hardware the user follows.',
+		})
 		assert(true, 'mergeNeurons() in taxonomy context works')
 
-		await taxonomyBrain.splitNeuron('ai-neuron', 'Separate into AI tools vs AI research')
-		assert(true, 'splitNeuron() in taxonomy context works')
+		await taxonomyBrain.updateNeuron('ai-neuron', { instructions: 'Track AI tools the user tries. Leave AI research out.' })
+		assert(true, 'updateNeuron() in taxonomy context works')
 
 		await taxonomyBrain.adjustNeuron('categories', 'Stop categorizing things as inspiration')
 		assert(true, 'adjustNeuron() in taxonomy context works')
@@ -126,13 +131,13 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'long-term', type: 'text', name: 'Long Term', description: 'Long-term patterns', instructions: 'Track patterns across all interactions.' },
+				{ id: 'long-term', name: 'Long Term', description: 'Long-term patterns', instructions: 'Track patterns across all interactions.' },
 			],
 		})
 
 		// Session brain: fixed structure, short-lived
 		const sessionNeuronDefs = [
-			{ id: 'obs', type: 'text' as const, name: 'Session', description: 'What happened in the session', instructions: 'Extract what happened in this session.' },
+			{ id: 'obs', name: 'Session', description: 'What happened in the session', instructions: 'Extract what happened in this session.' },
 		]
 		const sessionBrain = await Brain.create({
 			prompt: 'Extract what happened in this session.',
@@ -168,7 +173,7 @@ async function main() {
 			evolution: { enabled: false },
 			autoSetup: false,
 			neurons: [
-				{ id: 'sync', type: 'text', name: 'Sync', description: 'Sync test', instructions: 'Track sync patterns.' },
+				{ id: 'sync', name: 'Sync', description: 'Sync test', instructions: 'Track sync patterns.' },
 			],
 		})
 

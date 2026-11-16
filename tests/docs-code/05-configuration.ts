@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/05-configuration.ts
  */
 
-import { Brain, MemoryBrainStore, createAiSdkLLM } from '@unbody-io/adapt'
+import { Brain, MemoryBrainStore, createAiSdkLLM } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0
@@ -69,8 +69,6 @@ async function main() {
 			autoEvaluate: true,
 			coverageGap: {
 				relevanceThreshold: 0.3,
-				gapCountThreshold: 5,
-				windowSize: 20,
 			},
 		},
 
@@ -81,8 +79,9 @@ async function main() {
 			queryGaps: true,
 		},
 
-		dismissedBatchBuffer: {
-			maxSize: 100,
+		gaps: {
+			maxStored: 100,
+			chunkChars: 4000,
 		},
 	})
 

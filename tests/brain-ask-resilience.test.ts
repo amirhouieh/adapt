@@ -6,7 +6,7 @@ import type {
 import type { LanguageModel } from 'ai'
 import { expect, it } from 'vitest'
 import { Brain } from '../src/brain'
-import type { TextNeuron } from '../src/neurons'
+import type { Neuron } from '../src/neurons'
 import { MemoryBrainStore } from '../src/stores'
 
 // Replies by what the call is for (the system prompt), so parallel calls
@@ -24,7 +24,7 @@ function routedModel(): LanguageModel {
 		if (system.includes('Likes coffee.')) return { relevant: true }
 		if (system.includes('Likes tea.'))
 			return { relevant: true, relevance: 1, confidence: 1, response: 'Likes tea.', gaps: [] }
-		return { purpose: 'Track drinks.', evolutionGuidance: null, synthesisDirective: null }
+		return { purpose: 'Track drinks.', synthesisDirective: null }
 	}
 	const model: LanguageModelV3 = {
 		specificationVersion: 'v3',
@@ -54,7 +54,6 @@ function routedModel(): LanguageModel {
 
 const neuron = (id: string) => ({
 	id,
-	type: 'text' as const,
 	name: id,
 	description: `Tracks ${id}`,
 	instructions: `Track ${id}.`,
@@ -75,8 +74,8 @@ it('ask() answers from the other neurons when one neuron query fails', async () 
 		},
 		evolution: { enabled: false },
 	})
-	await (brain.getNeuron('tea') as unknown as TextNeuron).setUnderstanding('Likes tea.')
-	await (brain.getNeuron('coffee') as unknown as TextNeuron).setUnderstanding('Likes coffee.')
+	await (brain.getNeuron('tea') as unknown as Neuron).setUnderstanding('Likes tea.')
+	await (brain.getNeuron('coffee') as unknown as Neuron).setUnderstanding('Likes coffee.')
 	const failed: string[] = []
 	brain.on('neuron:query:failed', (event) => failed.push(event.neuronId))
 

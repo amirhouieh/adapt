@@ -2,7 +2,7 @@
  * Commentary — maps Brain events to human-readable commentary strings.
  * No LLM calls. Pure functions.
  */
-import type { Brain } from "@unbody-io/adapt"
+import type { Brain } from "adapt-memory"
 
 // --- Internal neuron definitions (always the same four) ---
 
@@ -131,9 +131,9 @@ export function commentaryFromEvent(
 			return { text: `${name}: ${previousStatus} → ${status}`, category: "progress" }
 		}
 
-		// --- Evaluator ---
+		// --- Evolution ---
 
-		case "evaluator:evaluation:started": {
+		case "evolution:started": {
 			const signalCount = payload.signalCount as number
 			return {
 				text: `Pausing to reflect on ${signalCount} signal${signalCount !== 1 ? "s" : ""}...`,
@@ -142,49 +142,30 @@ export function commentaryFromEvent(
 			}
 		}
 
-		case "evaluator:evaluation:completed": {
-			const decisionCount = payload.decisionCount as number
-			if (decisionCount > 0) {
-				const decisions = (payload.decisions as Array<{ action: string; reasoning: string }>)
-					.map((d) => `${d.action} — ${d.reasoning}`)
-					.join("; ")
-				return {
-					text: `Reorganizing: ${decisions}`,
-					priority: true,
-					category: "evolution",
-				}
+		case "evolution:change": {
+			const action = payload.action as string
+			const name = resolveName(brain, payload.neuronId as string)
+			const merged = ((payload.mergedIds as string[] | undefined) ?? [])
+				.map((id) => resolveName(brain, id))
+				.join(", ")
+			const templates: Record<string, string> = {
+				create: `New area: ${name}.`,
+				merge: `Combined ${merged} into ${name}.`,
+				remove: `Dropped ${name}.`,
+				update: `Reshaped ${name}.`,
 			}
-			const reasoning = payload.reasoning as string | undefined
 			return {
-				text: `Reflected — current structure works fine.${reasoning ? ` ${reasoning}` : ""}`,
+				text: templates[action] ?? `Changed ${name}.`,
 				priority: true,
 				category: "evolution",
 			}
 		}
 
-		// --- Evolution actions ---
-
-		case "evolution:action:executed": {
-			const action = payload.action as string
-			const reasoning = payload.reasoning as string
-			const targets = (payload.targets as string[])
-				.map((id) => resolveName(brain, id))
-				.join(", ")
-			const result = payload.result as Record<string, unknown> | undefined
-			const newNames = (result?.newNeuronIds as string[] | undefined)
-				?.map((id) => resolveName(brain, id))
-				.join(", ")
-
-			const templates: Record<string, string> = {
-				create: `New area: ${newNames}. ${reasoning}`,
-				merge: `Combined ${targets} into ${newNames}. ${reasoning}`,
-				split: `Split ${targets} into ${newNames}. ${reasoning}`,
-				delete: `Dropped ${targets}. ${reasoning}`,
-				update: `Reshaped ${targets}. ${reasoning}`,
-			}
-
+		case "evolution:completed": {
+			const changes = payload.changes as unknown[]
+			if (changes.length > 0) return null
 			return {
-				text: templates[action] ?? `Changed ${targets}.`,
+				text: "Reflected. The current structure works fine.",
 				priority: true,
 				category: "evolution",
 			}

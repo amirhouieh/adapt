@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
 	MemoryNeuronStore,
-	TextNeuron,
+	Neuron,
 	type AdaptiveTextLearningRuntime,
 	type AdaptLLMPlugin,
 } from '../src'
@@ -153,8 +153,8 @@ function runtime(
 	}
 }
 
-async function createNeuron(store: MemoryNeuronStore | SQLiteNeuronStore, adaptiveRuntime: AdaptiveTextLearningRuntime, initial = profile(), calls = { value: 0 }): Promise<TextNeuron> {
-	return TextNeuron.create({
+async function createNeuron(store: MemoryNeuronStore | SQLiteNeuronStore, adaptiveRuntime: AdaptiveTextLearningRuntime, initial = profile(), calls = { value: 0 }): Promise<Neuron> {
+	return Neuron.create({
 		id: 'preferences', model: queryModel, llm: fakeLlm(calls), store,
 		instructions: 'Remember engineering preferences.',
 		learning: { mode: 'adaptive', initialProfile: initial, runtime: adaptiveRuntime },
@@ -165,7 +165,7 @@ afterEach(() => {
 	for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true })
 })
 
-describe('adaptive TextNeuron public integration', () => {
+describe('adaptive Neuron public integration', () => {
 	it('creates, learns, commits once, and exposes pending/idempotence state without legacy calls', async () => {
 		const requests: ProseRequest[] = []
 		const calls = { value: 0 }
@@ -213,7 +213,7 @@ describe('adaptive TextNeuron public integration', () => {
 		expect(active).toEqual({ id: 'adaptive-profile', version: '1.r3' })
 		await neuron.dispose()
 
-		const restored = await TextNeuron.restore(path, {
+		const restored = await Neuron.restore(path, {
 			model: queryModel, llm: fakeLlm({ value: 0 }),
 			learning: { mode: 'adaptive', runtime: runtime([], requests) },
 		})
@@ -344,7 +344,7 @@ describe('adaptive TextNeuron public integration', () => {
 			},
 		}
 		const adaptiveRuntime = runtime([], [])
-		const neuron = await TextNeuron.create({
+		const neuron = await Neuron.create({
 			id: 'preferences',
 			model: queryModel,
 			llm,
@@ -384,7 +384,7 @@ describe('adaptive TextNeuron public integration', () => {
 		await first.dispose()
 
 		const restoreRuntime = runtime([], requests)
-		const restored = await TextNeuron.restore(path, {
+		const restored = await Neuron.restore(path, {
 			model: queryModel, llm: fakeLlm({ value: 0 }),
 			learning: { mode: 'adaptive', runtime: restoreRuntime },
 		})

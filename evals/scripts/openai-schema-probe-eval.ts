@@ -36,7 +36,6 @@ const neuronConfigSchema = z.object({
 	description: z.string().describe('Brief description of what this neuron tracks'),
 	instructions: z.string().describe('Full structured instructions'),
 	focus: z.string().nullable().describe('Optional focus areas (null if none)'),
-	type: z.enum(['text']).describe('Neuron type'),
 })
 
 // src/brain/schemas/schema.brain-decomposition.ts
@@ -193,7 +192,7 @@ const selectionSchema = z.object({
 	ids: z.array(z.string()).describe('IDs of relevant neurons'),
 })
 
-// src/neurons/base/query/direct.ts — responseSchema (no optional)
+// src/neurons/query/direct.ts — responseSchema (no optional)
 const responseSchema = z.object({
 	relevant: z.boolean().describe('Is this query within your area?'),
 	relevance: z.number().min(0).max(1),

@@ -9,17 +9,16 @@ import {
 	type LanguageModel,
 	Output,
 	resolveRuntimeLLM,
+	stepCountIs,
 	tool,
 } from '../llm'
+import { localModel } from '../llm/local/model'
 import {
 	type AdjustResult,
-	type BaseNeuron,
 	type GeneratedNeuronConfig,
 	type LearnInput,
-	type NeuronHealth,
-	type NeuronTypeDescriptor,
+	Neuron,
 	type TokenUsage,
-	textNeuronDescriptor,
 } from '../neurons'
 import type { BrainStore, NeuronStatus } from '../stores'
 import { MemoryBrainStore } from '../stores'
@@ -32,13 +31,20 @@ import {
 	synthesizeStream,
 } from './agent'
 import { BRAIN_DEFAULTS } from './config.defaults'
-import { Evaluator } from './evaluator/class'
-import { EVOLUTION_ACTIONS, type EvolutionDecision } from './evaluator/types'
-import { EvolutionOrchestrator } from './evolution/orchestrator'
-import type {
-	AggregatedEvolutionResult,
-	EvolutionActionResult,
-} from './evolution/types'
+import {
+	type EvolutionChange,
+	type EvolutionResult,
+	type EvolutionSignal,
+	evolutionPrompt,
+	evolutionSystemPrompt,
+	evolutionTools,
+	leftoverEntry,
+	leftoverIsEmpty,
+	leftoverPrompt,
+	leftoverSystemPrompt,
+	neuronConfigsSchema,
+	setupPrompt,
+} from './evolution'
 import { type InspectResult, inspect as runInspect } from './inspect'
 import {
 	getInternalNeuronConfigs,
@@ -48,8 +54,6 @@ import {
 	decomposeBrainPromptTemplate,
 	promptContextSchema,
 } from './prompts/prompt.decompose-brain-prompt'
-import { rootDecompositionPrompt } from './prompts/prompt.template.root-decomposition'
-import { brainDecompositionSchema } from './schemas/schema.brain-decomposition'
 import {
 	type BrainModelSlots,
 	type BrainState,
@@ -73,6 +77,20 @@ import type {
 	NeuronBatchResult,
 	ResolvedBrainConfig,
 } from './types'
+
+/**
+ * Value for the legacy `type` column of stored neuron records. Brain never
+ * reads it; it is still written because SQLite brains saved by 0.1.0 declare
+ * the column NOT NULL.
+ */
+const STORED_NEURON_TYPE = 'text'
+
+/** Most tool-call steps one evolution run may take. */
+const MAX_EVOLUTION_STEPS = 12
+/** Most recent dismissed batches shown to evolution as gaps. */
+const MAX_GAP_BATCHES = 20
+/** Past evolution runs shown to evolution. */
+const MAX_HISTORY = 5
 
 /**
  * Brain - A learning system that auto-generates and coordinates multiple neurons
@@ -101,27 +119,27 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	private readonly maxRepairAttempts?: number
 
 	// Runtime (rebuilt on init)
-	readonly neurons: Map<string, BaseNeuron<unknown>> = new Map()
-	readonly internalNeurons: Map<string, BaseNeuron<unknown>> = new Map()
-	readonly neuronTypes: Map<string, NeuronTypeDescriptor>
-	private neuronNames: Map<string, string> = new Map()
+	readonly neurons: Map<string, Neuron> = new Map()
+	readonly internalNeurons: Map<string, Neuron> = new Map()
 	private neuronStatus: Map<string, NeuronStatus> = new Map()
-	private evaluator?: Evaluator
-	private evolutionOrchestrator?: EvolutionOrchestrator
+	// Evolution: buffered signals, and a queue so runs never overlap
+	#signals: EvolutionSignal[] = []
+	#evolutionQueue: Promise<void> = Promise.resolve()
+	#pendingEvolutions = 0
+	// Batches some neuron took, waiting for one leftover call (not persisted)
+	#gapBuffer: Array<{ inputs: LearnInput[]; entry: string }> = []
 
 	// Constructor config (not persisted, used during init only)
 	private learningConfig?: LearningConfig
 	private readonly autoSetup: boolean
 	private readonly configNeurons?: GeneratedNeuronConfig[]
 	private readonly internalNeuronsConfig: BrainConfig['internalNeurons']
-	private readonly dismissedBatchMaxSize: number
-	private reinjectTimer: ReturnType<typeof setTimeout> | null = null
-	private pendingReinjectNeuronIds: Set<string> = new Set()
+	private readonly gaps: { maxStored: number; chunkChars: number }
 
 	private constructor(rawConfig: BrainConfig & { llm?: AdaptLLMPlugin }) {
 		super()
 
-		const model = rawConfig.model
+		const model = rawConfig.model ?? localModel()
 		const blueprintModel = rawConfig.blueprintModel ?? model
 
 		this.llm = resolveRuntimeLLM({
@@ -169,9 +187,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				coverageGap: {
 					relevanceThreshold:
 						rawConfig.evolution?.coverageGap?.relevanceThreshold ?? 0.3,
-					gapCountThreshold:
-						rawConfig.evolution?.coverageGap?.gapCountThreshold ?? 5,
-					windowSize: rawConfig.evolution?.coverageGap?.windowSize ?? 20,
 				},
 			},
 		})
@@ -182,14 +197,10 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		this.autoSetup = rawConfig.autoSetup ?? true
 		this.configNeurons = rawConfig.neurons
 		this.internalNeuronsConfig = rawConfig.internalNeurons
-		this.dismissedBatchMaxSize =
-			rawConfig.dismissedBatchBuffer?.maxSize ??
-			BRAIN_DEFAULTS.dismissedBatchBuffer.maxSize
-
-		// Register neuron type descriptors
-		this.neuronTypes = new Map([
-			[textNeuronDescriptor.type, textNeuronDescriptor],
-		])
+		this.gaps = {
+			maxStored: rawConfig.gaps?.maxStored ?? BRAIN_DEFAULTS.gaps.maxStored,
+			chunkChars: rawConfig.gaps?.chunkChars ?? BRAIN_DEFAULTS.gaps.chunkChars,
+		}
 	}
 
 	// ── Public accessors (read from state) ──────────────────────────────────
@@ -202,13 +213,9 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		return this.state.promptContext
 	}
 
-	get evolutionContext(): string | null {
-		return this.state.promptContext?.evolutionGuidance ?? null
-	}
-
 	/**
 	 * Computed view of state in the ResolvedBrainConfig shape.
-	 * External readers (evaluator, evolution handlers, evals) use this.
+	 * External readers (evals, tests) use this.
 	 * Internally, always read from this.state directly.
 	 */
 	get config(): ResolvedBrainConfig {
@@ -238,7 +245,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
-	// State persistence (mirrors BaseNeuron pattern)
+	// State persistence (mirrors Neuron pattern)
 	// ─────────────────────────────────────────────────────────────────────────
 
 	/**
@@ -316,9 +323,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				await this.freshInitialize()
 			}
 
-			// Initialize Evaluator and EvolutionOrchestrator if evolution is enabled
-			this.initEvolution()
-
 			this.emit('brain:init:completed', {
 				neuronIds: Array.from(this.neurons.keys()),
 			})
@@ -376,12 +380,8 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	}
 
 	/**
-	 * Fresh initialization: create explicit neurons + LLM decomposition → persist state
-	 *
-	 * Flow:
-	 * 1. If explicit `neurons` provided → create those first
-	 * 2. If `autopilot` is true → also run LLM decomposition for additional neurons
-	 * 3. Persist brain state for future restores
+	 * Fresh initialization: create explicit neurons, then (with `autoSetup`)
+	 * the neurons the model generates from the prompt, then persist state.
 	 */
 	private async freshInitialize(): Promise<void> {
 		// Heal orphans from a previous crashed init.
@@ -404,11 +404,11 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		// 1. Create explicit neurons if provided
 		if (this.configNeurons?.length) {
 			for (const config of this.configNeurons) {
-				await this.createNeuronFromConfig(config)
+				await this.addNeuron(config)
 			}
 		}
 
-		// 2. LLM decomposition (when autopilot is on)
+		// 2. Neurons generated from the prompt (autoSetup)
 		if (this.autoSetup) {
 			this.emit('brain:init:config:generating', {})
 
@@ -434,11 +434,11 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			for (const config of output.neurons) {
 				// Skip if a neuron with this ID was already created from explicit config
 				if (this.neurons.has(config.id)) continue
-				await this.createNeuronFromConfig(config)
+				await this.addNeuron(config)
 			}
 		}
 
-		// Decompose brain prompt into reusable context (purpose, evolution guidance, synthesis directive)
+		// Decompose brain prompt into reusable context (purpose, synthesis directive)
 		await this.decomposeBrainPrompt()
 
 		// Create internal neurons
@@ -460,7 +460,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 
 	/**
 	 * Decompose brain prompt into reusable context via LLM.
-	 * Extracts purpose, evolution guidance, and synthesis directive.
+	 * Extracts purpose and synthesis directive.
 	 * Result stored in state — skipped on restore.
 	 */
 	private async decomposeBrainPrompt(): Promise<void> {
@@ -480,19 +480,14 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 
 	/**
 	 * Restore neurons from store.neurons list (no LLM call).
-	 * Each record is just { id, type }. The neuron's own store has everything
+	 * Each record is just an id. The neuron's own store has everything
 	 * else — init() → loadState() handles the rest.
 	 */
 	private async restoreNeurons(): Promise<void> {
 		const records = await this.store.neurons.list()
 
 		for (const record of records) {
-			const descriptor = this.neuronTypes.get(record.type)
-			if (!descriptor) {
-				throw new Error(`Unknown neuron type: ${record.type}`)
-			}
-
-			const neuron = descriptor.factory({
+			const neuron = new Neuron({
 				id: record.id,
 				model: this.state.models.default,
 				blueprintModel: this.state.models.blueprint,
@@ -525,7 +520,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			await neuron.init({ expect: 'restore' })
 
 			this.neurons.set(record.id, neuron)
-			this.neuronNames.set(record.id, neuron.name)
 			this.neuronStatus.set(record.id, record.status ?? 'active')
 		}
 	}
@@ -533,18 +527,13 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	/**
 	 * Restore internal neurons from store.internalNeurons (no LLM call).
 	 * Same pattern as restoreNeurons() but writes to this.internalNeurons.
-	 * Internal neuron signals are NOT forwarded to the evaluator.
+	 * Internal neuron signals are NOT forwarded to evolution.
 	 */
 	private async restoreInternalNeurons(): Promise<void> {
 		const records = await this.store.internalNeurons.list()
 
 		for (const record of records) {
-			const descriptor = this.neuronTypes.get(record.type)
-			if (!descriptor) {
-				throw new Error(`Unknown neuron type: ${record.type}`)
-			}
-
-			const neuron = descriptor.factory({
+			const neuron = new Neuron({
 				id: record.id,
 				model: this.state.models.default,
 				blueprintModel: this.state.models.blueprint,
@@ -557,13 +546,10 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				store: this.store.getNeuronStore(record.id),
 			})
 
-			// Forward events through Brain but do NOT forward signals to evaluator
+			// Forward events through Brain but do NOT forward signals to evolution
 			neuron.on((event) => {
 				this.emit(event.type as keyof BrainEventMap, event.payload as never)
 			})
-
-			// Wire synthesis events to evaluator as "system knowledge updated" signals
-			this.wireInternalNeuronSignals(neuron)
 
 			await neuron.init({ expect: 'restore' })
 
@@ -579,10 +565,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		const configs = getInternalNeuronConfigs(this.internalNeuronsConfig)
 
 		for (const config of configs) {
-			const descriptor = this.neuronTypes.get(config.type)
-			if (!descriptor) continue
-
-			const neuron = descriptor.factory({
+			const neuron = new Neuron({
 				id: config.id,
 				model: this.state.models.default,
 				blueprintModel: this.state.models.blueprint,
@@ -603,132 +586,31 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 				},
 			})
 
-			// Forward events but do NOT forward signals to evaluator
+			// Forward events but do NOT forward signals to evolution
 			neuron.on((event) => {
 				this.emit(event.type as keyof BrainEventMap, event.payload as never)
 			})
-
-			// Wire synthesis events to evaluator as "system knowledge updated" signals
-			this.wireInternalNeuronSignals(neuron)
 
 			await neuron.init({ expect: 'fresh' })
 
 			this.internalNeurons.set(config.id, neuron)
 			await this.store.internalNeurons.add({
 				id: config.id,
-				type: config.type,
+				type: STORED_NEURON_TYPE,
 			})
 		}
 	}
 
 	/**
-	 * Initialize evolution system (evaluator + orchestrator)
-	 */
-	private initEvolution(): void {
-		if (!this.state.evolution.enabled) return
-
-		this.evaluator = new Evaluator(
-			this,
-			this.state.evolution.evaluatorSignalThreshold,
-		)
-
-		// Forward all Evaluator events through Brain
-		this.evaluator.on((event) => {
-			this.emit(event.type as keyof BrainEventMap, event.payload as never)
-		})
-
-		// Auto-execute decisions from signal-triggered evaluations
-		this.evaluator.on('evaluator:evaluation:completed', async (event) => {
-			if (event.source === 'auto' && event.decisions.length > 0) {
-				await this.executeEvolutionDecisions(event.decisions)
-			}
-		})
-
-		// Initialize evolution orchestrator
-		this.evolutionOrchestrator = new EvolutionOrchestrator(this)
-
-		// Re-inject dismissed batches when new neurons are added.
-		// Debounce with 5s window to collect all new neuron IDs into a single pass,
-		// so every batch is tried against all new neurons before delete/update.
-		this.on('brain:neuron:added', (event) => {
-			this.pendingReinjectNeuronIds.add(event.neuronId)
-			if (this.reinjectTimer) clearTimeout(this.reinjectTimer)
-			this.reinjectTimer = setTimeout(() => {
-				const ids = Array.from(this.pendingReinjectNeuronIds)
-				this.pendingReinjectNeuronIds.clear()
-				this.reinjectTimer = null
-				this.reinjectDismissedBatches(ids).catch((err: unknown) => {
-					const msg = err instanceof Error ? err.message : String(err)
-					console.error(`[brain] re-injection error:`, msg)
-				})
-			}, 5000)
-		})
-
-		// Feed gap neuron resolution observations after evolution actions
-		this.on('evolution:action:executed', (event) => {
-			const gapNeuron = this.internalNeurons.get(
-				INTERNAL_NEURON_IDS.injectionGaps,
-			)
-			if (!gapNeuron) return
-
-			const { action, guidance } = event
-			let text: string | undefined
-
-			if (action === 'create') {
-				text = `A new specialist has been created to cover previously uncovered domains. ${guidance}`
-			} else if (action === 'update' && this.guidanceMentionsGaps(guidance)) {
-				text = `An existing specialist was updated to cover previously uncovered domains. ${guidance}`
-			} else if (action === 'merge' && this.guidanceMentionsGaps(guidance)) {
-				text = `Specialists were consolidated to cover previously uncovered domains. ${guidance}`
-			}
-
-			if (text) {
-				gapNeuron.learn([text]).catch((err) => {
-					console.error(
-						`[brain] gap resolution feed error:`,
-						err?.message ?? err,
-					)
-				})
-			}
-		})
-
-		// Restore evolution history from store
-		this.restoreEvolutionHistory()
-	}
-
-	/**
-	 * Restore evolution history from brain store into evaluator
-	 */
-	private async restoreEvolutionHistory(): Promise<void> {
-		if (!this.evaluator) return
-
-		const records = await this.store.evolution.list()
-		for (const record of records) {
-			const decisions = record.decisions as Array<{
-				action: string
-				targets: string[]
-				reasoning: string
-			}>
-			this.evaluator.restoreHistoryEntry({
-				timestamp: new Date(record.created_at),
-				decisions,
-			})
-		}
-	}
-
-	/**
-	 * Generate neuron configs from prompt via LLM
+	 * Generate neuron configs from the brain prompt (one call)
 	 */
 	private async generateNeuronConfigs() {
 		return generate({
 			llm: this.llm,
 			model: this.state.models.init,
-			prompt: rootDecompositionPrompt(
-				this.prompt,
-				Array.from(this.neuronTypes.values()),
-			),
-			output: Output.object({ schema: brainDecompositionSchema }),
-			repairSchema: brainDecompositionSchema,
+			prompt: setupPrompt(this.prompt),
+			output: Output.object({ schema: neuronConfigsSchema }),
+			repairSchema: neuronConfigsSchema,
 			...this.llmRepairOptions,
 		})
 	}
@@ -744,16 +626,14 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	}
 
 	/**
-	 * Create a neuron from a generated config (factory — routes by config.type)
+	 * Add a neuron. Used for explicit neurons, setup, evolution and by users.
 	 */
-	async createNeuronFromConfig(
-		config: GeneratedNeuronConfig & {
-			thresholds?: { minImportance?: number; maxObservations?: number }
-			health?: Partial<NeuronHealth>
-		},
-	): Promise<BaseNeuron<unknown>> {
+	async addNeuron(config: GeneratedNeuronConfig): Promise<Neuron> {
+		if (this.neurons.has(config.id) || this.internalNeurons.has(config.id)) {
+			throw new Error(`Neuron ${config.id} already exists`)
+		}
 		const learning = this.learningConfig
-		const shared = {
+		const neuron = new Neuron({
 			id: config.id,
 			model: learning?.model ?? this.state.models.default,
 			blueprintModel: learning?.blueprintModel ?? this.state.models.blueprint,
@@ -764,7 +644,6 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			origin: 'prompt' as const,
 			name: config.name,
 			description: config.description,
-			health: config.health,
 			understand: {
 				thresholds: {
 					maxObservations:
@@ -772,19 +651,9 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 					maxTokens: BRAIN_DEFAULTS.learning.understand.thresholds.maxTokens,
 					minImportance:
 						BRAIN_DEFAULTS.learning.understand.thresholds.minImportance,
-					...this.learningConfig?.understand?.thresholds,
-					...config.thresholds,
+					...learning?.understand?.thresholds,
 				},
 			},
-		}
-
-		const descriptor = this.neuronTypes.get(config.type)
-		if (!descriptor) {
-			throw new Error(`Unknown neuron type: ${config.type}`)
-		}
-
-		const neuron = descriptor.factory({
-			...shared,
 			store: this.store.getNeuronStore(config.id),
 			governance: this.#governanceFor(config),
 		})
@@ -794,10 +663,8 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			this.emit(event.type as keyof BrainEventMap, event.payload as never)
 		})
 
-		// Forward neuron:signal events to Evaluator (when implemented)
+		// Neuron health signals feed evolution
 		neuron.on('neuron:signal', (event) => {
-			// In Stage 2, this will forward to Evaluator
-			// For now, just re-emit through Brain
 			this.signal({
 				source: event.neuronId,
 				description: event.description,
@@ -807,17 +674,15 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		// Feed synthesis events to global injection understanding
 		this.wireExternalNeuronSynthesisEvents(neuron)
 
-		// Initialize the neuron (generates observe/synthesize prompts)
 		await neuron.init({ expect: 'fresh' })
 
 		this.neurons.set(config.id, neuron)
-		this.neuronNames.set(config.id, config.name)
 		this.neuronStatus.set(config.id, 'active')
 
 		// Persist neuron ref (neuron's own store has everything else)
 		await this.store.neurons.add({
 			id: config.id,
-			type: config.type,
+			type: STORED_NEURON_TYPE,
 			status: 'active',
 		})
 
@@ -831,23 +696,57 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	}
 
 	/**
-	 * Add a neuron manually
+	 * Change a neuron's name, description or instructions. Its memory is kept.
 	 */
-	async addNeuron(config: GeneratedNeuronConfig): Promise<BaseNeuron<unknown>> {
-		return this.createNeuronFromConfig(config)
+	async updateNeuron(
+		id: string,
+		changes: Partial<
+			Pick<GeneratedNeuronConfig, 'name' | 'description' | 'instructions'>
+		>,
+	): Promise<Neuron> {
+		const neuron = this.#neuronOrThrow(id)
+		await neuron.update(changes)
+		return neuron
 	}
 
 	/**
-	 * Remove a neuron (basic tier — no evolution required)
-	 *
-	 * Disposes neuron store, removes from map, emits event.
+	 * Replace two or more neurons with one new neuron. The new neuron starts
+	 * with their memories joined; the old neurons are removed.
+	 */
+	async mergeNeurons(
+		ids: string[],
+		config: GeneratedNeuronConfig,
+	): Promise<Neuron> {
+		const sources = [...new Set(ids)].map((id) => this.#neuronOrThrow(id))
+		if (sources.length < 2) {
+			throw new Error('Merge needs two or more different neurons')
+		}
+		const memories = await Promise.all(
+			sources.map((neuron) => neuron.getUnderstanding()),
+		)
+		const merged = await this.addNeuron(config)
+		const memory = memories.filter((m) => m.length > 0).join('\n\n')
+		if (memory) await merged.setUnderstanding(memory)
+		for (const neuron of sources) await this.removeNeuron(neuron.id)
+		return merged
+	}
+
+	/**
+	 * Remove a neuron and everything it stored. The id can be created again.
 	 */
 	async removeNeuron(id: string): Promise<void> {
+		const neuron = this.#neuronOrThrow(id)
+		await neuron.erase()
+		this.neurons.delete(id)
+		this.neuronStatus.delete(id)
+		await this.store.neurons.delete(id)
+		this.emit('brain:neuron:removed', { neuronId: id })
+	}
+
+	#neuronOrThrow(id: string): Neuron {
 		const neuron = this.neurons.get(id)
-		if (!neuron) {
-			throw new Error(`Neuron ${id} not found`)
-		}
-		await this.__removeNeuron(id)
+		if (!neuron) throw new Error(`Neuron ${id} not found`)
+		return neuron
 	}
 
 	/**
@@ -859,7 +758,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	async adjustNeuron(
 		id: string,
 		directive: string,
-	): Promise<{ neuron: BaseNeuron<unknown>; result: AdjustResult }> {
+	): Promise<{ neuron: Neuron; result: AdjustResult }> {
 		const neuron = this.neurons.get(id)
 		if (!neuron) {
 			throw new Error(`Neuron ${id} not found`)
@@ -871,14 +770,14 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	/**
 	 * Get all neurons
 	 */
-	getNeurons(): BaseNeuron<unknown>[] {
+	getNeurons(): Neuron[] {
 		return Array.from(this.neurons.values())
 	}
 
 	/**
 	 * Get a specific neuron by ID
 	 */
-	getNeuron(id: string): BaseNeuron<unknown> | undefined {
+	getNeuron(id: string): Neuron | undefined {
 		return this.neurons.get(id)
 	}
 
@@ -930,7 +829,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	/**
 	 * Get a specific internal neuron by ID
 	 */
-	getInternalNeuron(id: string): BaseNeuron<unknown> | undefined {
+	getInternalNeuron(id: string): Neuron | undefined {
 		return this.internalNeurons.get(id)
 	}
 
@@ -1001,8 +900,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 					results: neuronResults,
 				})
 
-				// Check if all neurons dismissed this batch
-				await this.handleDismissedBatch(batchId, batch, neuronResults)
+				await this.handleGaps(batchId, batch, neuronResults)
 
 				batchResults.push({
 					id: batchId,
@@ -1144,7 +1042,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 					return understanding || buffer.count > 0 ? neuron : null
 				}),
 			)
-		).filter((l): l is BaseNeuron<unknown> => l !== null)
+		).filter((l): l is Neuron => l !== null)
 
 		// Pre-select relevant neurons via LLM
 		const relevantNeurons = await this.selectRelevantNeurons(
@@ -1159,10 +1057,7 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
 				try {
-					const result = await neuron.query(query, {
-						mode: 'direct',
-						...generateOptions,
-					})
+					const result = await neuron.query(query, generateOptions)
 					return { id: neuron.id, ...result }
 				} catch {
 					return null
@@ -1216,9 +1111,8 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 			if (!understanding && buffer.count === 0) continue
 			specialists.push({
 				id: neuron.id,
-				name: this.neuronNames.get(neuron.id) ?? neuron.id,
-				description:
-					neuron.description || this.neuronNames.get(neuron.id) || neuron.id,
+				name: neuron.name,
+				description: neuron.description || neuron.name,
 				query: (question, queryOptions) =>
 					neuron.query(question, { ...generateOptions, ...queryOptions }),
 			})
@@ -1241,15 +1135,15 @@ export class Brain extends TypedEmitter<BrainEventMap> {
 	 */
 	private async selectRelevantNeurons(
 		query: string,
-		neurons: BaseNeuron<unknown>[],
+		neurons: Neuron[],
 		model: LanguageModel,
 		generateOptions: AdaptGenerateOptions,
-	): Promise<BaseNeuron<unknown>[]> {
+	): Promise<Neuron[]> {
 		if (neurons.length <= 1) return neurons
 
 		const neuronMenu = neurons.map((l) => ({
 			id: l.id,
-			name: this.neuronNames.get(l.id) ?? l.id,
+			name: l.name,
 			description: l.description || '',
 		}))
 
@@ -1302,7 +1196,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 					return understanding || buffer.count > 0 ? neuron : null
 				}),
 			)
-		).filter((l): l is BaseNeuron<unknown> => l !== null)
+		).filter((l): l is Neuron => l !== null)
 
 		// Pre-select relevant neurons via LLM
 		const relevantNeurons = await this.selectRelevantNeurons(
@@ -1317,10 +1211,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		const neuronQueries = await Promise.all(
 			relevantNeurons.map(async (neuron) => {
 				try {
-					const result = await neuron.query(query, {
-						mode: 'direct',
-						...generateOptions,
-					})
+					const result = await neuron.query(query, generateOptions)
 					return { id: neuron.id, ...result }
 				} catch {
 					return null
@@ -1374,9 +1265,8 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			if (!understanding && buffer.count === 0) continue
 			specialists.push({
 				id: neuron.id,
-				name: this.neuronNames.get(neuron.id) ?? neuron.id,
-				description:
-					neuron.description || this.neuronNames.get(neuron.id) || neuron.id,
+				name: neuron.name,
+				description: neuron.description || neuron.name,
 				query: (question, queryOptions) =>
 					neuron.query(question, { ...generateOptions, ...queryOptions }),
 			})
@@ -1495,45 +1385,28 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Send a signal to the evolution system (Living Brain)
-	 *
-	 * @param signal - Signal with source and description
+	 * Send a signal to evolution. Signals are buffered; with `autoEvaluate`,
+	 * reaching `evaluatorSignalThreshold` starts an evolution run.
 	 */
-	signal(signal: {
-		source: string
-		description: string
-		bypass?: boolean
-	}): void {
-		const signalEvent = {
-			source: signal.source,
-			description: signal.description,
-			timestamp: new Date(),
-			bypass: signal.bypass,
-		}
-
-		this.emit('brain:signal:received', signalEvent)
-
-		// Forward to Evaluator
-		if (this.evaluator) {
-			this.evaluator.signal(signalEvent)
-		}
+	signal(signal: { source: string; description: string }): void {
+		const received: EvolutionSignal = { ...signal, timestamp: new Date() }
+		this.emit('brain:signal:received', received)
+		if (!this.state.evolution.enabled) return
+		this.#signals.push(received)
+		this.#maybeEvolve()
 	}
 
-	/**
-	 * Trigger evolution directly, bypassing the signal buffer.
-	 * Sends the signal as a bypass signal to the evaluator for immediate evaluation.
-	 */
-	async triggerEvolution(signal: {
-		source: string
-		description: string
-	}): Promise<void> {
-		if (!this.evaluator) return
-
-		this.signal({
-			source: signal.source,
-			description: signal.description,
-			bypass: true,
-		})
+	#maybeEvolve(): void {
+		const { enabled, autoEvaluate, evaluatorSignalThreshold } =
+			this.state.evolution
+		if (!enabled || !autoEvaluate || this.#pendingEvolutions > 0) return
+		if (this.#signals.length < evaluatorSignalThreshold) return
+		// A failed run already emitted evolution:failed and kept its signals;
+		// the next signal retries.
+		this.#queueEvolution('auto').then(
+			() => this.#maybeEvolve(),
+			() => undefined,
+		)
 	}
 
 	/**
@@ -1598,11 +1471,16 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Re-inject pending dismissed batches into newly created neurons.
-	 * If accepted → remove from buffer. If dismissed again → increment retryCount.
+	 * Retry stored gaps on neurons an evolution run just changed. A batch no
+	 * neuron took goes to every created, updated or merged neuron. A leftover
+	 * gap (from batches some neuron took) goes only to neurons created or
+	 * merged after it was stored, so neurons that took it never see it again.
+	 * If accepted → remove the record. If dismissed again → increment retryCount.
 	 */
 	private async reinjectDismissedBatches(
-		newNeuronIds: string[],
+		changedIds: string[],
+		createdIds: string[],
+		runStartedAt: string,
 	): Promise<void> {
 		const all = await this.store.dismissedBatches.list()
 		const unresolved = all.filter(
@@ -1610,19 +1488,30 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 		if (unresolved.length === 0) return
 
-		const newNeurons = newNeuronIds
-			.map((id) => this.neurons.get(id))
-			.filter((l): l is BaseNeuron<unknown> => l !== undefined)
-		if (newNeurons.length === 0) return
+		const neuronsOf = (ids: string[]) =>
+			ids
+				.map((id) => this.neurons.get(id))
+				.filter((l): l is Neuron => l !== undefined)
+		const changed = neuronsOf(changedIds)
+		const created = neuronsOf(createdIds)
+		const tried = new Set<Neuron>()
 
-		const resolvedGaps: string[] = []
+		let absorbed = 0
 
 		for (const batch of unresolved) {
 			const data = batch.data as LearnInput[]
+			const targets =
+				leftoverOf(batch.gaps) === undefined
+					? changed
+					: batch.timestamp <= runStartedAt
+						? created
+						: []
+			if (targets.length === 0) continue
 
-			// Try every new neuron — don't stop at first acceptance
+			// Try every target — don't stop at first acceptance
 			let anyAccepted = false
-			for (const neuron of newNeurons) {
+			for (const neuron of targets) {
+				tried.add(neuron)
 				const result = await neuron.learn(data)
 				if (result.status !== 'observe:dismissed') {
 					anyAccepted = true
@@ -1631,8 +1520,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 
 			if (anyAccepted) {
 				await this.store.dismissedBatches.delete(batch.id)
-				const gaps = batch.gaps as string[] | undefined
-				if (gaps?.length) resolvedGaps.push(...gaps)
+				absorbed++
 			} else {
 				await this.store.dismissedBatches.update(batch.id, {
 					retryCount: batch.retryCount + 1,
@@ -1641,13 +1529,14 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			}
 		}
 
-		// Notify gap neuron that these gaps are now covered
-		if (resolvedGaps.length > 0) {
+		// Tell the gap neuron that set-aside data is now covered
+		if (absorbed > 0) {
 			const gapNeuron = this.internalNeurons.get(
 				INTERNAL_NEURON_IDS.injectionGaps,
 			)
 			if (gapNeuron) {
-				const resolvedText = `Previously dismissed data has now been absorbed by a new specialist. Topics now covered: ${resolvedGaps.join(', ')}.`
+				const names = [...tried].map((n) => n.name).join(', ')
+				const resolvedText = `${absorbed} previously set-aside batch${absorbed === 1 ? ' was' : 'es were'} absorbed after evolution by: ${names}.`
 				gapNeuron.learn([resolvedText]).catch((err) => {
 					const msg = err instanceof Error ? err.message : String(err)
 					console.error(`[internal-neuron] gap resolution feed error:`, msg)
@@ -1702,6 +1591,10 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			(r) => r.relevance < relevanceThreshold,
 		)
 		if (allLowRelevance) {
+			this.signal({
+				source: 'brain',
+				description: `No neuron could answer: ${query}`,
+			})
 			const gapNeuron = this.internalNeurons.get(INTERNAL_NEURON_IDS.queryGaps)
 			if (gapNeuron) {
 				const allGaps = neuronResults.flatMap((r) => r.gaps)
@@ -1722,133 +1615,69 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Check if evolution guidance text references coverage gaps.
-	 */
-	private guidanceMentionsGaps(guidance: string): boolean {
-		const lower = guidance.toLowerCase()
-		return (
-			lower.includes('gap') ||
-			lower.includes('uncovered') ||
-			lower.includes('missing') ||
-			lower.includes('not covered') ||
-			lower.includes('dismissed')
-		)
-	}
-
-	/**
-	 * Notify the evaluator when an internal neuron synthesizes.
-	 */
-	private wireInternalNeuronSignals(neuron: BaseNeuron<unknown>): void {
-		neuron.on('neuron:synthesized', (event) => {
-			this.signal({
-				source: 'system',
-				description: `${neuron.name} updated: ${event.evolution || 'new understanding'}`,
-			})
-		})
-	}
-
-	/**
 	 * Wire an external neuron's synthesis events to the global understanding neuron.
 	 * Feeds understanding updates so the global neuron can form a unified picture.
 	 */
-	private wireExternalNeuronSynthesisEvents(neuron: BaseNeuron<unknown>): void {
+	private wireExternalNeuronSynthesisEvents(neuron: Neuron): void {
 		neuron.on('neuron:synthesized', (event) => {
 			const globalNeuron = this.internalNeurons.get(
 				INTERNAL_NEURON_IDS.globalUnderstanding,
 			)
 			if (!globalNeuron) return
 
-			const feedGlobal = (understanding: string) => {
-				globalNeuron
-					.learn([
-						[
-							`Specialist ${event.neuronId} updated its understanding.`,
-							`Change: ${event.evolution}`,
-							`Understanding:\n${understanding}`,
-						].join('\n'),
-					])
-					.catch((err) => {
-						console.error(`[internal-neuron] feed error:`, err?.message ?? err)
-					})
-			}
-
-			if (typeof event.newUnderstanding === 'string') {
-				// Text neuron — understanding is already prose
-				feedGlobal(event.newUnderstanding)
-			} else {
-				// List neuron — query for a prose compilation
-				neuron
-					.query('Compile everything you know into a comprehensive summary.')
-					.then((result) => {
-						feedGlobal(result.insight || JSON.stringify(event.newUnderstanding))
-					})
-					.catch((err) => {
-						console.error(
-							`[internal-neuron] list summary query error:`,
-							err?.message ?? err,
-						)
-					})
-			}
+			globalNeuron
+				.learn([
+					[
+						`Specialist ${event.neuronId} updated its understanding.`,
+						`Change: ${event.evolution}`,
+						`Understanding:\n${event.newUnderstanding}`,
+					].join('\n'),
+				])
+				.catch((err) => {
+					console.error(`[internal-neuron] feed error:`, err?.message ?? err)
+				})
 		})
 	}
 
 	/**
-	 * Handle a batch that was dismissed by all external neurons.
-	 * Persists to dismissed batch buffer and feeds the injection gap neuron.
+	 * Find gaps in a batch after every neuron saw it.
+	 * - No neuron took it: the whole batch is a gap. Brain stores it for
+	 *   evolution, sends a signal, and feeds the injection gap neuron.
+	 * - Some neuron took it: the batch and the notes the neurons kept go to
+	 *   the gap buffer, which finds what no neuron kept (see #flushGapBuffer).
 	 */
-	private async handleDismissedBatch(
+	private async handleGaps(
 		batchId: string,
 		batch: LearnInput[],
 		neuronResults: NeuronBatchResult[],
 	): Promise<void> {
-		const allDismissed = neuronResults.every(
-			(r) => r.result.status === 'observe:dismissed',
+		const takers = neuronResults.filter(
+			(r) => r.result.status !== 'observe:dismissed',
 		)
-		if (!allDismissed) return
-
-		// Collect gaps from all dismissals
-		const gaps: string[] = []
-		for (const r of neuronResults) {
-			if (r.result.status === 'observe:dismissed' && r.result.gaps) {
-				gaps.push(...r.result.gaps)
-			}
-		}
-
-		const now = new Date().toISOString()
-
-		// Persist dismissed batch
-		await this.store.dismissedBatches.add({
-			id: batchId,
-			data: batch,
-			gaps,
-			timestamp: now,
-			retryCount: 0,
-			status: 'pending',
-		})
-
-		// Size-based eviction
-		const count = await this.store.dismissedBatches.count()
-		if (count > this.dismissedBatchMaxSize) {
-			const all = await this.store.dismissedBatches.list()
-			all.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-			const toEvict = all.slice(0, count - this.dismissedBatchMaxSize)
-			for (const record of toEvict) {
-				await this.store.dismissedBatches.delete(record.id)
-			}
-		}
-
-		// When there are no external neurons, skip the gap neuron (nothing to verify)
-		// and signal the evaluator directly with the actual data content
-		if (neuronResults.length === 0) {
-			const summary = batch
-				.map((item) => (typeof item === 'string' ? item : item.text))
-				.join('; ')
-			this.signal({
-				source: 'system',
-				description: `No neurons exist to handle incoming data. Items: ${summary}`,
+		if (takers.length > 0) {
+			const notes = takers.flatMap((r) =>
+				'notes' in r.result && r.result.notes ? [r.result.notes] : [],
+			)
+			// Without notes (a taker deferred or failed) there is nothing to compare
+			if (notes.length === 0) return
+			this.#gapBuffer.push({
+				inputs: batch,
+				entry: leftoverEntry(batch.map(inputText), notes),
 			})
+			const chars = this.#gapBuffer.reduce((n, e) => n + e.entry.length, 0)
+			if (chars >= this.gaps.chunkChars) await this.#flushGapBuffer()
 			return
 		}
+
+		await this.#storeGap(batchId, batch, [])
+
+		this.signal({
+			source: 'brain',
+			description: `${batch.length} input${batch.length === 1 ? '' : 's'} taken by no neuron`,
+		})
+
+		// With no neurons yet, the gap neuron has nothing to learn from
+		if (neuronResults.length === 0) return
 
 		// Feed injection gap neuron (awaited so observations are stored before we continue)
 		const gapNeuron = this.internalNeurons.get(
@@ -1856,9 +1685,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		)
 		if (gapNeuron) {
 			try {
-				const items = batch.map((item) =>
-					typeof item === 'string' ? item : item.text,
-				)
+				const items = batch.map(inputText)
 				const gapText = `Data arrived that no specialist could absorb. It has been set aside for now:\n${items.map((item) => `- ${item}`).join('\n')}`
 				await gapNeuron.learn([gapText])
 			} catch (err) {
@@ -1869,334 +1696,208 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	}
 
 	/**
-	 * Manually trigger evolution evaluation (Living Brain)
-	 *
-	 * Evaluates buffered signals and returns evolution decisions.
-	 * Decisions are not automatically executed - use evolution action handlers for that.
-	 *
-	 * @returns Array of evolution decisions (empty if no changes needed)
-	 * @throws Error if evolution is not enabled
+	 * One leftover call over the buffered batches finds what no neuron kept.
+	 * When something is left, Brain stores the batches with the leftover text
+	 * and sends the leftover text to evolution as one signal.
 	 */
-	async evaluateEvolution(options?: { dryRun?: boolean }): Promise<{
-		decisions: EvolutionDecision[]
-		results: AggregatedEvolutionResult
-	}> {
-		if (!this.evaluator) {
-			throw new Error(
-				'Evolution is not enabled. Set config.evolution.enabled = true',
-			)
+	async #flushGapBuffer(): Promise<void> {
+		const entries = this.#gapBuffer.splice(0)
+		if (entries.length === 0) return
+		let leftover: string
+		try {
+			const result = await generate({
+				llm: this.llm,
+				model: this.state.models.default,
+				system: leftoverSystemPrompt,
+				prompt: leftoverPrompt(entries.map((e) => e.entry)),
+				...this.llmRepairOptions,
+			})
+			leftover = result.text.trim()
+		} catch (err) {
+			// Keep the batches; the next flush tries again
+			this.#gapBuffer.unshift(...entries)
+			const msg = err instanceof Error ? err.message : String(err)
+			console.error('[brain] leftover call error:', msg)
+			return
 		}
+		if (leftoverIsEmpty(leftover, entries.length)) return
 
-		const decisions = await this.evaluator.evaluate('manual')
-
-		// In dryRun mode, return decisions without executing them
-		if (options?.dryRun) {
-			return {
-				decisions,
-				results: {
-					created: [],
-					updated: [],
-					deleted: [],
-					merged: [],
-					split: [],
-				},
-			}
-		}
-
-		// Execute decisions automatically
-		const results = await this.executeEvolutionDecisions(decisions)
-
-		return { decisions, results }
-	}
-
-	/**
-	 * Streaming variant of evaluateEvolution().
-	 *
-	 * Returns the raw ai-sdk stream so the consumer can iterate fullStream
-	 * for evaluator tool events in real time, plus a decisions promise that
-	 * resolves after the stream finishes and decisions are optionally executed.
-	 */
-	async evaluateEvolutionStream(options?: { dryRun?: boolean }): Promise<{
-		stream: AdaptStreamResult
-		decisions: Promise<{
-			decisions: EvolutionDecision[]
-			results: AggregatedEvolutionResult
-		}>
-	}> {
-		if (!this.evaluator) {
-			throw new Error(
-				'Evolution is not enabled. Set config.evolution.enabled = true',
-			)
-		}
-
-		const { stream, decisions: rawDecisions } =
-			await this.evaluator.evaluateStream('manual')
-
-		const decisions = rawDecisions.then(async (decisions) => {
-			if (options?.dryRun || decisions.length === 0) {
-				return {
-					decisions,
-					results: {
-						created: [],
-						updated: [],
-						deleted: [],
-						merged: [],
-						split: [],
-					} as AggregatedEvolutionResult,
-				}
-			}
-			const results = await this.executeEvolutionDecisions(decisions)
-			return { decisions, results }
-		})
-
-		return { stream, decisions }
-	}
-
-	/**
-	 * Execute evolution decisions (private helper)
-	 */
-	private async executeEvolutionDecisions(
-		decisions: EvolutionDecision[],
-	): Promise<AggregatedEvolutionResult> {
-		if (!this.evolutionOrchestrator) {
-			throw new Error('Evolution orchestrator not initialized')
-		}
-
-		return this.evolutionOrchestrator.executeDecisions(decisions)
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Evolution Handler Helpers (internal, used by evolution action handlers)
-	// ─────────────────────────────────────────────────────────────────────────
-
-	/**
-	 * Internal: Remove neuron (used by evolution handlers)
-	 * @internal
-	 */
-	async __removeNeuron(neuronId: string): Promise<void> {
-		const neuron = this.neurons.get(neuronId)
-		if (neuron) {
-			await neuron.dispose()
-		}
-		this.neurons.delete(neuronId)
-		this.neuronNames.delete(neuronId)
-		this.neuronStatus.delete(neuronId)
-		await this.store.neurons.delete(neuronId)
-		this.emit('brain:neuron:removed', { neuronId })
-	}
-
-	/**
-	 * Internal: Emit evolution event (used by evolution handlers)
-	 * @internal
-	 */
-	__emitEvolutionEvent<K extends keyof BrainEventMap>(
-		eventName: K,
-		payload: BrainEventMap[K],
-	): void {
-		this.emit(eventName, payload)
-	}
-
-	/**
-	 * Internal: Update neuron name in Brain's name map (used by evolution handlers)
-	 * @internal
-	 */
-	__updateNeuronName(neuronId: string, newName: string): void {
-		this.neuronNames.set(neuronId, newName)
-	}
-
-	private getNeuronOrThrow(neuronId: string): BaseNeuron<unknown> {
-		const neuron = this.neurons.get(neuronId)
-		if (!neuron) {
-			throw new Error(`Neuron not found after evolution action: ${neuronId}`)
-		}
-		return neuron
-	}
-
-	private getNewNeuronIdsOrThrow(result: EvolutionActionResult): string[] {
-		if (!('newNeuronIds' in result)) {
-			throw new Error('Evolution action did not create a neuron')
-		}
-		return result.newNeuronIds
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// Manual Evolution API
-	// ─────────────────────────────────────────────────────────────────────────
-
-	/**
-	 * Create a new neuron based on natural language guidance
-	 *
-	 * @param guidance - Natural language description of the neuron to create
-	 * @returns The newly created neuron
-	 * @throws If evolution is not enabled
-	 *
-	 * @example
-	 * ```ts
-	 * const neuron = await brain.createNeuron('Track API design patterns and best practices')
-	 * ```
-	 */
-	async createNeuron(guidance: string): Promise<BaseNeuron<unknown>> {
-		if (!this.evolutionOrchestrator) {
-			throw new Error(
-				'Evolution is not enabled. Set config.evolution.enabled = true',
-			)
-		}
-
-		const decision: EvolutionDecision = {
-			action: EVOLUTION_ACTIONS.create,
-			reasoning: 'Manual creation',
-			guidance,
-			targets: [],
-		}
-
-		const result =
-			await this.evolutionOrchestrator.executeSingleDecision(decision)
-		const neuronId = this.getNewNeuronIdsOrThrow(result)[0]
-		return this.getNeuronOrThrow(neuronId)
-	}
-
-	/**
-	 * Merge multiple neurons into a single unified neuron
-	 *
-	 * @param neuronIds - IDs of neurons to merge (minimum 2)
-	 * @param guidance - Natural language description of how to merge
-	 * @returns The newly created merged neuron
-	 * @throws If evolution is not enabled or neuron IDs invalid
-	 *
-	 * @example
-	 * ```ts
-	 * const merged = await brain.mergeNeurons(
-	 *   ['neuron1', 'neuron2'],
-	 *   'Combine into unified testing practices neuron'
-	 * )
-	 * ```
-	 */
-	async mergeNeurons(
-		neuronIds: string[],
-		guidance: string,
-	): Promise<BaseNeuron<unknown>> {
-		if (!this.evolutionOrchestrator) {
-			throw new Error(
-				'Evolution is not enabled. Set config.evolution.enabled = true',
-			)
-		}
-
-		const decision: EvolutionDecision = {
-			action: EVOLUTION_ACTIONS.merge,
-			reasoning: 'Manual merge',
-			guidance,
-			targets: neuronIds,
-		}
-
-		const result =
-			await this.evolutionOrchestrator.executeSingleDecision(decision)
-		const neuronId = this.getNewNeuronIdsOrThrow(result)[0]
-		return this.getNeuronOrThrow(neuronId)
-	}
-
-	/**
-	 * Split a neuron into multiple focused neurons
-	 *
-	 * @param neuronId - ID of neuron to split
-	 * @param guidance - Natural language description of how to split
-	 * @returns Array of newly created split neurons
-	 * @throws If evolution is not enabled or neuron ID invalid
-	 *
-	 * @example
-	 * ```ts
-	 * const neurons = await brain.splitNeuron(
-	 *   'neuron3',
-	 *   'Split into frontend-focused and backend-focused neurons'
-	 * )
-	 * ```
-	 */
-	async splitNeuron(
-		neuronId: string,
-		guidance: string,
-	): Promise<BaseNeuron<unknown>[]> {
-		if (!this.evolutionOrchestrator) {
-			throw new Error(
-				'Evolution is not enabled. Set config.evolution.enabled = true',
-			)
-		}
-
-		const decision: EvolutionDecision = {
-			action: EVOLUTION_ACTIONS.split,
-			reasoning: 'Manual split',
-			guidance,
-			targets: [neuronId],
-		}
-
-		const result =
-			await this.evolutionOrchestrator.executeSingleDecision(decision)
-		return this.getNewNeuronIdsOrThrow(result).map((id: string) =>
-			this.getNeuronOrThrow(id),
+		await this.#storeGap(
+			`leftover_${nanoid()}`,
+			entries.flatMap((e) => e.inputs),
+			[leftover],
 		)
+		this.signal({ source: 'brain', description: leftover })
+	}
+
+	/** Store a gap record for evolution, evicting the oldest past `maxStored`. */
+	async #storeGap(
+		id: string,
+		data: LearnInput[],
+		gaps: string[],
+	): Promise<void> {
+		await this.store.dismissedBatches.add({
+			id,
+			data,
+			gaps,
+			timestamp: new Date().toISOString(),
+			retryCount: 0,
+			status: 'pending',
+		})
+		const count = await this.store.dismissedBatches.count()
+		if (count <= this.gaps.maxStored) return
+		const all = await this.store.dismissedBatches.list()
+		all.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+		for (const record of all.slice(0, count - this.gaps.maxStored)) {
+			await this.store.dismissedBatches.delete(record.id)
+		}
 	}
 
 	/**
-	 * Update a neuron's configuration
+	 * Run evolution now. An agent looks at the neurons, their memories, the
+	 * inputs no neuron took and the buffered signals, and creates, updates,
+	 * merges or removes neurons. Runs are queued, never parallel. Batches
+	 * waiting in the gap buffer are checked for leftovers first.
 	 *
-	 * @param neuronId - ID of neuron to update
-	 * @param guidance - Natural language description of updates needed
-	 * @returns The updated neuron
-	 * @throws If evolution is not enabled or neuron ID invalid
-	 *
-	 * @example
-	 * ```ts
-	 * const neuron = await brain.updateNeuron(
-	 *   'neuron4',
-	 *   'Narrow scope to focus only on React hooks, increase importance threshold'
-	 * )
-	 * ```
+	 * @throws if evolution is not enabled
 	 */
-	async updateNeuron(
-		neuronId: string,
-		guidance: string,
-	): Promise<BaseNeuron<unknown>> {
-		if (!this.evolutionOrchestrator) {
+	async evolve(): Promise<EvolutionResult> {
+		if (!this.state.evolution.enabled) {
 			throw new Error(
 				'Evolution is not enabled. Set config.evolution.enabled = true',
 			)
 		}
+		return this.#queueEvolution('manual')
+	}
 
-		const decision: EvolutionDecision = {
-			action: EVOLUTION_ACTIONS.update,
-			reasoning: 'Manual update',
-			guidance,
-			targets: [neuronId],
+	async #queueEvolution(source: 'auto' | 'manual'): Promise<EvolutionResult> {
+		this.#pendingEvolutions++
+		const run = this.#evolutionQueue.then(() => this.#runEvolution(source))
+		this.#evolutionQueue = run.then(
+			() => undefined,
+			() => undefined,
+		)
+		try {
+			return await run
+		} finally {
+			this.#pendingEvolutions--
 		}
+	}
 
-		await this.evolutionOrchestrator.executeSingleDecision(decision)
-		return this.getNeuronOrThrow(neuronId)
+	async #runEvolution(source: 'auto' | 'manual'): Promise<EvolutionResult> {
+		if (source === 'manual') await this.#flushGapBuffer()
+		const startedAt = new Date().toISOString()
+		const signals = this.#signals.splice(0)
+		this.emit('evolution:started', { signalCount: signals.length })
+		try {
+			const neurons = await Promise.all(
+				this.getNeurons()
+					.filter((n) => this.neuronStatus.get(n.id) === 'active')
+					.map(async (n) => ({
+						id: n.id,
+						name: n.name,
+						description: n.description,
+						instructions: n.instructions,
+						memoryLength: (await n.getUnderstanding()).length,
+					})),
+			)
+			const prompt = evolutionPrompt({
+				brainPrompt: this.state.prompt,
+				neurons,
+				gaps: await this.#gapTexts(),
+				signals,
+				history: await this.#evolutionHistory(),
+			})
+
+			const changes: EvolutionChange[] = []
+			const result = await generate({
+				llm: this.llm,
+				model: this.state.models.evolution,
+				system: evolutionSystemPrompt,
+				prompt,
+				tools: evolutionTools(this, (change) => {
+					changes.push(change)
+					this.emit('evolution:change', change)
+				}),
+				toolChoice: 'auto',
+				stopWhen: stepCountIs(MAX_EVOLUTION_STEPS),
+				...this.llmRepairOptions,
+			})
+			const reasoning = result.steps
+				.map((step) => step.text)
+				.filter(Boolean)
+				.join('\n')
+
+			await this.store.evolution.add({
+				id: `evolution_${nanoid()}`,
+				decisions: changes,
+				source,
+				created_at: new Date().toISOString(),
+			})
+
+			// Neurons that now cover new ground get a try at the gaps
+			const ids = (actions: EvolutionChange['action'][]) => [
+				...new Set(
+					changes
+						.filter((c) => actions.includes(c.action))
+						.map((c) => c.neuronId)
+						.filter((id) => this.neurons.has(id)),
+				),
+			]
+			const changed = ids(['create', 'update', 'merge'])
+			if (changed.length > 0) {
+				await this.reinjectDismissedBatches(
+					changed,
+					ids(['create', 'merge']),
+					startedAt,
+				)
+			}
+
+			const outcome: EvolutionResult = { changes, reasoning }
+			this.emit('evolution:completed', outcome)
+			return outcome
+		} catch (error) {
+			this.#signals.unshift(...signals)
+			const message = error instanceof Error ? error.message : String(error)
+			this.emit('evolution:failed', { error: message })
+			throw error
+		}
 	}
 
 	/**
-	 * Delete a neuron from the Brain
-	 *
-	 * @param neuronId - ID of neuron to delete
-	 * @throws If evolution is not enabled or neuron ID invalid
-	 *
-	 * @example
-	 * ```ts
-	 * await brain.deleteNeuron('neuron5')
-	 * ```
+	 * Text of the most recent gaps, oldest first: the inputs of a batch no
+	 * neuron took, or the leftover text of batches some neuron took.
 	 */
-	async deleteNeuron(neuronId: string): Promise<void> {
-		if (!this.evolutionOrchestrator) {
-			throw new Error(
-				'Evolution is not enabled. Set config.evolution.enabled = true',
-			)
-		}
+	async #gapTexts(): Promise<string[]> {
+		const batches = await this.store.dismissedBatches.list()
+		return batches
+			.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+			.slice(-MAX_GAP_BATCHES)
+			.flatMap((batch): unknown[] => {
+				const leftover = leftoverOf(batch.gaps)
+				if (leftover !== undefined) return [leftover]
+				return Array.isArray(batch.data) ? batch.data : []
+			})
+			.flatMap((item: unknown) => {
+				if (typeof item === 'string') return [item]
+				if (
+					typeof item === 'object' &&
+					item !== null &&
+					'text' in item &&
+					typeof item.text === 'string'
+				)
+					return [item.text]
+				return []
+			})
+	}
 
-		const decision: EvolutionDecision = {
-			action: EVOLUTION_ACTIONS.delete,
-			reasoning: 'Manual deletion',
-			guidance: `Delete neuron ${neuronId}`,
-			targets: [neuronId],
-		}
-
-		await this.evolutionOrchestrator.executeSingleDecision(decision)
+	/** The last few evolution runs, oldest first. */
+	async #evolutionHistory(): Promise<string[]> {
+		const records = await this.store.evolution.list()
+		return records
+			.sort((a, b) => a.created_at.localeCompare(b.created_at))
+			.slice(-MAX_HISTORY)
+			.map((r) => `${r.created_at}: ${JSON.stringify(r.decisions)}`)
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -2211,7 +1912,8 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	 *
 	 * 1. **Brain-only** — persisted to state, no downstream propagation
 	 * 2. **Mechanical cascade** — forwarded to all neurons via neuron.update()
-	 * 3. **Signal-driven** — semantic changes routed through the evaluator
+	 * 3. **Semantic** — prompt and `learning` name/description/instructions
+	 *    changes become a signal and run evolution (when enabled)
 	 *
 	 * @param updates - Partial configuration updates (same shape as BrainConfig)
 	 * @returns Result with changed fields, neuron results, and evolution results
@@ -2219,7 +1921,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 	async update(updates: Partial<BrainConfig>): Promise<BrainUpdateResult> {
 		const changedFields: string[] = []
 		const neuronResults: BrainUpdateResult['neuronResults'] = []
-		let evolutionResults: BrainUpdateResult['evolutionResults'] | undefined
+		let evolution: EvolutionResult | undefined
 		const stateChanges: Partial<BrainState> = {}
 
 		// ── 1. Collect brain-only state changes ──
@@ -2309,16 +2011,8 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			stateChanges.prompt = updates.prompt
 			changedFields.push('prompt')
 			semanticChanges.push(
-				`Brain purpose has been updated by the user.\n` +
-					`Previous purpose: ${oldPrompt}\n` +
-					`New purpose: ${updates.prompt}\n\n` +
-					`IMPORTANT: This update does NOT necessarily mean all existing neurons should be deleted and recreated. ` +
-					`Consider the relationship between the old and new purpose:\n` +
-					`- If the new purpose is a REFINEMENT or NARROWING of the old one, ADJUST existing neurons to match.\n` +
-					`- If the new purpose OVERLAPS with the old one, keep neurons whose knowledge is still relevant (check "What it has learned so far"), adjust their instructions, and only create new ones for gaps.\n` +
-					`- If the new purpose ADDS a new dimension, create new neurons for the new area while keeping existing ones.\n` +
-					`- Only DELETE a neuron if its accumulated knowledge is genuinely irrelevant to the new purpose.\n` +
-					`- Prefer ADJUST over DELETE+CREATE — adjusting preserves accumulated understanding, deleting destroys it.`,
+				`The user changed what the system should track. Previous: ${oldPrompt}. ` +
+					'Keep neurons whose memory still serves the new purpose; update them rather than remove and recreate.',
 			)
 		}
 
@@ -2334,27 +2028,6 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		if (changedFields.includes('prompt')) {
 			await this.decomposeBrainPrompt()
 			await this.setState({ promptContext: this.state.promptContext })
-		}
-
-		if (
-			changedFields.includes('evolution.enabled') &&
-			this.state.evolution.enabled &&
-			!this.evaluator
-		) {
-			this.initEvolution()
-		}
-
-		if (
-			changedFields.includes('evolution.evaluatorSignalThreshold') &&
-			this.evaluator
-		) {
-			this.evaluator = new Evaluator(
-				this,
-				this.state.evolution.evaluatorSignalThreshold,
-			)
-			this.evaluator.on((event) => {
-				this.emit(event.type as keyof BrainEventMap, event.payload as never)
-			})
 		}
 
 		// ── 2. Mechanical cascade to neurons ──
@@ -2410,7 +2083,7 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			}
 		}
 
-		// ── 3. Signal-driven (semantic changes) ──
+		// ── 3. Semantic changes run evolution ──
 
 		if (updates.learning?.instructions) {
 			semanticChanges.push(
@@ -2428,21 +2101,12 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			)
 		}
 
-		if (semanticChanges.length > 0) {
+		if (semanticChanges.length > 0 && this.state.evolution.enabled) {
 			this.signal({
-				source: 'brain',
-				description: `SYSTEM DIRECTIVE: ${semanticChanges.join('\n\n')}`,
-				bypass: true,
+				source: 'user',
+				description: semanticChanges.join('\n'),
 			})
-
-			// Await full evaluation + execution
-			if (this.evaluator) {
-				const { decisions, results } = await this.evaluateEvolution()
-				evolutionResults = {
-					decisions,
-					...results,
-				}
-			}
+			evolution = await this.evolve()
 		}
 
 		// ── 4. Emit event ──
@@ -2455,14 +2119,16 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 			changedFields,
 			config: this.config,
 			neuronResults,
-			evolutionResults,
+			evolution,
 		}
 	}
 
 	/**
-	 * Dispose Brain: disposes all neurons and the brain store
+	 * Dispose Brain: disposes all neurons and the brain store. Batches still
+	 * in the gap buffer are dropped, like buffered signals.
 	 */
 	async dispose(): Promise<void> {
+		this.#gapBuffer = []
 		for (const neuron of this.neurons.values()) {
 			await neuron.dispose()
 		}
@@ -2471,10 +2137,20 @@ ${neuronMenu.map((l) => `- ${l.id}: ${l.name} — ${l.description}`).join('\n')}
 		}
 		this.neurons.clear()
 		this.internalNeurons.clear()
-		this.neuronNames.clear()
 		this.neuronStatus.clear()
 		await this.store.dispose()
 	}
+}
+
+function inputText(item: LearnInput): string {
+	return typeof item === 'string' ? item : item.text
+}
+
+/** The leftover text of a gap record; undefined for a batch no neuron took. */
+function leftoverOf(gaps: unknown): string | undefined {
+	if (!Array.isArray(gaps)) return undefined
+	const [first]: unknown[] = gaps
+	return typeof first === 'string' ? first : undefined
 }
 
 async function resolveBrainStore(

@@ -163,10 +163,10 @@ async function main() {
 	brain.on((event) => {
 		switch (event.type) {
 			case 'brain:init:config:generated': {
-				const p = event.payload as { configs: Array<{ id: string; name: string; description: string; type: string }> }
+				const p = event.payload as { configs: Array<{ id: string; name: string; description: string }> }
 				console.log(`  [${elapsed()}s] Decomposition generated ${p.configs.length} neurons:`)
 				for (const c of p.configs) {
-					console.log(`    - ${c.id} (${c.type}): ${c.name}`)
+					console.log(`    - ${c.id}: ${c.name}`)
 					console.log(`      ${c.description}`)
 				}
 				break
@@ -187,19 +187,15 @@ async function main() {
 				console.log(`  [${elapsed()}s] Signal: [${p.source}] ${p.description}`)
 				break
 			}
-			case 'evaluator:evaluation:completed': {
-				const p = event.payload as { decisions: Array<{ action: string; reasoning: string; targets: string[] }> }
-				console.log(`  [${elapsed()}s] Evolution evaluation — ${p.decisions.length} decisions:`)
-				for (const d of p.decisions) {
-					console.log(`    ${d.action} [${d.targets.join(', ')}]: ${d.reasoning}`)
-				}
+			case 'evolution:change': {
+				const p = event.payload as { action: string; neuronId: string; mergedIds?: string[] }
+				const from = p.mergedIds ? ` from [${p.mergedIds.join(', ')}]` : ''
+				console.log(`  [${elapsed()}s] Evolution: ${p.action} ${p.neuronId}${from}`)
 				break
 			}
-			case 'evolution:action:executed': {
-				const p = event.payload as { action: string; targets: string[]; result: { newNeuronIds?: string[]; deletedNeuronIds?: string[] } }
-				console.log(`  [${elapsed()}s] Evolution executed: ${p.action} [${p.targets.join(', ')}]`)
-				if (p.result.newNeuronIds?.length) console.log(`    Created: ${p.result.newNeuronIds.join(', ')}`)
-				if (p.result.deletedNeuronIds?.length) console.log(`    Deleted: ${p.result.deletedNeuronIds.join(', ')}`)
+			case 'evolution:completed': {
+				const p = event.payload as { changes: unknown[]; reasoning: string }
+				console.log(`  [${elapsed()}s] Evolution run — ${p.changes.length} changes. ${p.reasoning}`)
 				break
 			}
 		}
@@ -219,10 +215,6 @@ async function main() {
 		console.log(`\n  Neuron: ${l.id}`)
 		console.log(`  Instructions: ${meta.instructions}`)
 		console.log(`  Origin: ${meta.origin}`)
-	}
-
-	if (brain.evolutionContext) {
-		console.log(`\nEvolution context:\n${brain.evolutionContext}`)
 	}
 
 	if (QUERY_ONLY) {
