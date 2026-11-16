@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react"
 import { Settings2 } from "lucide-react"
-import type { UseCase, ModelRef } from "../../lib/demo/use-cases"
+import type { UseCase } from "../../lib/demo/use-cases"
 import type { InjectionProgress } from "../../lib/demo/types"
+import { DEFAULT_MODEL } from "../../lib/demo/model"
 import { TextReveal } from "./text-reveal"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,6 +30,7 @@ interface Props {
 	evolutionActivity: string
 	evolutionCommentary: string
 	useCase: UseCase | null
+	modelId: string
 }
 
 export function StatusDisplay({
@@ -38,6 +40,7 @@ export function StatusDisplay({
 	evolutionActivity,
 	evolutionCommentary,
 	useCase,
+	modelId,
 }: Props) {
 	const lines = commentary ? commentary.split("\n\n").filter(Boolean) : []
 	const latestComment = lines.length > 0 ? lines[lines.length - 1] : null
@@ -92,6 +95,7 @@ export function StatusDisplay({
 						open={detailsOpen}
 						onOpenChange={setDetailsOpen}
 						useCase={useCase}
+						modelId={modelId}
 					/>
 				</>
 			)}
@@ -285,12 +289,14 @@ function UseCaseDetailsDialog({
 	open,
 	onOpenChange,
 	useCase,
+	modelId,
 }: {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	useCase: UseCase
+	modelId: string
 }) {
-	const code = buildUseCaseCode(useCase)
+	const code = buildUseCaseCode(useCase, modelId)
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -335,7 +341,7 @@ function UseCaseDetailsDialog({
 						}}>
 							<MetaPill label="Duration" value={useCase.duration ?? "custom"} />
 							<MetaPill label="Sources" value={String(useCase.dataPaths.length)} />
-							<MetaPill label="Model" value={compactModelName(useCase.model) ?? "default"} />
+							<MetaPill label="Model" value={compactModelName(modelId)} />
 							{useCase.evolution?.enabled && (
 								<MetaPill label="Evolution" value={useCase.evolution.autoEvaluate ? "auto" : "manual"} />
 							)}
@@ -381,9 +387,7 @@ function UseCaseDetailsDialog({
 							<SectionCard title="Models">
 								<ValueGrid
 									items={[
-										["Primary", modelName(useCase.model) ?? "default"],
-										["Blueprint", modelName(useCase.blueprintModel) ?? "inherits primary"],
-										["Evolution", modelName(useCase.evolution?.model) ?? "inherits primary"],
+										["Model", modelId],
 									]}
 								/>
 							</SectionCard>
@@ -663,15 +667,8 @@ function MetaPill({ label, value }: { label: string; value: string }) {
 }
 
 
-function modelName(slot: string | ModelRef | undefined): string | null {
-	if (!slot) return null
-	return typeof slot === "string" ? slot : slot.model
-}
-
-function compactModelName(slot: string | ModelRef | undefined): string | null {
-	const fullName = modelName(slot)
-	if (!fullName) return null
-	return fullName.includes("/") ? fullName.split("/").pop() ?? fullName : fullName
+function compactModelName(id: string): string {
+	return id.includes("/") ? id.split("/").pop() ?? id : id
 }
 
 function formatScalar(value: string | number | boolean | undefined): string {
@@ -683,27 +680,17 @@ function formatJson(value: unknown): string {
 	return JSON.stringify(value, null, 2)
 }
 
-function buildUseCaseCode(useCase: UseCase): string {
-	const mainModel = modelName(useCase.model) ?? "google/gemini-2.5-flash"
-	const blueprintModel = modelName(useCase.blueprintModel)
-	const evolutionModel = modelName(useCase.evolution?.model)
+function buildUseCaseCode(useCase: UseCase, modelId: string): string {
 
 	const lines = [
-		'import { Brain, MemoryBrainStore } from "@unbody-io/adapt"',
-		'import { createOpenRouter } from "@openrouter/ai-sdk-provider"',
-		"",
-		"const openrouter = createOpenRouter({",
-		'  baseURL: "/api/llm-proxy",',
-		'  apiKey: "proxy",',
-		"})",
-		"",
-		"const model = (id: string) => openrouter(id)",
+		modelId === DEFAULT_MODEL
+			? 'import { Brain, MemoryBrainStore } from "@unbody-io/adapt"'
+			: 'import { Brain, MemoryBrainStore, localModel } from "@unbody-io/adapt"',
 		"",
 		"const brain = await Brain.create({",
 		`  prompt: ${JSON.stringify(useCase.prompt)},`,
 		`  autoSetup: ${JSON.stringify(useCase.autoSetup ?? true)},`,
-		`  model: model(${JSON.stringify(mainModel)}),`,
-		`  init: { model: model(${JSON.stringify(blueprintModel ?? mainModel)}) },`,
+		...(modelId === DEFAULT_MODEL ? [] : [`  model: localModel(${JSON.stringify(modelId)}),`]),
 		"  store: new MemoryBrainStore(),",
 		`  ingest: ${formatJson(useCase.ingest ?? {})},`,
 		"  learning: {",
@@ -715,7 +702,6 @@ function buildUseCaseCode(useCase: UseCase): string {
 				`    enabled: ${JSON.stringify(useCase.evolution.enabled)},`,
 				`    autoEvaluate: ${JSON.stringify(useCase.evolution.autoEvaluate)},`,
 				`    evaluatorSignalThreshold: ${JSON.stringify(useCase.evolution.evaluatorSignalThreshold)},`,
-				`    model: model(${JSON.stringify(evolutionModel ?? mainModel)}),`,
 				"  },",
 			]
 			: []),
@@ -731,11 +717,10 @@ function buildUseCaseCode(useCase: UseCase): string {
 		")",
 		"",
 		"for (const source of dataSources) {",
-		"  const items = source.items.map((item) => ({",
-		"    ...item.data,",
-		"    _id: item.id,",
-		"    _label: item.label,",
-		"  }))",
+		"  // The brain learns from plain text.",
+		"  const items = source.items.map((item) =>",
+		"    [item.label, ...Object.entries(item.data).map(([k, v]) => `${k}: ${v}`)].join(\"\\n\")",
+		"  )",
 		"",
 		"  await brain.inject(items)",
 		"}",

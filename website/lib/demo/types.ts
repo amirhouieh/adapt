@@ -15,7 +15,6 @@ export interface NeuronHealth {
 export interface Neuron {
 	id: string
 	name: string
-	type: string
 	description: string
 	understandingSize: number
 	activity: "idle" | "observing" | "thinking" | "synthesizing" | "querying"
