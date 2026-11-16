@@ -684,8 +684,8 @@ function buildUseCaseCode(useCase: UseCase, modelId: string): string {
 
 	const lines = [
 		modelId === DEFAULT_MODEL
-			? 'import { Brain, MemoryBrainStore } from "@unbody-io/adapt"'
-			: 'import { Brain, MemoryBrainStore, localModel } from "@unbody-io/adapt"',
+			? 'import { Brain, MemoryBrainStore } from "adapt-memory"'
+			: 'import { Brain, MemoryBrainStore, localModel } from "adapt-memory"',
 		"",
 		"const brain = await Brain.create({",
 		`  prompt: ${JSON.stringify(useCase.prompt)},`,

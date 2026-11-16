@@ -81,7 +81,7 @@ interface UseBrainOptions {
 
 export function useBrain() {
 	const [state, setState] = useState<DemoState>(initialState)
-	const brainRef = useRef<import("@unbody-io/adapt").Brain | null>(null)
+	const brainRef = useRef<import("adapt-memory").Brain | null>(null)
 	const eventIdCounter = useRef(0)
 	const timelineRef = useRef<{ t: number; event: string; payload: Record<string, unknown> }[]>([])
 	const fullLogRef = useRef<string[]>([])
@@ -221,7 +221,7 @@ export function useBrain() {
 	}, [])
 
 	const start = useCallback(async (options: UseBrainOptions) => {
-		const { Brain, MemoryBrainStore } = await import("@unbody-io/adapt")
+		const { Brain, MemoryBrainStore } = await import("adapt-memory")
 
 		startTimeRef.current = Date.now()
 		timelineRef.current = []
@@ -480,7 +480,7 @@ export function useBrain() {
 		})
 	}
 
-	const syncNeurons = (brain: import("@unbody-io/adapt").Brain) => {
+	const syncNeurons = (brain: import("adapt-memory").Brain) => {
 		const newNeurons: Neuron[] = []
 		for (const neuron of brain.getNeurons()) {
 			if (neuron.name.startsWith("__internal")) continue
@@ -605,7 +605,7 @@ interface ActivityResult {
 function activityFromEvent(
 	type: string,
 	payload: Record<string, unknown>,
-	brain: import("@unbody-io/adapt").Brain | null,
+	brain: import("adapt-memory").Brain | null,
 ): ActivityResult | null {
 	switch (type) {
 		case "brain:init:started": return { text: "Analyzing prompt...", category: "progress" }

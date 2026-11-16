@@ -13,8 +13,8 @@ import {
 	MemoryBrainStore,
 	MemoryNeuronStore,
 	type NeuronStore,
-} from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+} from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'

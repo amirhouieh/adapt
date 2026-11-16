@@ -69,8 +69,8 @@ A brain should survive a restart. This is the one home for persistence.
 First run:
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+import { Brain } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 
 const brain = await Brain.create({
   prompt: 'Track my coding preferences and food habits.',
@@ -92,7 +92,7 @@ const brain = await Brain.restore('./brain.db')
 - Saved: prompt, prompt split, model references, `ingest.batchSize`, evolution settings, and each neuron's instructions, governance, current understanding and learning records (revision numbers and short notes of what changed, not past understandings).
 - Not saved: the `gaps` config (restore uses 100 and 4000), the signal buffer, the leftover buffer, the `internalNeurons` config and the `learning` defaults. Pass `learning` to `Brain.restore` again if you set it.
 - Restore also accepts `blueprintModel`, `init`, `query`, `evolution`, `llm`, `onEvent`, `repairWithFeedback` and `maxRepairAttempts`. The model options only supply live hosted models for the saved references and do not replace the saved per-job models or evolution settings. To change one, call `brain.update` after restore, which saves the change.
-- Bun: import from `@unbody-io/adapt/sqlite/bun` and pass the store instance: `Brain.restore(new SQLiteBrainStore('./brain.db'))`. The path-string form always uses the Node adapter.
+- Bun: import from `adapt-memory/sqlite/bun` and pass the store instance: `Brain.restore(new SQLiteBrainStore('./brain.db'))`. The path-string form always uses the Node adapter.
 - Call `await brain.dispose()` when done.
 
 ### Memory size: governance
@@ -114,7 +114,7 @@ An understanding is one text that is rewritten whole, and a neuron keeps no past
 Define neurons yourself when you know the topics, or to save the setup call.
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 
 const brain = await Brain.create({
   prompt: 'Track cooking knowledge.',
@@ -175,7 +175,7 @@ A change to `prompt` costs 1 call, to split the new prompt. A change to `learnin
 A neuron can run without a brain. It has no setup, no gaps and no evolution.
 
 ```ts
-import { Neuron, MemoryNeuronStore } from '@unbody-io/adapt'
+import { Neuron, MemoryNeuronStore } from 'adapt-memory'
 
 const neuron = await Neuron.create({
   instructions: 'Track my coding preferences.',
@@ -192,7 +192,7 @@ It restores like a brain: `Neuron.restore('./neuron.db', { id })`, with `id` whe
 The default is LFM3 1.7B in LM Studio, the only model tested with this release. Another local model or server is a `localModel(...)` call; Qwen here is untested:
 
 ```ts
-import { Brain, localModel } from '@unbody-io/adapt'
+import { Brain, localModel } from 'adapt-memory'
 
 const brain = await Brain.create({
   prompt: 'Track my coding preferences and food habits.',
@@ -263,7 +263,7 @@ Small-model facts:
 A hosted model runs off your machine. Pass any AI SDK model. OpenRouter with LFM3 is the tested hosted path. `@ai-sdk/openai-compatible` is installed with adapt. With pnpm or another strict package manager, run `npm i @ai-sdk/openai-compatible` so your code can import it.
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 
 const openrouter = createOpenAICompatible({

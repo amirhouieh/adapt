@@ -36,7 +36,7 @@ async function writeNodeSmoke(dir) {
 	await writeFile(
 		join(dir, 'smoke.mjs'),
 		`import assert from 'node:assert/strict'
-import { SQLiteBrainStore, SQLiteNeuronStore } from '@unbody-io/adapt/sqlite'
+import { SQLiteBrainStore, SQLiteNeuronStore } from 'adapt-memory/sqlite'
 
 const brainPath = './brain.db'
 const neuronPath = './neuron.db'
@@ -94,7 +94,7 @@ async function writeBunSmoke(dir) {
 	await writeFile(
 		join(dir, 'smoke.mjs'),
 		`import assert from 'node:assert/strict'
-import { SQLiteBrainStore, SQLiteNeuronStore } from '@unbody-io/adapt/sqlite/bun'
+import { SQLiteBrainStore, SQLiteNeuronStore } from 'adapt-memory/sqlite/bun'
 
 const brainPath = './brain.db'
 const neuronPath = './neuron.db'
@@ -168,8 +168,8 @@ async function writeNodeCjsSmoke(dir) {
 	await writeFile(
 		join(dir, 'smoke.cjs'),
 		`const assert = require('node:assert/strict')
-const { SQLiteBrainStore, SQLiteNeuronStore } = require('@unbody-io/adapt/sqlite')
-const { Brain, MemoryBrainStore, MemoryNeuronStore, Neuron } = require('@unbody-io/adapt')
+const { SQLiteBrainStore, SQLiteNeuronStore } = require('adapt-memory/sqlite')
+const { Brain, MemoryBrainStore, MemoryNeuronStore, Neuron } = require('adapt-memory')
 
 assert.equal(typeof Brain, 'function')
 assert.equal(typeof MemoryBrainStore, 'function')

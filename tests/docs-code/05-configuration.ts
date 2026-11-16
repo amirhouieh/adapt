@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/05-configuration.ts
  */
 
-import { Brain, MemoryBrainStore, createAiSdkLLM } from '@unbody-io/adapt'
+import { Brain, MemoryBrainStore, createAiSdkLLM } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0

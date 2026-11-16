@@ -20,13 +20,13 @@ You do not name the model in code. With no `model` option, adapt uses `localMode
 ## 2. Install
 
 ```bash
-npm i @unbody-io/adapt
+npm i adapt-memory
 ```
 
 ## 3. Create a brain
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 
 const brain = await Brain.create({
   prompt: 'Track my coding preferences and food habits.',
@@ -87,8 +87,8 @@ You get one `insight`, the `sources` behind it, and `gaps`: what the answering m
 By default a brain lives in memory and is lost when the process exits. To keep it on disk, give `Brain.create` a SQLite store. SQLite needs `npm i better-sqlite3`.
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+import { Brain } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 
 const brain = await Brain.create({
   prompt: 'Track my coding preferences and food habits.',
@@ -121,8 +121,8 @@ await brain.dispose()
 Save as `first-run.mjs` and run `node first-run.mjs`. Run it once; a second run throws because `brain.db` already holds a brain. Use `Brain.restore` after that.
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+import { Brain } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 
 const brain = await Brain.create({
   prompt: 'Track my coding preferences and food habits.',
@@ -150,7 +150,7 @@ await brain.dispose()
 `localModel()` points adapt at another model in LM Studio or another OpenAI-compatible server, such as llama.cpp. Only LFM3 1.7B has been tested with this release. Pass the result as `model` to `Brain.create`:
 
 ```ts
-import { localModel } from '@unbody-io/adapt'
+import { localModel } from 'adapt-memory'
 
 localModel('qwen/qwen3.5-2b') // another model in LM Studio (untested)
 localModel('<model id>', { baseURL: 'http://localhost:8080/v1' }) // a llama.cpp server (untested)

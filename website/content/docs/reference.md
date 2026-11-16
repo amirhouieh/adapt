@@ -3,15 +3,15 @@ title: Reference
 description: Every public method, config option with its default, emitted event with payload, store and LLM plugin in adapt 0.1.0 plus unreleased changes (the local default and localModel).
 ---
 
-This page lists exact names, signatures, defaults, events and return types. Read [concepts](/docs/concepts) and [how-it-works](/docs/how-it-works) first for the words and the lifecycle. Import names: root `@unbody-io/adapt`; SQLite `@unbody-io/adapt/sqlite` (Node, `better-sqlite3`, an optional peer dependency); `@unbody-io/adapt/sqlite/bun` (ESM only, `bun:sqlite`). Nothing else is exported.
+This page lists exact names, signatures, defaults, events and return types. Read [concepts](/docs/concepts) and [how-it-works](/docs/how-it-works) first for the words and the lifecycle. Import names: root `adapt-memory`; SQLite `adapt-memory/sqlite` (Node, `better-sqlite3`, an optional peer dependency); `adapt-memory/sqlite/bun` (ESM only, `bun:sqlite`). Nothing else is exported.
 
 ## Exports
 
 | Import | Values |
 |---|---|
-| `@unbody-io/adapt` | `Brain`, `MemoryBrainStore`, `Neuron`, `MemoryNeuronStore`, `MemoryNeuronCollection`, `createAiSdkLLM`, `localModel`, `DEFAULT_LOCAL_MODEL_ID` (`'lfm3-1.7b'`), `DEFAULT_LOCAL_BASE_URL` (`'http://localhost:1234/v1'`), `neuronConfigSchema` (zod), `STRATEGIES` (`['continuous','cumulative','decay']`), plus types (including `LocalModel`) |
-| `@unbody-io/adapt/sqlite` | `SQLiteBrainStore`, `SQLiteBrainCollection`, `SQLiteNeuronStore`, `SQLiteNeuronCollection` |
-| `@unbody-io/adapt/sqlite/bun` | the same four, on `bun:sqlite` |
+| `adapt-memory` | `Brain`, `MemoryBrainStore`, `Neuron`, `MemoryNeuronStore`, `MemoryNeuronCollection`, `createAiSdkLLM`, `localModel`, `DEFAULT_LOCAL_MODEL_ID` (`'lfm3-1.7b'`), `DEFAULT_LOCAL_BASE_URL` (`'http://localhost:1234/v1'`), `neuronConfigSchema` (zod), `STRATEGIES` (`['continuous','cumulative','decay']`), plus types (including `LocalModel`) |
+| `adapt-memory/sqlite` | `SQLiteBrainStore`, `SQLiteBrainCollection`, `SQLiteNeuronStore`, `SQLiteNeuronCollection` |
+| `adapt-memory/sqlite/bun` | the same four, on `bun:sqlite` |
 
 Hard dependencies: `@ai-sdk/openai-compatible`, `ai`, `jsonrepair`, `nanoid`, `zod`. For a hosted model other than an OpenAI-compatible one, install its `@ai-sdk/*` provider yourself.
 

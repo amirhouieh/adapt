@@ -8,8 +8,8 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/10-recipes.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+import { Brain } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite'
 import { model } from '../../evals/helpers/provider'
 import { mkdirSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'

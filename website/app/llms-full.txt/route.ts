@@ -8,7 +8,7 @@ export const revalidate = false;
 const header = `# adapt — full documentation
 
 All adapt docs in one file, in reading order. Each part builds on the one before it.
-Read top to bottom. Package: @unbody-io/adapt.`;
+Read top to bottom. Package: adapt-memory.`;
 
 // Pages in sidebar order, so each concept comes after the one it builds on.
 function urlsInOrder(nodes: PageTree.Node[]): string[] {

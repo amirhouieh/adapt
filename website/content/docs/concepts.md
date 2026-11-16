@@ -114,7 +114,7 @@ adapt keeps a rewritten understanding, not the source text. For verbatim recall,
 
 ## Status
 
-- **Shipped:** neurons and brains; learning from text with `inject`; `ask` in `direct` and `deep` modes; gaps; evolution; background neurons; local models by default; SQLite save and restore. MIT. The latest version on npm is 0.0.6; this release is not published yet ([changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md)). Until it is, `npm i @unbody-io/adapt` installs 0.0.6, which has none of this page's API.
+- **Shipped:** neurons and brains; learning from text with `inject`; `ask` in `direct` and `deep` modes; gaps; evolution; background neurons; local models by default; SQLite save and restore. MIT. The latest version on npm is 0.0.6; this release is not published yet ([changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md)). Until it is, `npm i adapt-memory` installs 0.0.6, which has none of this page's API.
 - **Next:** attention to change, bursts and drift ([#25](https://github.com/unbody-io/adapt/issues/25)); expectation, including "what would I reply to Alex?" ([#26](https://github.com/unbody-io/adapt/issues/26)); explicit history: dated snapshots of each understanding, and a store of the user's own messages.
 - **Where this is going:** adapt will learn what to expect from your data and notice when reality differs. Today: attention-based understanding that organizes itself. Next: attention to change, and prediction.
 

@@ -2,7 +2,7 @@
 
 Terms in reading order; after the first, each definition uses only terms above it. API names are in code font. Terms marked *(next)* are reserved for later releases and never describe current behavior.
 
-- **adapt**: a TypeScript library, `@unbody-io/adapt`, that learns from your data as it arrives, on your device. It isn't a store of chunks you search: it forms understanding, revises it when things change, and reorganizes itself around what matters, using small local models.
+- **adapt**: a TypeScript library, `adapt-memory`, that learns from your data as it arrives, on your device. It isn't a store of chunks you search: it forms understanding, revises it when things change, and reorganizes itself around what matters, using small local models.
 - **neuron**: one topic, its `instructions`, and a plain-text account of that topic, called its understanding.
 - **understanding**: a neuron's plain-text account of its topic, rewritten whole when new input fits the topic. Read it with `neuron.getUnderstanding()`. The API also calls it the memory. A neuron keeps no past versions of its understanding.
 - **brain**: today, your goal, written as one prompt, plus its neurons. `Brain.create` designs the first neurons from the prompt. You can also write them yourself.

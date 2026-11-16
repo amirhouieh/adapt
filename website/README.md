@@ -1,6 +1,6 @@
 # adapt website
 
-The public site for `@unbody-io/adapt`: an understanding layer for AI applications. Next.js + [Fumadocs](https://fumadocs.dev).
+The public site for `adapt-memory`: an understanding layer for AI applications. Next.js + [Fumadocs](https://fumadocs.dev).
 
 ## Develop
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type CSSProperties, type RefObject } from "react"
 import Markdown from "react-markdown"
 import type { LanguageModel } from "ai"
-import type { Brain, Neuron as AdaptNeuron } from "@unbody-io/adapt"
+import type { Brain, Neuron as AdaptNeuron } from "adapt-memory"
 import type { Neuron } from "../../lib/demo/types"
 import { classifyIntent } from "../../lib/demo/model"
 import { Switch } from "@/components/ui/switch"

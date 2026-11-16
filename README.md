@@ -11,7 +11,7 @@ A brain holds a set of neurons. Each neuron has a topic and one plain-text memor
 ## Install
 
 ```bash
-npm i @unbody-io/adapt   # not on npm yet; npm currently serves 0.0.6
+npm i adapt-memory   # not on npm yet; npm currently serves 0.0.6
 ```
 
 ## Quickstart
@@ -19,8 +19,8 @@ npm i @unbody-io/adapt   # not on npm yet; npm currently serves 0.0.6
 Load `lfm3-1.7b` in LM Studio with a 32768-token context and start its server on port 1234. Then:
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
-import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite' // npm i better-sqlite3
+import { Brain } from 'adapt-memory'
+import { SQLiteBrainStore } from 'adapt-memory/sqlite' // npm i better-sqlite3
 
 const brain = await Brain.create({
   prompt: 'Track my coding preferences and food habits.',
@@ -37,7 +37,7 @@ await brain.dispose()
 
 ## Status
 
-MIT. This release is not on npm yet ([changelog](CHANGELOG.md)); until it is, `npm i @unbody-io/adapt` installs 0.0.6, which has a different API. Tested on Node and Bun; a CommonJS build is provided for Electron, untested. Memory in RAM or SQLite.
+MIT. This release is not on npm yet ([changelog](CHANGELOG.md)); until it is, `npm i adapt-memory` installs 0.0.6, which has a different API. Tested on Node and Bun; a CommonJS build is provided for Electron, untested. Memory in RAM or SQLite.
 
 - **Shipped:** neurons and brains; learning from text; `ask` in `direct` and `deep` modes; gaps; [evolution](https://adapt.unbody.io/docs/concepts#self-evolving) on by default; [background neurons](https://adapt.unbody.io/docs/how-it-works#6-background-neurons); local models by default; save and restore.
 - **Next:** attention to change, bursts and drift ([#25](https://github.com/unbody-io/adapt/issues/25)); expectation, including "what would I reply to Alex?" ([#26](https://github.com/unbody-io/adapt/issues/26)); explicit history: dated snapshots of each understanding, and a store of the user's own messages.
@@ -50,5 +50,5 @@ Limits: a neuron keeps no past versions of its understanding, so an old value is
 ## Links
 
 - Docs: <https://adapt.unbody.io/docs>
-- [Changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md) · [npm](https://www.npmjs.com/package/@unbody-io/adapt)
+- [Changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md) · [npm](https://www.npmjs.com/package/adapt-memory)
 - Everything in one file, for coding agents: <https://adapt.unbody.io/llms-full.txt>

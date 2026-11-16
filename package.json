@@ -1,5 +1,5 @@
 {
-  "name": "@unbody-io/adapt",
+  "name": "adapt-memory",
   "version": "0.1.0",
   "description": "An understanding layer for AI apps. Learns from a data stream on your machine with small local models.",
   "type": "module",

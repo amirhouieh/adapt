@@ -3,7 +3,7 @@
  *
  * @example
  * ```typescript
- * import { Brain, localModel } from '@unbody-io/adapt'
+ * import { Brain, localModel } from 'adapt-memory'
  *
  * // First run — fresh brain. No model given: LFM3 on LM Studio
  * // (http://localhost:1234/v1). Qwen: model: localModel('qwen/qwen3.5-2b').
@@ -18,7 +18,7 @@
  *
  * // Subsequent runs (different process / restart) — restore from disk.
  * // This needs the brain created with a SQLite store:
- * // store: new SQLiteBrainStore('brain.db') from '@unbody-io/adapt/sqlite'.
+ * // store: new SQLiteBrainStore('brain.db') from 'adapt-memory/sqlite'.
  * // A local model is saved with the brain, so no second arg is needed.
  * // A hosted model is passed again: Brain.restore('brain.db', { model }).
  * // The brain holds its own plugin reference; there is no global state.

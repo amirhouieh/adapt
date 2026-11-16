@@ -14,7 +14,7 @@ A brain holds a set of neurons. Each neuron has a topic and one plain-text memor
 ## Install
 
 ```bash
-npm i @unbody-io/adapt   # not on npm yet; npm currently serves 0.0.6
+npm i adapt-memory   # not on npm yet; npm currently serves 0.0.6
 ```
 
 The default model is LFM3 1.7B in [LM Studio](https://lmstudio.ai) at `http://localhost:1234/v1`. Use `localModel()` for another local model or server.
@@ -22,7 +22,7 @@ The default model is LFM3 1.7B in [LM Studio](https://lmstudio.ai) at `http://lo
 ## Example
 
 ```ts
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 
 const brain = await Brain.create({ prompt: 'Track my coding preferences and food habits.' })
 

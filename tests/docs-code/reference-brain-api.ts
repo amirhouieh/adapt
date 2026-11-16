@@ -8,7 +8,7 @@
  *   export $(cat .env.local | xargs) && npx tsx tests/docs-code/reference-brain-api.ts
  */
 
-import { Brain } from '@unbody-io/adapt'
+import { Brain } from 'adapt-memory'
 import { model } from '../../evals/helpers/provider'
 
 let passed = 0

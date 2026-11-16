@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Breaking:** the package is renamed from `@unbody-io/adapt` to `adapt-memory`. Update installs and imports, including `adapt-memory/sqlite` and `adapt-memory/sqlite/bun`.
 - Local models are the default. With no `model`, `Brain` and `Neuron` use `localModel()`: LFM3 (`lfm3-1.7b`) on LM Studio at `http://localhost:1234/v1`. `localModel(id?, { baseURL? })` picks another local model (Qwen: `localModel('qwen/qwen3.5-2b')`) or another OpenAI-compatible server (llama.cpp: `{ baseURL: 'http://localhost:8080/v1' }`). It is plain data, saved with the brain, so `Brain.restore(store)` needs no model. New exports: `localModel`, `LocalModel`, `DEFAULT_LOCAL_MODEL_ID`, `DEFAULT_LOCAL_BASE_URL`. Hosted models work as before: pass `model`. `BrainConfig.model` and `NeuronConfig.model` are now optional.
 - `@ai-sdk/openai-compatible` is now a dependency (was a dev dependency); the default AI SDK plugin uses it for `localModel()` configs.
 - **Breaking:** the unused 0.0.6 migration code is removed, with the store collections only it used. `BrainStore` no longer has `registryHeads`, `registryRevisions`, `evolutionActivations`, `evolutionStages` or `memoryMappings`. Old SQLite files that have these tables still open; the tables are ignored.
