@@ -23,7 +23,9 @@
     }
   },
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs",
+    "clean": "node -e \"for (const d of ['dist', 'dist-cjs']) require('fs').rmSync(d, { recursive: true, force: true })\"",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "prepublishOnly": "npm run build",
     "build:esm": "tsc && tsc-alias -f",
     "build:cjs": "tsc -p tsconfig.cjs.json && tsc-alias -f -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('dist-cjs/package.json', JSON.stringify({type:'commonjs'}, null, 2) + '\\n')\"",
     "dev": "tsc --watch",
