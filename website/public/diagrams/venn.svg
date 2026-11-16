@@ -1,40 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 560" width="640" height="560" role="img" aria-label="adapt is where attention, self-evolution and proactivity overlap, on small local and on-edge models">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480" role="img" aria-label="adapt is where attention, self-evolution and proactivity overlap">
 <style>
   text { font-family: 'Google Sans Code', ui-monospace, Menlo, monospace; fill: #171717; }
   .c { fill: none; stroke: #171717; stroke-width: 1.25; }
   .t { font-size: 15px; font-weight: 600; }
-  .s { font-size: 12px; fill: #737373; }
-  .o { font-size: 12px; }
   .core { font-size: 16px; font-weight: 700; }
-  .base { fill: none; stroke: #171717; stroke-width: 1.25; stroke-dasharray: 4 4; }
-  @media (prefers-color-scheme: dark) {
-    text { fill: #EDEDED; } .s { fill: #A3A3A3; }
-    .c, .base { stroke: #EDEDED; }
-  }
+  @media (prefers-color-scheme: dark) { text { fill: #EDEDED; } .c { stroke: #EDEDED; } }
 </style>
-<circle class="c" cx="250" cy="200" r="140"/>
-<circle class="c" cx="390" cy="200" r="140"/>
-<circle class="c" cx="320" cy="320" r="140"/>
-
-<text class="t" x="180" y="150" text-anchor="middle">attention</text>
-<text class="s" x="180" y="170" text-anchor="middle">each neuron keeps</text>
-<text class="s" x="180" y="186" text-anchor="middle">only its topic</text>
-
-<text class="t" x="460" y="150" text-anchor="middle">self-evolution</text>
-<text class="s" x="460" y="170" text-anchor="middle">creates, merges,</text>
-<text class="s" x="460" y="186" text-anchor="middle">removes neurons</text>
-
-<text class="t" x="320" y="410" text-anchor="middle">proactivity</text>
-<text class="s" x="320" y="430" text-anchor="middle">notices what fits nowhere</text>
-
-<text class="o" x="320" y="140" text-anchor="middle">reshapes</text>
-<text class="o" x="320" y="156" text-anchor="middle">its topics</text>
-<text class="o" x="245" y="300" text-anchor="middle">gaps</text>
-<text class="o" x="397" y="294" text-anchor="middle">evolves</text>
-<text class="o" x="397" y="310" text-anchor="middle">by itself</text>
-
-<text class="core" x="320" y="246" text-anchor="middle">adapt</text>
-
-<rect class="base" x="70" y="490" width="500" height="40" rx="6"/>
-<text class="s" x="320" y="515" text-anchor="middle">on small local and on-edge models (1–2B)</text>
+<circle class="c" cx="250" cy="190" r="140"/>
+<circle class="c" cx="390" cy="190" r="140"/>
+<circle class="c" cx="320" cy="310" r="140"/>
+<text class="t" x="185" y="160" text-anchor="middle">attention</text>
+<text class="t" x="455" y="160" text-anchor="middle">self-evolution</text>
+<text class="t" x="320" y="400" text-anchor="middle">proactivity</text>
+<text class="core" x="320" y="240" text-anchor="middle">adapt</text>
 </svg>
