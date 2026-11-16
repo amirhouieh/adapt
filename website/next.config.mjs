@@ -10,8 +10,7 @@ const betterSqliteStub = new URL(
 const config = {
   reactStrictMode: true,
   turbopack: {
-    // The demo links the local library one folder up, so Turbopack must see it.
-    root: new URL("..", import.meta.url).pathname,
+    root: import.meta.dirname,
     resolveAlias: {
       "better-sqlite3": "./lib/noop-better-sqlite3.ts",
     },
