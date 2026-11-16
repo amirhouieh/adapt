@@ -1,7 +1,7 @@
 {
   "name": "@unbody-io/adapt",
   "version": "0.1.0",
-  "description": "A self-evolving memory layer for AI applications",
+  "description": "An understanding layer for AI apps. Learns from a data stream on your machine with small local models.",
   "type": "module",
   "main": "dist-cjs/index.js",
   "module": "dist/index.js",
@@ -51,8 +51,15 @@
   "keywords": [
     "unbody",
     "adapt",
+    "understanding",
     "memory",
     "neurons",
+    "attention",
+    "local-first",
+    "edge",
+    "local-llm",
+    "lfm",
+    "qwen",
     "ai"
   ],
   "repository": {

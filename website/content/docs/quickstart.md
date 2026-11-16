@@ -1,0 +1,164 @@
+---
+title: Quickstart
+description: Start a local model, create a brain, learn from text, ask a question and save the brain, in five minutes.
+---
+
+This page takes you from nothing to a brain that learns on a local model and survives a restart. Read [concepts](/docs/concepts) first for the words: brain, neuron, understanding, gap.
+
+The code needs ESM and top-level `await`. Use a `.mjs` file, or `"type": "module"` in `package.json`.
+
+## 1. Start a local model
+
+adapt talks to any OpenAI-compatible local server. The default is LM Studio with Liquid LFM3 1.7B.
+
+1. In LM Studio, load `lfm3-1.7b`.
+2. Set the context length to 32768 tokens. adapt asks for up to 8192 output tokens, so do not cap output lower.
+3. Start the server on port 1234.
+
+You do not name the model in code. With no `model` option, adapt uses `localModel()`, which is `lfm3-1.7b` at `http://localhost:1234/v1`.
+
+## 2. Install
+
+```bash
+npm i @unbody-io/adapt
+```
+
+## 3. Create a brain
+
+```ts
+import { Brain } from '@unbody-io/adapt'
+
+const brain = await Brain.create({
+  prompt: 'Track my coding preferences and food habits.',
+})
+```
+
+The prompt is your goal. `Brain.create` makes two model calls. One designs the neurons from the prompt. The other splits the prompt into a purpose and an answer style, which the brain uses when it writes answers.
+
+Look at the neurons it designed:
+
+```ts
+for (const n of brain.getNeurons()) console.log(n.id, '-', n.name, '-', n.description)
+```
+
+For this prompt, expect neurons for coding and for food. The model picks their number and names, so they vary between runs.
+
+## 4. Learn from text
+
+```ts
+const result = await brain.inject([
+  'I always use strict TypeScript.',
+  'Dinner: vegetarian ramen.',
+  'Code review: prefer small pure functions.',
+])
+```
+
+Every neuron reads the whole batch and keeps what fits its topic in its understanding. `result` is `{ id, batches: [{ id, index, results: [{ neuronId, result }] }] }`, and each `result.status` is one of:
+
+- `synthesized`: the neuron's understanding changed.
+- `observe:dismissed`: nothing in the batch fit this neuron.
+- `synthesize:dismissed`: something fit, but the understanding text did not change.
+
+Other values appear when a run was cut off or failed. See `LearnOutput` in [reference](/docs/reference#result-types). An input longer than 2000 characters is skipped without an error, so split long text first.
+
+Print what each neuron now understands:
+
+```ts
+for (const n of brain.getNeurons()) {
+  console.log(n.name, '->', await n.getUnderstanding())
+}
+```
+
+Each is a short plain-text paragraph about that neuron's topic.
+
+## 5. Ask
+
+```ts
+const answer = await brain.ask('What do I prefer in code?')
+console.log(answer.insight)
+console.log(answer.sources) // [{ neuronId, relevance, confidence, insight }]
+console.log(answer.gaps)    // string[]
+```
+
+You get one `insight`, the `sources` behind it, and `gaps`: what the answering model reports it could not answer. The default mode is `direct`. The `deep` mode lets an agent decide which neurons to ask, and it needs a model with tool calling.
+
+## 6. Save the brain
+
+By default a brain lives in memory and is lost when the process exits. To keep it on disk, give `Brain.create` a SQLite store. SQLite needs `npm i better-sqlite3`.
+
+```ts
+import { Brain } from '@unbody-io/adapt'
+import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+
+const brain = await Brain.create({
+  prompt: 'Track my coding preferences and food habits.',
+  store: new SQLiteBrainStore('./brain.db'),
+})
+```
+
+In a later run, restore it by path:
+
+```ts
+const brain = await Brain.restore('./brain.db')
+console.log(await brain.ask('What do I prefer in code?'))
+await brain.dispose()
+```
+
+Restore makes no model calls and needs no model option: a local model is saved with the brain. `Brain.create` throws if the store already holds a brain, and `Brain.restore` throws if it is empty. What is saved is listed in [guides](/docs/guides#save-and-restore).
+
+## 7. Finish
+
+Some learning continues after `inject` and `ask` return: the brain's [background neurons](/docs/how-it-works#6-background-neurons), which it keeps about itself, learn from what just happened. A script that exits at once can cut that off. When you are done, call:
+
+```ts
+await brain.dispose()
+```
+
+`dispose` waits for learning that is already running, then closes the stores.
+
+## The whole first run
+
+Save as `first-run.mjs` and run `node first-run.mjs`. Run it once; a second run throws because `brain.db` already holds a brain. Use `Brain.restore` after that.
+
+```ts
+import { Brain } from '@unbody-io/adapt'
+import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite'
+
+const brain = await Brain.create({
+  prompt: 'Track my coding preferences and food habits.',
+  store: new SQLiteBrainStore('./brain.db'),
+})
+
+await brain.inject([
+  'I always use strict TypeScript.',
+  'Dinner: vegetarian ramen.',
+  'Code review: prefer small pure functions.',
+])
+
+for (const n of brain.getNeurons()) {
+  console.log(n.name, '->', await n.getUnderstanding())
+}
+
+const answer = await brain.ask('What do I prefer in code?')
+console.log(answer.insight)
+
+await brain.dispose()
+```
+
+## Other local models
+
+`localModel()` points adapt at another model in LM Studio or another OpenAI-compatible server, such as llama.cpp. Only LFM3 1.7B has been tested with this release. Pass the result as `model` to `Brain.create`:
+
+```ts
+import { localModel } from '@unbody-io/adapt'
+
+localModel('qwen/qwen3.5-2b') // another model in LM Studio (untested)
+localModel('<model id>', { baseURL: 'http://localhost:8080/v1' }) // a llama.cpp server (untested)
+```
+
+Use the id your server reports. A saved brain remembers its local model and server address. Hosted models are covered in [guides](/docs/guides#hosted-models).
+
+## Next
+
+- [how-it-works](/docs/how-it-works) explains what just happened and how many model calls each step makes.
+- [guides](/docs/guides) shows how to write prompts, define your own neurons and listen to events.

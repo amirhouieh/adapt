@@ -53,16 +53,17 @@ On slide: the reframe + the brain analogy.
 - and we learn by two moves: **observe and filter the noise**, and **be selective** about what we pay attention to in the first place
 - so what if memory worked the same way?
 
-*Intent: the pivot from problem → idea, and the origin of the whole design (why "neurons", why an observe/filter phase, why scoped specialists). State the principle only — save the mechanism for "how it works".*
+*Intent: the pivot from problem → idea, and the origin of the whole design (why "neurons", why an extract/filter step, why scoped specialists). State the principle only — save the mechanism for "how it works".*
 
 ## 5 — three things that make it different
 
-On slide: three characteristics, named plainly.
-- **attention learning, not dumb storing** — it judges what's worth keeping as data flows in
-- **self-evolving & self-structuring** — creates, splits, merges, prunes its own neurons
-- **proactive behaviours** — doesn't wait to be queried; emits events / surfaces gaps as it learns
+On slide: what adapt is, then three things that follow from it.
+- adapt is an **understanding layer**, not a store you query. its architecture is built on **attention**.
+- **self-evolving** — the brain creates, merges and removes its own neurons from what it sees
+- **proactive** — it notices what it doesn't cover yet (inputs no neuron kept) and acts on it without being asked
+- **local-first** — runs on your device, your data stays there. built for edge devices and small local models. we start with liquid lfm-3 and qwen.
 
-*Intent: the three things, no abstraction. #1 is the thesis the whole talk just built; #2 and #3 are what fall out of it. next slides show how each works.*
+*Intent: the positioning, no abstraction. attention is the thesis the talk just built; the other three fall out of it. next slides show how each works. Note: local-first is the direction and design; the main test model today is lfm-3.*
 
 ## 6 — how it works: the big picture
 
@@ -75,9 +76,9 @@ On slide: two building blocks.
 
 ## 7 — how a neuron learns (two steps)
 
-On slide: observe → understand, over time.
-- **observe** — read each item, keep what's relevant, score it, drop the noise → into a buffer
-- **understand** — once enough piles up, synthesize the buffer into knowledge
+On slide: extract → update, over time.
+- **extract** — read each batch, keep only what's relevant to this neuron, drop the noise
+- **update** — rewrite the neuron's plain-text memory with what was kept
 - querying is separate: it reads the understanding, never re-reads the raw data
 
 *Intent: this is slide 4's "observe + filter" made real — the core learning loop. show it as a cycle that runs over time, not a one-shot.*
@@ -105,7 +106,7 @@ ADAPT   ●➘──●➘──●➘──●➘──●➘──●         
 
 On slide: route → synthesize → evolve.
 - inject fans out to every neuron (each self-filters); ask fans out, then synthesizes one answer
-- evolution loop: **signal → evaluate → act** — an evaluator inspects the network and creates / splits / merges / prunes neurons
+- evolution loop: **signal → evolve** — one agent looks at the neurons, their memories and the gaps, then creates / updates / merges / removes neurons
 - plus internal neurons that track gaps + meta-knowledge
 
 *Intent: this is slide 5's "reshapes itself" made real — the Brain as the thing that grows and reshapes the network. tie the evolve loop visually back to slide 5.*

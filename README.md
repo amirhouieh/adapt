@@ -1,129 +1,54 @@
-# Adapt
+# adapt
 
-![Adapt — a memory layer that grows and reshapes over time](https://raw.githubusercontent.com/unbody-io/adapt/main/assets/hero.jpg)
+adapt is a TypeScript memory layer designed around attention, self-evolution and proactivity, optimized for small local and on-edge models (1–2B).
 
-**Your agent can search everything it stored and still not know you changed your mind.**
+adapt takes a different approach to memory. Most memory layers are recall-based: they store data and retrieve it when asked. adapt is attention-based: it tracks what you tell it to, and decides which incoming data deserves its effort. This lets adapt keep a small, current memory instead of a growing archive, notice data that fits nothing it tracks, and reshape what it tracks as the data changes. Each of these steps is narrow enough for a small local model.
 
-Adapt is a memory layer that watches data as it arrives, forms conclusions, and revises them when new data contradicts the old ones. It is not a store you query. It is a thing that has been paying attention.
+![adapt is where attention, self-evolution and proactivity overlap, on small local and on-edge models.](website/public/diagrams/venn.svg)
 
-```bash
-npm install @unbody-io/adapt
-```
+A brain holds a set of neurons. Each neuron has a topic and one plain-text memory. `inject()` sends text to every neuron; each extracts what fits its topic and rewrites its memory. Text no neuron keeps is recorded as a gap. Gaps trigger evolution, which creates, merges or removes neurons. `ask()` routes a question to the neurons whose topics match and merges their answers.
 
----
-
-## The difference in one example
-
-Feed six months of code reviews into a vector store and ask what your review style is.
-
-RAG returns the chunks most similar to your question. Five review comments. You get a summary of five comments.
-
-Adapt has been reading them as they arrived. In March you rejected a factory pattern as over-engineering. In June you approved one on a service that had grown. It noticed the shift, revised the conclusion, and kept both.
-
-```ts
-const result = await brain.ask('How has my view on abstraction changed?')
-
-// "Six months ago you treated abstraction as premature by default.
-//  Since the auth refactor you accept it where a module has more than
-//  two consumers. The threshold moved, the skepticism did not."
-```
-
-That answer is not in any single chunk. No amount of retrieval finds it, because it is not stored anywhere. It comes from having watched the sequence.
-
----
-
-## Quick start
-
-Adapt uses the [Vercel AI SDK](https://sdk.vercel.ai) for model access. Install a provider alongside it.
+## Install
 
 ```bash
-npm install @ai-sdk/openai   # or @ai-sdk/anthropic, @ai-sdk/google
+npm i @unbody-io/adapt   # not on npm yet; npm currently serves 0.0.6
 ```
+
+## Quickstart
+
+Load `lfm3-1.7b` in LM Studio with a 32768-token context and start its server on port 1234. Then:
 
 ```ts
 import { Brain } from '@unbody-io/adapt'
-import { openai } from '@ai-sdk/openai'
+import { SQLiteBrainStore } from '@unbody-io/adapt/sqlite' // npm i better-sqlite3
 
 const brain = await Brain.create({
-  prompt: 'Track my coding patterns and development philosophy.',
-  model: openai('gpt-4o'),
+  prompt: 'Track my coding preferences and food habits.',
+  store: new SQLiteBrainStore('./brain.db'),
 })
-
-await brain.inject([
-  'commit: refactor: extract validation into pure functions',
-  'review: Too heavy. Factory functions work fine at our scale.',
-])
-
-const result = await brain.ask('What is my coding philosophy?')
-console.log(result.insight)
+await brain.inject(['I always use strict TypeScript.', 'Dinner: vegetarian ramen.'])
+const answer = await brain.ask('What do I prefer in code?')
+console.log(answer.insight, answer.gaps)
+await brain.dispose()
+// later: const brain = await Brain.restore('./brain.db')
 ```
 
-Persist it with SQLite and pick it up later:
-
-```ts
-const brain = await Brain.restore('./memory.db')
-```
-
----
-
-## How it works
-
-Memory lives in Neurons: small units of understanding, each holding a conclusion and the evidence behind it.
-
-Each Neuron learns in two stages, in plain text: extract what in the new data is relevant, then update its memory with it. A memory strategy (continuous, cumulative or decay) keeps the memory from growing without bound.
-
-When data arrives, Adapt decides what to do with it. New territory creates a Neuron. Supporting evidence strengthens one. Contradicting evidence revises it. A Neuron that has grown to cover two unrelated things splits. Two that have converged merge. Nothing that stops earning its place survives.
-
-The structure is an output, not a schema you designed up front. You do not model your domain. You point it at a stream.
-
----
-
-## When to use this
-
-Good fit:
-
-- Long-running agents that should get better at a specific person or codebase over months
-- Questions about drift, contradiction, or pattern across time
-- Anywhere "what do I know about X" matters more than "find document Y"
-
-Bad fit:
-
-- Fact lookup and citation. Use a vector store. It is better at this and cheaper.
-- Anything needing verbatim recall. Adapt keeps understanding, not transcripts.
-- Compliance or audit trails. Not a system of record.
-
-Most real systems want both. Adapt alongside retrieval, not instead of it.
-
----
-
-## Compared to what you are probably using
-
-|  | Vector RAG | Conversation memory (mem0, Zep) | Adapt |
-| --- | --- | --- | --- |
-| Stores | Chunks | Extracted facts | Conclusions with evidence |
-| On new data | Embeds and appends | Appends, sometimes dedupes | Revises what it already believed |
-| Handles contradiction | Returns both | Usually last write wins | Updates the conclusion, keeps the history |
-| Structure | Fixed | Fixed | Reorganizes itself |
-| Answers "what changed" | No | Partially | Yes |
-
----
-
-## What it costs
-
-Every injection triggers model calls, so this is heavier than an embed-and-store pipeline. It earns that when the questions you care about are about pattern rather than lookup, and it does not when they are not.
-
-Requires a model with structured output and tool calling.
-
----
+`inject` means learn from this data; `ask` means ask what the brain understands, and returns an answer, its sources and what the model could not answer. No model is named, so adapt uses LFM3 1.7B on LM Studio. `localModel('<id>', { baseURL })` points it at another local model or server, untested so far. The code needs ESM and top-level `await`.
 
 ## Status
 
-`0.1.x`. In use, changing fast, breaking changes expected. Node, Bun, Electron. ESM and CJS. In-memory or SQLite. MIT.
+MIT. This release is not on npm yet ([changelog](CHANGELOG.md)); until it is, `npm i @unbody-io/adapt` installs 0.0.6, which has a different API. Tested on Node and Bun; a CommonJS build is provided for Electron, untested. Memory in RAM or SQLite.
 
-**Upgrading from 0.0.6:** 0.1.0 does not support 0.0.6 stores; start with a new one. See the changelog.
+- **Shipped:** neurons and brains; learning from text; `ask` in `direct` and `deep` modes; gaps; [evolution](https://adapt.unbody.io/docs/concepts#self-evolving) on by default; [background neurons](https://adapt.unbody.io/docs/how-it-works#6-background-neurons); local models by default; save and restore.
+- **Next:** attention to change, bursts and drift ([#25](https://github.com/unbody-io/adapt/issues/25)); expectation, including "what would I reply to Alex?" ([#26](https://github.com/unbody-io/adapt/issues/26)); explicit history: dated snapshots of each understanding, and a store of the user's own messages.
+- **Where this is going:** adapt will learn what to expect from your data and notice when reality differs. Today: attention-based understanding that organizes itself. Next: attention to change, and prediction.
 
-Local models (Ollama, LM Studio) are not fully tested yet.
+Limits: a neuron keeps no past versions of its understanding, so an old value is lost when a rewrite keeps only the new one. Inputs are 2000 characters at most. [`continuous` governance](https://adapt.unbody.io/docs/guides#memory-size-governance) stops learning once the understanding is full. Evolution needs tool calling. For verbatim recall, citations and audit trails, use RAG or a database alongside adapt.
 
-Issues and PRs welcome. If you try it and it does not fit your case, that is the most useful issue you can open.
+**Upgrading from 0.0.6:** 0.1.0 does not support 0.0.6 stores. Start with a new one. See the changelog.
 
-[Docs](https://adapt.unbody.io) · [Changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md) · [npm](https://www.npmjs.com/package/@unbody-io/adapt)
+## Links
+
+- Docs: <https://adapt.unbody.io/docs>
+- [Changelog](https://github.com/unbody-io/adapt/blob/main/CHANGELOG.md) · [npm](https://www.npmjs.com/package/@unbody-io/adapt)
+- Everything in one file, for coding agents: <https://adapt.unbody.io/llms-full.txt>

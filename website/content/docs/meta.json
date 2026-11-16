@@ -2,20 +2,10 @@
   "title": "Documentation",
   "pages": [
     "index",
+    "quickstart",
     "concepts",
-    "---Guides---",
-    "brain",
-    "neurons",
-    "configuration",
-    "cost",
-    "models",
-    "stores",
-    "evolution",
-    "prompt-design",
-    "events",
-    "recipes",
-    "changelog",
-    "---",
+    "how-it-works",
+    "guides",
     "reference"
   ]
 }
