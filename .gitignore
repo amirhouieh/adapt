@@ -19,3 +19,5 @@ internal-docs/
 website/.next/
 website/node_modules/
 website/.source/
+
+/docs/
